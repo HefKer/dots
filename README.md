@@ -2,9 +2,9 @@
 
 My dotfiles. Includes configs for:
 - bash: Just a few aliases
+- qutebrowser
 
 Todo:
-- qutebrowser
 - hyprland
 - XCompose
 - fish
