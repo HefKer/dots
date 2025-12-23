@@ -3,6 +3,12 @@ Reference:
 :config-source to reload config
 [Bread config](https://github.com/BreadOnPenguins/dots/blob/master/.config/qutebrowser/config.py)
 [config docs](qute://help/settings.html)
+[translation service](https://github.com/AckslD/Qute-Translate)
+[tab manager](https://codeberg.org/mister_monster/tab-manager)
+
+bitwarden
+https://github.com/qutebrowser/qutebrowser/blob/main/misc/userscripts/qute-bitwarden
+https://github.com/haztecaso/bwmenu
 
 Todo:
 - Setup search engines: no arguments to open a certain default page
@@ -20,6 +26,7 @@ Todo:
 # pyright: reportUndefinedVariable=false
 
 config.load_autoconfig()  # Load settings done via the GUI
+#
 # idk
 # c.completion.shrink = True
 
