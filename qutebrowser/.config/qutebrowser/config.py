@@ -26,9 +26,6 @@ Todo:
 # pyright: reportUndefinedVariable=false
 
 config.load_autoconfig()  # Load settings done via the GUI
-#
-# idk
-# c.completion.shrink = True
 
 ### Cosmetics
 
@@ -182,3 +179,7 @@ c.content.blocking.enabled = True
 
 # Sessions
 c.auto_save.session = True
+
+config.bind(",sl", "cmd-set-text -s :session-load ")
+config.bind(",ss", "cmd-set-text -s :session-save ")
+config.bind(",sd", "cmd-set-text -s :session-delete ")
