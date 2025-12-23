@@ -32,7 +32,21 @@ config.load_autoconfig()  # Load settings done via the GUI
 
 ### Cosmetics
 
+# Zen config
+c.tabs.position = "left"
+
+c.tabs.show = "always"
+c.tabs.title.format = ""
+c.tabs.title.format_pinned = ""
+c.tabs.width = 36
+c.tabs.padding = {"top": 4, "bottom": 4, "left": 4, "right": 4}
+c.tabs.close_mouse_button = "none"
+c.statusbar.show = "in-mode"  # Only shows statusbar when in insert/command modes
+c.window.title_format = "{current_title}"
+c.scrolling.bar = "never"
+
 # tabs
+"""
 c.tabs.position = "top"
 
 if c.tabs.position == "top":
@@ -41,6 +55,7 @@ elif c.tabs.position == "left":
     c.tabs.width = "7%"  # default 15%
 
 c.tabs.padding = {"top": 5, "bottom": 5, "left": 9, "right": 9}
+"""
 # c.tabs.indicator.width = 0  # no tab indicators
 # c.window.transparent = True # apparently not needed
 
@@ -106,6 +121,7 @@ config.bind('gm', 'tab-move')
 ### Other
 
 # Search engines
+c.url.open_base_url = True
 c.url.searchengines = {
     "DEFAULT": "https://duckduckgo.com/?q={}",
     "!apkg": "https://archlinux.org/packages/?sort=&q={}&maintainer=&flagged=",
@@ -163,3 +179,6 @@ c.content.blocking.enabled = True
 #         "https://github.com/uBlockOrigin/uAssets/raw/master/filters/quick-fixes.txt",
 #         "https://github.com/uBlockOrigin/uAssets/raw/master/filters/resource-abuse.txt",
 #         "https://github.com/uBlockOrigin/uAssets/raw/master/filters/unbreak.txt"]
+
+# Sessions
+c.auto_save.session = True
