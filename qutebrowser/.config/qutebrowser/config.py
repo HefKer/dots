@@ -11,15 +11,14 @@ https://github.com/qutebrowser/qutebrowser/blob/main/misc/userscripts/qute-bitwa
 https://github.com/haztecaso/bwmenu
 
 Todo:
-- Setup search engines: no arguments to open a certain default page
 - adblocking
 - smooth scroll
 - Adblocking
 - Logins (Bitwarden)
-- Look into quickmarks/bookmarks
-- Look into sessions
+- Look into quickmarks/bookmarks https://qutebrowser.org/doc/faq.html
 - Jumplist
 """
+# from qutebrowser.api import interceptor
 
 # Mute linter warnings
 # ruff: noqa: F821
@@ -75,6 +74,7 @@ c.scrolling.smooth = True
 
 ### keybinds
 
+# General binds
 if c.tabs.position == "top":
     config.bind("J", "tab-prev")
     config.bind("K", "tab-next")
@@ -114,6 +114,21 @@ config.bind('gJ', 'tab-move +')
 config.bind('gK', 'tab-move -')
 config.bind('gm', 'tab-move')
 """
+# Focus binds
+# config.bind("xb", "config-cycle statusbar.show always never")
+# config.tind("xt", "config-cycle tabs.show always never")
+# config.bind("xx", "config-cycle statusbar.show always never")
+
+# Video binds
+"""
+check relevant sections:
+https://gitlab.com/dwt1/dotfiles/-/blob/master/.config/qutebrowser/config.py
+
+need to set up mpv for this to work:
+config.bind('M', 'hint links spawn mpv {hint-url}')
+# config.bind('Z', 'hint links spawn st -e youtube-dl {hint-url}')
+"""
+config.bind(",vv", "hint links spawn --detach mpv {hint-url}")
 
 ### Other
 
@@ -183,3 +198,6 @@ c.auto_save.session = True
 config.bind(",sl", "cmd-set-text -s :session-load ")
 config.bind(",ss", "cmd-set-text -s :session-save ")
 config.bind(",sd", "cmd-set-text -s :session-delete ")
+
+# Bitwarden
+config.bind(",u", "spawn --userscript qute-bitwarden")
