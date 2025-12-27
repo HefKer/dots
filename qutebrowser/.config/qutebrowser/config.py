@@ -17,6 +17,7 @@ Todo:
 - Logins (Bitwarden)
 - Look into quickmarks/bookmarks https://qutebrowser.org/doc/faq.html
 - Jumplist
+- Appending to sessions
 """
 # from qutebrowser.api import interceptor
 
@@ -95,6 +96,8 @@ config.bind("d", "scroll-page 0 0.5")
 config.bind("u", "scroll-page 0 -0.5")
 config.bind("Ctrl-u", "undo")
 
+config.bind(";r", "hint all right-click")
+
 
 """
 config.bind('=', 'cmd-set-text -s :open')
@@ -129,6 +132,7 @@ config.bind('M', 'hint links spawn mpv {hint-url}')
 # config.bind('Z', 'hint links spawn st -e youtube-dl {hint-url}')
 """
 config.bind(",vv", "hint links spawn --detach mpv {hint-url}")
+config.bind("<Alt-Esc>", "fake-key <Escape>")
 
 ### Other
 
@@ -193,11 +197,12 @@ c.content.blocking.enabled = True
 #         "https://github.com/uBlockOrigin/uAssets/raw/master/filters/unbreak.txt"]
 
 # Sessions
-c.auto_save.session = True
+c.auto_save.session = False
 
 config.bind(",sl", "cmd-set-text -s :session-load ")
 config.bind(",ss", "cmd-set-text -s :session-save ")
 config.bind(",sd", "cmd-set-text -s :session-delete ")
 
-# Bitwarden
-config.bind(",u", "spawn --userscript qute-bitwarden")
+### User Scripts
+
+config.bind(",b", "spawn --userscript qute-bitwarden")
