@@ -10,14 +10,8 @@ bitwarden
 https://github.com/qutebrowser/qutebrowser/blob/main/misc/userscripts/qute-bitwarden
 https://github.com/haztecaso/bwmenu
 
-Todo:
-- adblocking
-- smooth scroll
-- Adblocking
-- Logins (Bitwarden)
-- Look into quickmarks/bookmarks https://qutebrowser.org/doc/faq.html
-- Jumplist
-- Appending to sessions
+userscript tutorial
+http://www.ii.com/qutebrowser-userscripts-on-windows/
 """
 # from qutebrowser.api import interceptor
 
@@ -86,22 +80,23 @@ else:
 config.bind("j", "scroll down")
 config.bind("k", "scroll up")
 
-config.unbind("d")
-config.unbind("u")
-config.unbind("<Ctrl-U>")
-config.unbind("<Ctrl-D>")
-
 config.bind("x", "tab-close -o")
 config.bind("d", "scroll-page 0 0.5")
 config.bind("u", "scroll-page 0 -0.5")
-config.bind("Ctrl-u", "undo")
+config.bind("U", "undo")
 
 config.bind(";r", "hint all right-click")
 
+config.bind("<Ctrl-h>", "history")
+
+config.bind(",ym", "yank inline [{title}]({url:pretty})")  # Markdown yank
+
+# Change start and default page
+# c.url.start_pages = ["about:blank"]
+# c.url.default_page = "about:blank"
 
 """
 config.bind('=', 'cmd-set-text -s :open')
-config.bind('h', 'history')
 config.bind('cc', 'hint images spawn sh -c "cliphist link {hint-url}"')
 config.bind('cs', 'cmd-set-text -s :config-source')
 config.bind('tH', 'config-cycle tabs.show multiple never')
@@ -113,8 +108,6 @@ config.bind('pt', 'open -t -- {clipboard}')
 config.bind('qm', 'macro-record')
 config.bind('<ctrl-y>', 'spawn --userscript ytdl.sh')
 config.bind('tT', 'config-cycle tabs.position top left')
-config.bind('gJ', 'tab-move +')
-config.bind('gK', 'tab-move -')
 config.bind('gm', 'tab-move')
 """
 # Focus binds
