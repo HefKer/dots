@@ -1,14 +1,9 @@
 """
 Reference:
-:config-source to reload config
 [Bread config](https://github.com/BreadOnPenguins/dots/blob/master/.config/qutebrowser/config.py)
 [config docs](qute://help/settings.html)
 [translation service](https://github.com/AckslD/Qute-Translate)
 [tab manager](https://codeberg.org/mister_monster/tab-manager)
-
-bitwarden
-https://github.com/qutebrowser/qutebrowser/blob/main/misc/userscripts/qute-bitwarden
-https://github.com/haztecaso/bwmenu
 
 userscript tutorial
 http://www.ii.com/qutebrowser-userscripts-on-windows/
@@ -92,8 +87,9 @@ config.bind("<Ctrl-h>", "history")
 config.bind(",ym", "yank inline [{title}]({url:pretty})")  # Markdown yank
 
 # Change start and default page
-# c.url.start_pages = ["about:blank"]
-# c.url.default_page = "about:blank"
+# Default: https://start.duckduckgo.com/
+c.url.start_pages = ["https://github.com/hefker"]
+c.url.default_page = "https://github.com/hefker"
 
 """
 config.bind('=', 'cmd-set-text -s :open')
