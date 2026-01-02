@@ -15,10 +15,25 @@ A keyboard-focused browser with vim bindings. Although it doesn't have extension
 
 Will share some screenshots once I'm done configuring it.
 
+
 ## Bitwarden setup
 
-Install the following:
-bitwarden-cli
-https://pypi.org/project/tldextract/
-https://pypi.org/project/pyperclip/
-rofi
+To set up Bitwarden, install the following:
+- bitwarden-cli
+- https://pypi.org/project/tldextract/
+- https://pypi.org/project/pyperclip/
+- rofi
+
+> [!NOTE]
+> I'm still having issues with the Bitwarden setup. It's slow + doesn't autofill properly on a lot of sites.
+
+# Future Improvements
+
+## qutebrowser
+
+- Add hotkey to toggle dark mode
+- Fix for open_base_url not working on certain sites
+- Set up mpv
+- Set up py adblock
+- Rice the shit out of it
+- Fix bitwarden
