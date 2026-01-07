@@ -5,18 +5,17 @@ My dotfiles (using stow). Includes configs for:
 - qutebrowser
 
 Todo:
-- hyprland
 - XCompose
 - fish
 
-# qutebrowser
+## qutebrowser
 
 A keyboard-focused browser with vim bindings. Although it doesn't have extensions, it is highly customizable through its config file. I'm still messing with it but the sessions are really powerful, essentially letting you create, load, and delete workspaces on the fly.
 
 Will share some screenshots once I'm done configuring it.
 
 
-## Bitwarden setup
+### Bitwarden setup
 
 To set up Bitwarden, install the following:
 - bitwarden-cli
@@ -27,9 +26,13 @@ To set up Bitwarden, install the following:
 > [!NOTE]
 > I'm still having issues with the Bitwarden setup. It's slow + doesn't autofill properly on a lot of sites.
 
-# Future Improvements
+## Hyprland
 
-## qutebrowser
+Mostly the omarchy defaults with a few bind changes to use hjkl instead of arrow keys.
+
+## Future Improvements
+
+### qutebrowser
 
 - Add hotkey to toggle dark mode
 - Fix for open_base_url not working on certain sites
