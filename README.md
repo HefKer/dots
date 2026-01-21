@@ -1,8 +1,9 @@
 # dots
 
-My dotfiles (using stow). Includes configs for:
+My dotfiles (using [GNU Stow](https://www.gnu.org/software/stow/)). Includes configs for:
 - bash: Just a few aliases
 - qutebrowser
+- Wezterm
 
 Todo:
 - XCompose
