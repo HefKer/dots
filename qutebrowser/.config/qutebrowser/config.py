@@ -146,6 +146,8 @@ c.url.searchengines = {
     "amazon": "https://www.amazon.com/s?k={}",
     "az": "https://www.amazon.com/s?k={}",
     "aliexpress": "https://www.aliexpress.com/wholesale?SearchText={}",
+    "rb": "https://www.redbubble.com/shop/{}",
+    "redbubble": "https://www.redbubble.com/shop/{}",
 }
 
 
