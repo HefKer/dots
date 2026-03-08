@@ -16,12 +16,69 @@ http://www.ii.com/qutebrowser-userscripts-on-windows/
 
 config.load_autoconfig()  # Load settings done via the GUI
 
+# Colors
+c.colors.completion.fg = "#899CA1"
+c.colors.completion.category.fg = "#F2F2F2"
+c.colors.completion.category.bg = "#555555"
+c.colors.completion.item.selected.fg = "white"
+c.colors.completion.item.selected.match.fg = "#0080FF"
+c.colors.completion.item.selected.bg = "#333333"
+c.colors.completion.item.selected.border.top = "#333333"
+c.colors.completion.item.selected.border.bottom = "#333333"
+c.colors.completion.match.fg = "#66FFFF"
+c.colors.statusbar.normal.fg = "#899CA1"
+c.colors.statusbar.normal.bg = "#222222"
+c.colors.statusbar.insert.fg = "#899CA1"
+c.colors.statusbar.insert.bg = "#222222"
+c.colors.statusbar.command.bg = "#555555"
+c.colors.statusbar.command.fg = "#F0F0F0"
+c.colors.statusbar.caret.bg = "#5E468C"
+c.colors.statusbar.caret.selection.fg = "white"
+c.colors.statusbar.progress.bg = "#333333"
+c.colors.statusbar.passthrough.bg = "#4779B3"
+c.colors.statusbar.url.fg = c.colors.statusbar.normal.fg
+c.colors.statusbar.url.success.http.fg = "#899CA1"
+c.colors.statusbar.url.success.https.fg = "#53A6A6"
+c.colors.statusbar.url.error.fg = "#8A2F58"
+c.colors.statusbar.url.warn.fg = "#914E89"
+c.colors.statusbar.url.hover.fg = "#2B7694"
+c.colors.tabs.bar.bg = "#222222"
+c.colors.tabs.even.fg = "#899CA1"
+c.colors.tabs.even.bg = "#222222"
+c.colors.tabs.odd.fg = "#899CA1"
+c.colors.tabs.odd.bg = "#222222"
+c.colors.tabs.selected.even.fg = "white"
+c.colors.tabs.selected.even.bg = "#222222"
+c.colors.tabs.selected.odd.fg = "white"
+c.colors.tabs.selected.odd.bg = "#222222"
+c.colors.tabs.indicator.start = "#222222"
+c.colors.tabs.indicator.stop = "#222222"
+c.colors.tabs.indicator.error = "#8A2F58"
+c.colors.hints.bg = "#CCCCCC"
+c.colors.hints.match.fg = "#000"
+c.colors.downloads.start.fg = "black"
+c.colors.downloads.start.bg = "#BFBFBF"
+c.colors.downloads.stop.fg = "black"
+c.colors.downloads.stop.bg = "#F0F0F0"
+c.colors.keyhint.fg = "#FFFFFF"
+c.colors.keyhint.suffix.fg = "#FFFF00"
+c.colors.keyhint.bg = "rgba(0, 0, 0, 80%)"
+c.colors.messages.error.bg = "#8A2F58"
+c.colors.messages.error.border = "#8A2F58"
+c.colors.messages.warning.bg = "#BF85CC"
+c.colors.messages.warning.border = c.colors.messages.warning.bg
+c.colors.messages.info.bg = "#333333"
+c.colors.prompts.fg = "#333333"
+c.colors.prompts.bg = "#DDDDDD"
+c.colors.prompts.selected.bg = "#4779B3"
+
 ### Cosmetics
 
 # Zen config
 c.tabs.position = "left"
 
-c.tabs.show = "always"
+# c.tabs.show = "always"
+config.set("tabs.show", "switching")
 c.tabs.title.format = ""
 c.tabs.title.format_pinned = ""
 c.tabs.width = 36
@@ -30,6 +87,17 @@ c.tabs.close_mouse_button = "none"
 c.statusbar.show = "in-mode"  # Only shows statusbar when in insert/command modes
 c.window.title_format = "{current_title}"
 c.scrolling.bar = "never"
+#
+# Press 'tt' to toggle both the Tab bar and Status bar at once
+config.bind(
+    ",tt",
+    "config-cycle tabs.show always switching",
+)
+
+config.bind(
+    ",,",
+    "config-cycle statusbar.show always in-mode ;; config-cycle tabs.show always switching",
+)
 
 # tabs
 """
@@ -50,6 +118,18 @@ c.colors.webpage.darkmode.enabled = True
 c.colors.webpage.darkmode.algorithm = "lightness-cielab"
 c.colors.webpage.darkmode.policy.images = "never"
 config.set("colors.webpage.darkmode.enabled", False, "file://*")
+
+# Toggle dark mode and reload the page automatically
+config.bind(",td", "config-cycle colors.webpage.darkmode.enabled true false ;; reload")
+
+# Custom function to toggle darkmode for the current domain
+for mode in ["true", "false"]:
+    config.bind(f"t{mode[0]}", f"set -u {{url}} colors.webpage.darkmode.enabled {mode}")
+
+# Toggle dark mode for ONLY the current website and reload
+config.bind(
+    ",tw", "config-cycle -u {url} colors.webpage.darkmode.enabled true false ;; reload"
+)
 
 # fonts
 c.fonts.default_family = []
@@ -119,6 +199,8 @@ https://gitlab.com/dwt1/dotfiles/-/blob/master/.config/qutebrowser/config.py
 need to set up mpv for this to work:
 config.bind('M', 'hint links spawn mpv {hint-url}')
 # config.bind('Z', 'hint links spawn st -e youtube-dl {hint-url}')
+config.bind('m', 'spawn mpv {url}')
+config.bind('M', 'hint links spawn mpv {hint-url}')
 """
 config.bind(",vv", "hint links spawn --detach mpv {hint-url}")
 config.bind("<Alt-Esc>", "fake-key <Escape>")
@@ -148,6 +230,9 @@ c.url.searchengines = {
     "aliexpress": "https://www.aliexpress.com/wholesale?SearchText={}",
     "rb": "https://www.redbubble.com/shop/{}",
     "redbubble": "https://www.redbubble.com/shop/{}",
+    # Socials
+    "linkedin": "https://www.linkedin.com/search/results/all/?keywords={}&origin=GLOBAL_SEARCH_HEADER",
+    "li": "https://www.linkedin.com/search/results/all/?keywords={}&origin=GLOBAL_SEARCH_HEADER",
 }
 
 
