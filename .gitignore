@@ -1,0 +1,6 @@
+# hyprland
+*.bak*
+shaders/
+monitors.conf
+xdph.conf
+
