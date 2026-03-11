@@ -3,4 +3,8 @@
 shaders/
 monitors.conf
 xdph.conf
+hyprsunset.conf
+
+# python
+__pycache__/
 
