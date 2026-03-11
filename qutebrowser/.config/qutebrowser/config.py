@@ -16,67 +16,14 @@ http://www.ii.com/qutebrowser-userscripts-on-windows/
 
 config.load_autoconfig()  # Load settings done via the GUI
 
-# Colors
-c.colors.completion.fg = "#899CA1"
-c.colors.completion.category.fg = "#F2F2F2"
-c.colors.completion.category.bg = "#555555"
-c.colors.completion.item.selected.fg = "white"
-c.colors.completion.item.selected.match.fg = "#0080FF"
-c.colors.completion.item.selected.bg = "#333333"
-c.colors.completion.item.selected.border.top = "#333333"
-c.colors.completion.item.selected.border.bottom = "#333333"
-c.colors.completion.match.fg = "#66FFFF"
-c.colors.statusbar.normal.fg = "#899CA1"
-c.colors.statusbar.normal.bg = "#222222"
-c.colors.statusbar.insert.fg = "#899CA1"
-c.colors.statusbar.insert.bg = "#222222"
-c.colors.statusbar.command.bg = "#555555"
-c.colors.statusbar.command.fg = "#F0F0F0"
-c.colors.statusbar.caret.bg = "#5E468C"
-c.colors.statusbar.caret.selection.fg = "white"
-c.colors.statusbar.progress.bg = "#333333"
-c.colors.statusbar.passthrough.bg = "#4779B3"
-c.colors.statusbar.url.fg = c.colors.statusbar.normal.fg
-c.colors.statusbar.url.success.http.fg = "#899CA1"
-c.colors.statusbar.url.success.https.fg = "#53A6A6"
-c.colors.statusbar.url.error.fg = "#8A2F58"
-c.colors.statusbar.url.warn.fg = "#914E89"
-c.colors.statusbar.url.hover.fg = "#2B7694"
-c.colors.tabs.bar.bg = "#222222"
-c.colors.tabs.even.fg = "#899CA1"
-c.colors.tabs.even.bg = "#222222"
-c.colors.tabs.odd.fg = "#899CA1"
-c.colors.tabs.odd.bg = "#222222"
-c.colors.tabs.selected.even.fg = "white"
-c.colors.tabs.selected.even.bg = "#222222"
-c.colors.tabs.selected.odd.fg = "white"
-c.colors.tabs.selected.odd.bg = "#222222"
-c.colors.tabs.indicator.start = "#222222"
-c.colors.tabs.indicator.stop = "#222222"
-c.colors.tabs.indicator.error = "#8A2F58"
-c.colors.hints.bg = "#CCCCCC"
-c.colors.hints.match.fg = "#000"
-c.colors.downloads.start.fg = "black"
-c.colors.downloads.start.bg = "#BFBFBF"
-c.colors.downloads.stop.fg = "black"
-c.colors.downloads.stop.bg = "#F0F0F0"
-c.colors.keyhint.fg = "#FFFFFF"
-c.colors.keyhint.suffix.fg = "#FFFF00"
-c.colors.keyhint.bg = "rgba(0, 0, 0, 80%)"
-c.colors.messages.error.bg = "#8A2F58"
-c.colors.messages.error.border = "#8A2F58"
-c.colors.messages.warning.bg = "#BF85CC"
-c.colors.messages.warning.border = c.colors.messages.warning.bg
-c.colors.messages.info.bg = "#333333"
-c.colors.prompts.fg = "#333333"
-c.colors.prompts.bg = "#DDDDDD"
-c.colors.prompts.selected.bg = "#4779B3"
+# Cosmetics
 
-### Cosmetics
+from themes import everforest
+everforest.set(c, "dark", "hard")  # options are dark/light and hard/medium/soft
 
-# Zen config
+
+## Zen config (tabs on left)
 c.tabs.position = "left"
-
 # c.tabs.show = "always"
 config.set("tabs.show", "switching")
 c.tabs.title.format = ""
@@ -87,17 +34,6 @@ c.tabs.close_mouse_button = "none"
 c.statusbar.show = "in-mode"  # Only shows statusbar when in insert/command modes
 c.window.title_format = "{current_title}"
 c.scrolling.bar = "never"
-#
-# Press 'tt' to toggle both the Tab bar and Status bar at once
-config.bind(
-    ",tt",
-    "config-cycle tabs.show always switching",
-)
-
-config.bind(
-    ",,",
-    "config-cycle statusbar.show always in-mode ;; config-cycle tabs.show always switching",
-)
 
 # tabs
 """
@@ -113,14 +49,15 @@ c.tabs.padding = {"top": 5, "bottom": 5, "left": 9, "right": 9}
 # c.tabs.indicator.width = 0  # no tab indicators
 # c.window.transparent = True # apparently not needed
 
-# dark mode setup
+## dark mode setup
 c.colors.webpage.darkmode.enabled = True
 c.colors.webpage.darkmode.algorithm = "lightness-cielab"
 c.colors.webpage.darkmode.policy.images = "never"
 config.set("colors.webpage.darkmode.enabled", False, "file://*")
 
 # Toggle dark mode and reload the page automatically
-config.bind(",td", "config-cycle colors.webpage.darkmode.enabled true false ;; reload")
+config.bind(",td", "config-cycle colors.webpage.darkmode.enabled true false")
+# config.bind(",td", "config-cycle colors.webpage.darkmode.enabled true false ;; reload")
 
 # Custom function to toggle darkmode for the current domain
 for mode in ["true", "false"]:
@@ -128,10 +65,12 @@ for mode in ["true", "false"]:
 
 # Toggle dark mode for ONLY the current website and reload
 config.bind(
-    ",tw", "config-cycle -u {url} colors.webpage.darkmode.enabled true false ;; reload"
+    ",tw",
+    "config-cycle -u {url} colors.webpage.darkmode.enabled true false",
+    # ",tw", "config-cycle -u {url} colors.webpage.darkmode.enabled true false ;; reload"
 )
 
-# fonts
+## fonts
 c.fonts.default_family = []
 c.fonts.default_size = "13pt"
 c.fonts.web.family.fixed = "monospace"
@@ -139,12 +78,12 @@ c.fonts.web.family.sans_serif = "monospace"
 c.fonts.web.family.serif = "monospace"
 c.fonts.web.family.standard = "monospace"
 
-# others
+## others
 c.scrolling.smooth = True
 
-### keybinds
+# keybinds
 
-# General binds
+## General binds
 if c.tabs.position == "top":
     config.bind("J", "tab-prev")
     config.bind("K", "tab-next")
@@ -165,6 +104,29 @@ config.bind(";r", "hint all right-click")
 config.bind("<Ctrl-h>", "history")
 
 config.bind(",ym", "yank inline [{title}]({url:pretty})")  # Markdown yank
+
+# Press 'tt' to toggle both the Tab bar and Status bar at once
+config.bind(
+    ",tt",
+    "config-cycle tabs.show always switching",
+)
+
+config.bind(
+    ",,",
+    "config-cycle statusbar.show always in-mode ;; config-cycle tabs.show always switching",
+)
+
+
+# Sessions
+c.auto_save.session = False
+
+config.bind(",sl", "cmd-set-text -s :session-load ")
+config.bind(",ss", "cmd-set-text -s :session-save ")
+config.bind(",sd", "cmd-set-text -s :session-delete ")
+
+### User Scripts
+
+config.bind(",b", "spawn --userscript qute-bitwarden")
 
 # Change start and default page
 # Default: https://start.duckduckgo.com/
@@ -271,14 +233,3 @@ c.content.blocking.enabled = True
 #         "https://github.com/uBlockOrigin/uAssets/raw/master/filters/quick-fixes.txt",
 #         "https://github.com/uBlockOrigin/uAssets/raw/master/filters/resource-abuse.txt",
 #         "https://github.com/uBlockOrigin/uAssets/raw/master/filters/unbreak.txt"]
-
-# Sessions
-c.auto_save.session = False
-
-config.bind(",sl", "cmd-set-text -s :session-load ")
-config.bind(",ss", "cmd-set-text -s :session-save ")
-config.bind(",sd", "cmd-set-text -s :session-delete ")
-
-### User Scripts
-
-config.bind(",b", "spawn --userscript qute-bitwarden")
