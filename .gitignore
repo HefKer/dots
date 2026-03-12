@@ -8,3 +8,5 @@ hyprsunset.conf
 # python
 __pycache__/
 
+# other
+*.backup*
