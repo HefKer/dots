@@ -64,7 +64,7 @@ input {
     }
 
     // Uncomment this to make the mouse warp to the center of newly focused windows.
-    // warp-mouse-to-focus
+    warp-mouse-to-focus
 
     // Focus windows and outputs automatically when moving the mouse into them.
     // Setting max-scroll-amount="0%" makes it work only on windows already fully on screen.
@@ -402,14 +402,20 @@ binds {
 
     Mod+Q repeat=false { close-window; }
 
-    Mod+Left  { focus-column-left; }
+    Mod+Left  { focus-column-or-monitor-left; }
+    // Mod+Left  { focus-column-left; }
     Mod+Down  { focus-window-down; }
     Mod+Up    { focus-window-up; }
-    Mod+Right { focus-column-right; }
-    Mod+H     { focus-column-left; }
+    // Mod+Right { focus-column-right; }
+    Mod+Right { focus-column-or-monitor-right; }
+    // Mod+H     { focus-column-left; }
+    Mod+H     { focus-column-or-monitor-left; }
     Mod+J     { focus-window-down; }
     Mod+K     { focus-window-up; }
-    Mod+L     { focus-column-right; }
+    // Mod+L     { focus-column-right; }
+    Mod+L     { focus-column-or-monitor-right; }
+
+
 
     Mod+Ctrl+Left  { move-column-left; }
     Mod+Ctrl+Down  { move-window-down; }
@@ -623,3 +629,7 @@ binds {
     // moving the mouse or pressing any other key.
     Mod+Shift+P { power-off-monitors; }
 }
+
+include "dms/outputs.kdl"
+
+include "dms/cursor.kdl"
