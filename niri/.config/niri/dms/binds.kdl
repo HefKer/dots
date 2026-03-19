@@ -5,7 +5,7 @@ binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // === Application Launchers ===
-    Mod+T hotkey-overlay-title="Open Terminal" { spawn "{{TERMINAL_COMMAND}}"; }
+    Mod+Return { spawn "wezterm"; }
     Mod+Space hotkey-overlay-title="Application Launcher" {
         spawn "dms" "ipc" "call" "spotlight" "toggle";
     }
