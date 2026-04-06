@@ -11,10 +11,11 @@ config.initial_rows = 28
 
 config.default_prog = { "fish", "-l" }
 
-config.color_scheme = "Catppuccin Frappe"
+--config.color_scheme = "Catppuccin Frappe"
+config.color_scheme = "dank-theme"
 config.window_background_opacity = 0.95
-local color_scheme = wezterm.color.get_builtin_schemes()[config.color_scheme]
-local accent = "#babbf1" -- lavender
+--local color_scheme = wezterm.color.get_builtin_schemes()[config.color_scheme]
+--local accent = "#babbf1" -- lavender
 
 -- config.font = wezterm.font("Maple Mono")
 config.font_size = 14

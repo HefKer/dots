@@ -8,7 +8,7 @@ end
 
 # Interactive shell - Shell behavior and user interface
 if status is-interactive
-    #fish_config theme choose catppuccin
+    set -g fish_greeting ''
 
     # Aliases
     alias cat="bat"
@@ -16,6 +16,11 @@ if status is-interactive
     alias lt='eza --tree --level=2 --long --icons --git'
 
     # Abbreviations
+    #
+    abbr -a q 'cd ..'
+    abbr -a qq 'cd ../..'
+    abbr -a qqq 'cd ../../..'
+
     abbr -a lsa 'ls -a'
     abbr -a lta 'lt -a'
 
@@ -25,7 +30,9 @@ if status is-interactive
     abbr -a n nvim
     abbr -a lg lazygit
     abbr -a g git
+    abbr -a gs git status
     abbr -a gc git commit -m
+    abbr -a gcm git commit -m
     abbr -a gcam git commit -am
 
     abbr -a p python
@@ -39,14 +46,8 @@ if status is-interactive
     set -g fish_key_bindings fish_vi_key_bindings
 
     # Interactive functions
-    function run-ls-on-cd -v PWD
-        set current_repository (git rev-parse --show-toplevel 2> /dev/null)
-        if [ "$current_repository" ] && [ "$current_repository" != "$last_repository" ]
-            #onefetch
-        end
-        set -gx last_repository $current_repository
-        #command lsd -l
-        #command lsd -l --sort date
+    function __auto_ls --on-variable PWD
+        ls
     end
 
     function cd
