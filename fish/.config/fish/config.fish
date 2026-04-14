@@ -34,9 +34,10 @@ if status is-interactive
     abbr -a lg lazygit
     abbr -a g git
     abbr -a gs git status
-    abbr -a gc git commit -m
-    abbr -a gcm git commit -m
-    abbr -a gcam git commit -am
+    abbr -a ga git add
+    abbr -a gc --set-cursor 'git commit -m "%"'
+    abbr -a gcm --set-cursor 'git commit -m "%"'
+    abbr -a gcam --set-cursor 'git commit -am "%"'
     abbr -a gp git push
 
     abbr -a p python
