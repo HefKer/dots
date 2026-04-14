@@ -13,6 +13,7 @@ workspace "7"
 workspace "8"
 workspace "9"
 workspace "10"
+
 // This config is in the KDL format: https://kdl.dev
 // "/-" comments out the following node.
 // Check the wiki for a full description of the configuration:
@@ -427,8 +428,8 @@ binds {
     Mod+Right { focus-column-or-monitor-right; }
     // Mod+H     { focus-column-left; }
     Mod+H     { focus-column-or-monitor-left; }
-    Mod+J     { focus-window-down; }
-    Mod+K     { focus-window-up; }
+    // Mod+J     { focus-window-down; }
+    // Mod+K     { focus-window-up; }
     // Mod+L     { focus-column-right; }
     Mod+L     { focus-column-or-monitor-right; }
 
