@@ -10,22 +10,25 @@ end
 if status is-interactive
     set -g fish_greeting ''
 
+    # --- Shorteners ---
+
     # Aliases
     alias cat="bat"
     alias ls='eza -lh --group-directories-first --icons=auto'
     alias lt='eza --tree --level=2 --long --icons --git'
 
     # Abbreviations
-    #
     abbr -a q 'cd ..'
     abbr -a qq 'cd ../..'
     abbr -a qqq 'cd ../../..'
 
     abbr -a lsa 'ls -a'
     abbr -a lta 'lt -a'
+    abbr -a lsd 'ls -s date'
 
-    abbr -a c clear
-    abbr -a mv "mv -i" # Ask before overwriting
+    abbr -a c 'clear ; ls'
+    abbr -a mv "mv -iv" # Ask before overwriting
+    abbr -a cp "cp -v"
 
     abbr -a n nvim
     abbr -a lg lazygit
@@ -34,6 +37,7 @@ if status is-interactive
     abbr -a gc git commit -m
     abbr -a gcm git commit -m
     abbr -a gcam git commit -am
+    abbr -a gp git push
 
     abbr -a p python
     abbr -a py python
