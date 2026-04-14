@@ -1,43 +1,30 @@
 # dots
 
-My dotfiles (using [GNU Stow](https://www.gnu.org/software/stow/)). Includes configs for:
-- bash: Just a few aliases
-- qutebrowser
-- Wezterm
-
-Todo:
-- XCompose
-- fish
+My dotfiles (using [GNU Stow](https://www.gnu.org/software/stow/)).
 
 ## qutebrowser
 
 A keyboard-focused browser with vim bindings. Although it doesn't have extensions, it is highly customizable through its config file. I'm still messing with it but the sessions are really powerful, essentially letting you create, load, and delete workspaces on the fly.
 
-Will share some screenshots once I'm done configuring it.
+### Dependencies
 
+To detach videos (download & play locally):
 
-### Bitwarden setup
+- [mpv - player](https://mpv.io/)
+- [yt-dlp - download videos to play externally](https://github.com/yt-dlp/yt-dlp)
+- mpv-sponsorblock to block sponsored sections in mpv
 
-To set up Bitwarden, install the following:
+For bitwarden:
+
+- [Rofi for bitwarden login menu](https://wiki.archlinux.org/title/Rofi)
+- [tldextract · PyPI](https://pypi.org/project/tldextract/)
+- [pyperclip · PyPI](https://pypi.org/project/pyperclip/)
 - bitwarden-cli
-- https://pypi.org/project/tldextract/
-- https://pypi.org/project/pyperclip/
-- rofi
 
 > [!NOTE]
 > I'm still having issues with the Bitwarden setup. It's slow + doesn't autofill properly on a lot of sites.
 
-## Hyprland
+For the adblock:
 
-Mostly the omarchy defaults with a few bind changes to use hjkl instead of arrow keys.
-
-## Future Improvements
-
-### qutebrowser
-
-- Add hotkey to toggle dark mode
-- Fix for open_base_url not working on certain sites
-- Set up mpv
-- Set up py adblock
-- Rice the shit out of it
-- Fix bitwarden
+- [adblock · PyPI](https://pypi.org/project/adblock/)
+- Run `:adblock-update` in qb to update adblock lists
