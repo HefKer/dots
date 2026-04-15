@@ -13,7 +13,6 @@ if status is-interactive
     # --- Shorteners ---
 
     # Aliases
-    alias cat="bat"
     alias ls='eza -lh --group-directories-first --icons=auto'
     alias lt='eza --tree --level=2 --long --icons --git'
 
