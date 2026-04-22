@@ -12,3 +12,9 @@ __pycache__/
 *.backup*
 .stfolder/
 .stignore
+
+# qutebrowser
+autoconfig.yml
+urls
+QtProject.conf
+quickmarks
