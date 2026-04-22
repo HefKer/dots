@@ -197,7 +197,7 @@
   "dankLauncherV2UnloadOnClose": false,
   "useAutoLocation": true,
   "weatherEnabled": true,
-  "networkPreference": "auto",
+  "networkPreference": "wifi",
   "iconTheme": "System Default",
   "cursorSettings": {
     "theme": "everforest-cursors",
@@ -256,7 +256,12 @@
   "fadeToDpmsGracePeriod": 5,
   "launchPrefix": "",
   "brightnessDevicePins": {},
-  "wifiNetworkPins": {},
+  "wifiNetworkPins": {
+    "preferredWifi": [
+      "Galaxy S24 Ultra FF94",
+      "HCCprivate"
+    ]
+  },
   "bluetoothDevicePins": {},
   "audioInputDevicePins": {
     "preferredInput": [
@@ -425,8 +430,11 @@
         "cpuUsage",
         "memUsage",
         "notificationButton",
-        "battery",
-        "controlCenterButton"
+        "controlCenterButton",
+        {
+          "id": "battery",
+          "enabled": true
+        }
       ],
       "spacing": 4,
       "innerPadding": 4,
@@ -573,6 +581,12 @@
           "height": 200,
           "x": 640,
           "y": 440
+        },
+        "eDP-1": {
+          "width": 200,
+          "height": 200,
+          "x": 723,
+          "y": 414.5
         }
       }
     }
