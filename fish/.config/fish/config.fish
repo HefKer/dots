@@ -4,6 +4,7 @@ if status is-login
     zoxide init fish | source
     starship init fish | source
     fzf --fish | source
+    atuin init fish | source
 end
 
 # Interactive shell - Shell behavior and user interface
@@ -16,7 +17,8 @@ if status is-interactive
     alias ls='eza -lh --group-directories-first --icons=auto'
     alias lt='eza --tree --level=2 --long --icons --git'
 
-    # Abbreviations
+    # - Abbreviations -
+    # Core utils
     abbr -a q 'cd ..'
     abbr -a qq 'cd ../..'
     abbr -a qqq 'cd ../../..'
@@ -29,6 +31,7 @@ if status is-interactive
     abbr -a mv "mv -iv" # Ask before overwriting
     abbr -a cp "cp -v"
 
+    # CLI programs
     abbr -a n nvim
     abbr -a lg lazygit
     abbr -a g git
@@ -38,6 +41,9 @@ if status is-interactive
     abbr -a gcm --set-cursor 'git commit -m "%"'
     abbr -a gcam --set-cursor 'git commit -am "%"'
     abbr -a gp git push
+
+    abbr -a rg 'rg -i'
+    abbr -a ns 'nix search nixpkgs'
 
     abbr -a p python
     abbr -a py python
@@ -69,3 +75,4 @@ end
 
 # Added by LM Studio CLI (lms)
 set -gx PATH $PATH /home/hefker/.lmstudio/bin
+set -gx MANPAGER 'bat -l man -p'
