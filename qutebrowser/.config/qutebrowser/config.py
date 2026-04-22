@@ -1,24 +1,5 @@
 import shutil
-import os
 from themes import everforest
-
-"""
-Reference:
-[Bread config](https://github.com/BreadOnPenguins/dots/blob/master/.config/qutebrowser/config.py)
-[config docs](qute://help/settings.html)
-[translation service](https://github.com/AckslD/Qute-Translate)
-[tab manager](https://codeberg.org/mister_monster/tab-manager)
-
-userscript tutorial
-http://www.ii.com/qutebrowser-userscripts-on-windows/
-
-
-<PgDown>: completion-item-focus next-page
-<PgUp>: completion-item-focus prev-page
-
-q to quit (shift+esc in normal mode)
-"""
-# from qutebrowser.api import interceptor
 
 # Mute linter warnings
 # ruff: noqa: F821
@@ -41,20 +22,6 @@ c.tabs.close_mouse_button = "none"
 c.statusbar.show = "in-mode"  # Only shows statusbar when in insert/command modes
 c.window.title_format = "{current_title}"
 c.scrolling.bar = "never"
-
-# tabs
-"""
-c.tabs.position = "top"
-
-if c.tabs.position == "top":
-    pass
-elif c.tabs.position == "left":
-    c.tabs.width = "7%"  # default 15%
-
-c.tabs.padding = {"top": 5, "bottom": 5, "left": 9, "right": 9}
-"""
-# c.tabs.indicator.width = 0  # no tab indicators
-# c.window.transparent = True # apparently not needed
 
 ## dark mode setup
 c.colors.webpage.darkmode.enabled = True
@@ -162,10 +129,6 @@ config.bind("cs", "config-source")
 config.bind("Q", "macro-record")
 config.bind("q", "fake-key <Escape>")
 config.bind("<Alt-Esc>", "fake-key <Escape>")
-# Focus binds
-# config.bind("xb", "config-cycle statusbar.show always never")
-# config.tind("xt", "config-cycle tabs.show always never")
-# config.bind("xx", "config-cycle statusbar.show always never")
 
 # Video binds
 config.bind(",mf", "hint links spawn --detach mpv {hint-url}")
