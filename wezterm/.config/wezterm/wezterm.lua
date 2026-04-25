@@ -1,10 +1,10 @@
 -- Pull in the wezterm API
-local wezterm = require 'wezterm'
+local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
 config.keys = require("keys")
 -- For example, changing the initial geometry for new windows:
-config.initial_cols = 120
+config.initial_cols = 70
 config.initial_rows = 28
 
 -- config.color_scheme = 'AdventureTime'
