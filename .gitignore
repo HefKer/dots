@@ -12,6 +12,7 @@ __pycache__/
 *.backup*
 .stfolder/
 .stignore
+inspo/
 
 # qutebrowser
 autoconfig.yml
