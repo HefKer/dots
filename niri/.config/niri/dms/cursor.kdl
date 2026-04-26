@@ -6,4 +6,5 @@
 cursor {
     xcursor-theme "everforest-cursors"
     xcursor-size 50
+    hide-when-typing
 }

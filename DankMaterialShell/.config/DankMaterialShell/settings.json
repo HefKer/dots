@@ -3,7 +3,7 @@
   "currentThemeCategory": "registry",
   "customThemeFile": "/home/hefker/.config/DankMaterialShell/themes/everforest/theme.json",
   "registryThemeVariants": {
-    "everforest": "medium"
+    "everforest": "soft"
   },
   "matugenScheme": "scheme-tonal-spot",
   "runUserMatugenTemplates": true,
@@ -203,7 +203,7 @@
     "theme": "everforest-cursors",
     "size": 50,
     "niri": {
-      "hideWhenTyping": false,
+      "hideWhenTyping": true,
       "hideAfterInactiveMs": 0
     },
     "hyprland": {
