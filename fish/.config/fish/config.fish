@@ -41,6 +41,7 @@ if status is-interactive
     abbr -a gcm --set-cursor 'git commit -m "%"'
     abbr -a gcam --set-cursor 'git commit -am "%"'
     abbr -a gp git push
+    abbr -a calc kalker
 
     abbr -a rg 'rg -i'
     abbr -a ns 'nix search nixpkgs'
