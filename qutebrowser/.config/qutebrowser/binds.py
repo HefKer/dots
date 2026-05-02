@@ -20,6 +20,10 @@ config.bind("cs", "config-source")
 config.bind("Q", "macro-record")
 config.bind("q", "fake-key <Escape>")
 config.bind("<Alt-Esc>", "fake-key <Escape>")
+config.bind("gG", "tab-give")
+
+config.bind("T", "cmd-set-text -s :tab-select")
+config.bind("gt", "tab-focus")  # buggy
 
 config.bind(
     ",,",
@@ -65,16 +69,16 @@ config.bind(",sd", "cmd-set-text -s :session-delete ")
 # config.bind(",b", "spawn --userscript qute-bitwarden")
 config.bind(",b", "spawn --userscript qute-rbw")
 
-# --- Spawn Commands ---
-# other browsers
-config.bind(",Sf", "spawn firefox {url}")
-config.bind(",Sz", "spawn zen-browser {url}")
-config.bind(",Sb", "spawn brave {url}")
+# --- [E]xternal Spawn Commands ---
+# [b]rowsers
+config.bind("ebf", "spawn firefox {url}")
+config.bind("ebz", "spawn zen-browser {url}")
+config.bind("ebb", "spawn brave {url}")
 
-# Video binds (mpv)
-config.bind(",mf", "hint links spawn --detach mpv {hint-url}")
-config.bind(",mm", "spawn --detach mpv {url}")
-config.bind(",md", "hint links spawn st -e youtube-dl {hint-url}")
+# Video binds ([m]pv)
+config.bind("emf", "hint links spawn --detach mpv {hint-url}")
+config.bind("emm", "spawn --detach mpv {url}")
+config.bind("emd", "hint links spawn st -e youtube-dl {hint-url}")
 
 
 # Mute linter warnings
