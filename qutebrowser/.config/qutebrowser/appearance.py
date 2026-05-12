@@ -4,7 +4,6 @@ from themes import everforest
 everforest.set(c, "dark", "hard")  # options are dark/light and hard/medium/soft
 
 c.tabs.position = "left"
-# c.tabs.show = "always"
 c.tabs.title.format = ""
 c.tabs.title.format_pinned = ""
 c.tabs.width = 36
@@ -30,7 +29,7 @@ c.fonts.web.family.standard = "monospace"
 
 ## --- Feel ---
 c.scrolling.smooth = True
-config.set("tabs.show", "switching")
+c.tabs.show = "switching"  # always
 
 # Mute linter warnings
 # ruff: noqa: F821
