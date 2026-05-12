@@ -7,6 +7,11 @@ config.source("binds.py")
 config.source("search_engines.py")
 
 c.auto_save.session = False
+
+c.completion.shrink = True
+c.hints.auto_follow = "unique-match"
+c.input.insert_mode.auto_enter = True
+c.input.insert_mode.auto_leave = True
 c.downloads.location.directory = "~/Downloads"
 
 # Change start and default page
