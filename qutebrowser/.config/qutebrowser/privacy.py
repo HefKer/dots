@@ -6,7 +6,7 @@
 # config.set("content.canvas_reading", False)
 # config.set("content.geolocation", False) # Block sites from asking for location
 # config.set("content.webrtc_ip_handling_policy", "default-public-interface-only")
-config.set("content.cookies.accept", "all")
+config.set("content.cookies.accept", "no-3rdparty")  # all
 config.set("content.cookies.store", True)
 # config.set("content.javascript.enabled", False) # tsh keybind to toggle
 
@@ -28,7 +28,7 @@ c.content.blocking.adblock.lists = [
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/filters-2024.txt",
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/badlists.txt",
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/annoyances.txt",
-    # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/annoyances-others.txt",
+    "https://github.com/uBlockOrigin/uAssets/raw/master/filters/annoyances-others.txt",
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/badlists.txt",
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/quick-fixes.txt",
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/resource-abuse.txt",

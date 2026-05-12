@@ -3,7 +3,6 @@ c.url.open_base_url = True
 c.url.searchengines = {
     "DEFAULT": "https://duckduckgo.com/?q={}",
     "yt": "https://www.youtube.com/results?search_query={}",
-    "y": "https://www.youtube.com/results?search_query={}",
     "gh": "https://github.com/search?o=desc&q={}&s=stars",
     # Nix
     "nix": "https://search.nixos.org/packages?channel=unstable&include_modular_service_options=1&include_nixos_options=1&query={}",
@@ -12,7 +11,6 @@ c.url.searchengines = {
     "g.m": "https://www.google.com/maps?q={}",
     "g.s": "https://scholar.google.com/scholar?q={}",
     # Wikis
-    "w": "https://www.wikipedia.org/w/index.php?search={}",
     "wiki": "https://www.wikipedia.org/w/index.php?search={}",
     "aw": "https://wiki.archlinux.org/?search={}",
     # Game wikis

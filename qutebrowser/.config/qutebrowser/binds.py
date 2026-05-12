@@ -25,7 +25,6 @@ config.bind("<Alt-Esc>", "fake-key <Escape>")
 config.bind("gG", "tab-give")
 
 config.bind("T", "cmd-set-text -s :tab-select")
-config.bind("gt", "tab-focus")  # buggy
 
 config.bind(
     ",,",
@@ -46,7 +45,6 @@ for mode in ["true", "false"]:
     )  # Custom function to toggle darkmode for the current domain
 
 # --- Spawn configs in nvim ---
-c.editor.command = ["/home/hefker/.local/bin/qute-editor", "{}"]
 c.editor.command = ["wezterm", "start", "--always-new-process", "--", "nvim", "{}"]
 config.bind("ce", "config-edit")
 
