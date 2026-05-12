@@ -12,6 +12,9 @@ c.completion.shrink = True
 c.hints.auto_follow = "unique-match"
 c.input.insert_mode.auto_enter = True
 c.input.insert_mode.auto_leave = True
+c.session.lazy_restore = True
+c.confirm_quit = ["multiple-tabs"]
+c.spellcheck.languages = ["en-US"]
 c.downloads.location.directory = "~/Downloads"
 
 # Change start and default page
