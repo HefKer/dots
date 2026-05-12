@@ -13,7 +13,7 @@ if status is-interactive
 
     # --- Shorteners ---
 
-    # Aliases
+    # - Aliases -
     alias ls='eza -lh --group-directories-first --icons=auto'
     alias lt='eza --tree --level=2 --long --icons --git'
 
@@ -28,6 +28,7 @@ if status is-interactive
     abbr -a lsd 'ls -s date'
 
     abbr -a c 'clear ; ls'
+    abbr -a cl clear
     abbr -a mv "mv -iv" # Ask before overwriting
     abbr -a cp "cp -v"
 
@@ -42,6 +43,7 @@ if status is-interactive
     abbr -a gcam --set-cursor 'git commit -am "%"'
     abbr -a gp git push
     abbr -a calc kalker
+    abbr -a ff fastfetch
 
     abbr -a rg 'rg -i'
     abbr -a ns 'nix search nixpkgs'
@@ -71,6 +73,27 @@ if status is-interactive
 
     function fzf
         nvim $(command fzf --preview "bat --style=numbers --color=always --line-range :500 {}")
+    end
+
+    function yt_summarize --description "Summarize a YouTube video transcript"
+        if test (count $argv) -eq 0
+            echo "Usage: yt_summarize <video_id_or_url>"
+            return 1
+        end
+
+        set video_id $argv[1]
+
+        # Extract video ID from URL if full URL is passed
+        if string match -q "*youtube.com*" $video_id
+            set video_id (string replace -r '.*[?&]v=([^&]+).*' '$1' $video_id)
+        else if string match -q "*youtu.be*" $video_id
+            set video_id (string replace -r '.*youtu\.be/([^?]+).*' '$1' $video_id)
+        end
+
+        youtube_transcript_api $video_id --format json \
+            | jq -r '.[][].text' \
+            | tr '\n' ' ' \
+            | claude --model haiku -p "summarize this transcript"
     end
 end
 
