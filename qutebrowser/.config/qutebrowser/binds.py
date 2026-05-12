@@ -43,12 +43,9 @@ for mode in ["true", "false"]:
         f"t{mode[0]}", f"set -u {{url}} colors.webpage.darkmode.enabled {mode}"
     )  # Custom function to toggle darkmode for the current domain
 
-# --- todo: fix for nixos ---
-# c.editor.command = ["wezterm", "start", "--always-new-process", "--", "sh", "-c", "nvim {} && exit"]
+# --- Spawn configs in nvim ---
 c.editor.command = ["/home/hefker/.local/bin/qute-editor", "{}"]
-# c.editor.command = ["wezterm", "start", "--always-new-process", "--", "nvim", "{}"]
-# c.editor.command = ["wezterm", "start", "--", "nvim", "{}"]
-# c.editor.command = ["wezterm", "start", "--always-new-process", "--", "sh", "-c", "nvim {} && exit"]
+c.editor.command = ["wezterm", "start", "--always-new-process", "--", "nvim", "{}"]
 config.bind("ce", "config-edit")
 
 
