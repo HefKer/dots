@@ -78,7 +78,8 @@ config.bind("ebb", "spawn brave {url}")
 # Video binds ([m]pv)
 config.bind("emf", "hint links spawn --detach mpv {hint-url}")
 config.bind("emm", "spawn --detach mpv {url}")
-config.bind("emd", "hint links spawn st -e youtube-dl {hint-url}")
+config.bind("emdf", "hint links spawn wezterm -e yt-dlp {hint-url}")
+config.bind("emdd", "spawn wezterm -e yt-dlp {url}")
 
 
 # Mute linter warnings
