@@ -73,10 +73,18 @@ config.bind("ebz", "spawn zen-browser {url}")
 config.bind("ebb", "spawn brave {url}")
 
 # Video binds ([m]pv)
-config.bind("emf", "hint links spawn --detach mpv {hint-url}")
-config.bind("emm", "spawn --detach mpv {url}")
-config.bind("emdf", "hint links spawn wezterm -e yt-dlp {hint-url}")
-config.bind("emdd", "spawn wezterm -e yt-dlp {url}")
+config.bind(
+    "emf",
+    "hint links spawn --detach mpv --ytdl-raw-options=write-subs=,write-auto-subs= {hint-url}",
+)
+config.bind(
+    "emm", "spawn --detach mpv --ytdl-raw-options=write-subs=,write-auto-subs= {url}"
+)
+config.bind("emdf", "hint links spawn wezterm -e /home/hefker/.local/bin/ytdl {hint-url}")
+config.bind("emdF", "hint --rapid links spawn /home/hefker/.local/bin/ytdl {hint-url}")
+config.bind("emdd", "spawn wezterm -e /home/hefker/.local/bin/ytdl {url}")
+config.bind("ewlc", "spawn --userscript wl-clean")
+config.bind("ewlr", "spawn --userscript wl-hint-remove")
 
 
 # Mute linter warnings

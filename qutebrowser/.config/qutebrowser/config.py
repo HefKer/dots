@@ -16,6 +16,7 @@ c.session.lazy_restore = True
 c.confirm_quit = ["multiple-tabs"]
 c.spellcheck.languages = ["en-US"]
 c.downloads.location.directory = "~/Downloads"
+c.hints.scatter = False
 
 # Change start and default page
 # Default: https://start.duckduckgo.com/
