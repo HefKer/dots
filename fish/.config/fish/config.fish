@@ -5,6 +5,8 @@ if status is-login
     starship init fish | source
     fzf --fish | source
     atuin init fish | source
+    direnv hook fish | source
+    nix-your-shell fish | source
     set -gx MANPAGER 'bat -l man -p'
 end
 
@@ -75,53 +77,6 @@ if status is-interactive
         nvim $(command fzf --preview "bat --style=numbers --color=always --line-range :500 {}")
     end
 
-    function __extract_yt_id
-        set url $argv[1]
-        if string match -q "*youtube.com*" $url
-            string replace -r '.*[?&]v=([^&]+).*' '$1' $url
-        else if string match -q "*youtu.be*" $url
-            string replace -r '.*youtu\.be/([^?]+).*' '$1' $url
-        else
-            echo $url
-        end
-    end
-
-    function yt_summarize --description "Summarize a YouTube video transcript"
-        if test (count $argv) -eq 0
-            echo "Usage: yt_summarize <video_id_or_url>"
-            return 1
-        end
-
-        set video_id (__extract_yt_id $argv[1])
-
-        youtube_transcript_api $video_id --format json \
-            | jq -r '.[][].text' \
-            | tr '\n' ' ' \
-            | claude --model haiku -p "summarize this transcript"
-    end
-
-    function yt_chat --description "Chat about a YouTube video transcript in Claude Code"
-        if test (count $argv) -eq 0
-            echo "Usage: yt_chat <video_id_or_url>"
-            return 1
-        end
-
-        set video_id (__extract_yt_id $argv[1])
-
-        set tmpfile /tmp/yt_transcript_$video_id.txt
-
-        echo "Fetching transcript for $video_id..."
-        youtube_transcript_api $video_id --format json \
-            | jq -r '.[][].text' \
-            | tr '\n' ' ' >$tmpfile
-
-        if test $status -ne 0 -o ! -s $tmpfile
-            echo "Failed to fetch transcript"
-            return 1
-        end
-
-        claude "I want to discuss a YouTube video (ID: $video_id). The transcript is at $tmpfile — please read it, then let's chat about it."
-    end
 end
 
 fish_add_path /home/hefker/.lmstudio/bin
