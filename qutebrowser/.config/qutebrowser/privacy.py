@@ -6,7 +6,7 @@
 # config.set("content.canvas_reading", False)
 # config.set("content.geolocation", False) # Block sites from asking for location
 # config.set("content.webrtc_ip_handling_policy", "default-public-interface-only")
-config.set("content.cookies.accept", "no-3rdparty")  # all
+config.set("content.cookies.accept", "all")  # Options: all, no-3rdparty
 config.set("content.cookies.store", True)
 # config.set("content.javascript.enabled", False) # tsh keybind to toggle
 
