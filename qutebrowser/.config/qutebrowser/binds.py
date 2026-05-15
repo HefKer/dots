@@ -10,10 +10,11 @@ config.bind("j", "scroll down")
 config.bind("k", "scroll up")
 
 config.bind("x", "tab-close -o")
-config.bind("d", "scroll-page 0 0.5")
-config.bind("u", "scroll-page 0 -0.5")
-config.bind("<Ctrl-d>", "fake-key <PgDown>")
-config.bind("<Ctrl-u>", "fake-key <PgUp>")
+config.bind("<Ctrl-d>", "scroll-page 0 0.5")
+config.bind("<Ctrl-u>", "scroll-page 0 -0.5")
+# scroll-page doesn't work sometimes, fake-key is better
+config.bind("d", "fake-key <PgDown>")
+config.bind("u", "fake-key <PgUp>")
 config.bind("U", "undo")
 config.bind("gD", "tab-clone")
 config.bind(";r", "hint all right-click")
@@ -80,7 +81,9 @@ config.bind(
 config.bind(
     "emm", "spawn --detach mpv --ytdl-raw-options=write-subs=,write-auto-subs= {url}"
 )
-config.bind("emdf", "hint links spawn wezterm -e /home/hefker/.local/bin/ytdl {hint-url}")
+config.bind(
+    "emdf", "hint links spawn wezterm -e /home/hefker/.local/bin/ytdl {hint-url}"
+)
 config.bind("emdF", "hint --rapid links spawn /home/hefker/.local/bin/ytdl {hint-url}")
 config.bind("emdd", "spawn wezterm -e /home/hefker/.local/bin/ytdl {url}")
 config.bind("ewlc", "spawn --userscript wl-clean")
