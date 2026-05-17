@@ -72,6 +72,7 @@ config.bind(",b", "spawn --userscript qute-rbw")
 config.bind("ebf", "spawn firefox {url}")
 config.bind("ebz", "spawn zen-browser {url}")
 config.bind("ebb", "spawn brave {url}")
+config.bind("ebh", "spawn helium {url}")
 
 # Video binds ([m]pv)
 config.bind(
