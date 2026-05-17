@@ -46,7 +46,6 @@ for mode in ["true", "false"]:
     )  # Custom function to toggle darkmode for the current domain
 
 # --- Spawn configs in nvim ---
-c.editor.command = ["wezterm", "start", "--always-new-process", "--", "nvim", "{}"]
 config.bind("ce", "config-edit")
 
 
