@@ -13,6 +13,7 @@ c.url.searchengines = {
     "g.s": "https://scholar.google.com/scholar?q={}",
     # Wikis
     "wiki": "https://www.wikipedia.org/w/index.php?search={}",
+    "w": "https://www.wikipedia.org/w/index.php?search={}",
     "aw": "https://wiki.archlinux.org/?search={}",
     # Game wikis
     "sv": "https://wiki.stardewvalley.net/mediawiki/index.php?search={}&title=Special%3ASearch&go=Go",
@@ -25,6 +26,10 @@ c.url.searchengines = {
     # Socials
     "linkedin": "https://www.linkedin.com/search/results/all/?keywords={}&origin=GLOBAL_SEARCH_HEADER",
     "li": "https://www.linkedin.com/search/results/all/?keywords={}&origin=GLOBAL_SEARCH_HEADER",
+    # Others
+    "obsidian": "https://community.obsidian.md/search?q={}",
+    "ob": "https://community.obsidian.md/search?q={}",
+    "rmp": "https://www.ratemyprofessors.com/search/professors/2184?q={}",
 }
 
 # Mute linter warnings
