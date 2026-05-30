@@ -9,7 +9,7 @@ c.tabs.title.format_pinned = ""
 c.tabs.width = 36
 c.tabs.padding = {"top": 4, "bottom": 4, "left": 4, "right": 4}
 c.tabs.close_mouse_button = "none"
-c.statusbar.show = "in-mode"  # Only shows statusbar when in insert/command modes
+c.statusbar.show = "always"
 c.window.title_format = "{current_title}"
 c.scrolling.bar = "never"
 
@@ -29,7 +29,7 @@ c.fonts.web.family.standard = "monospace"
 
 ## --- Feel ---
 c.scrolling.smooth = True
-c.tabs.show = "switching"  # always
+c.tabs.show = "always"  # opts: always, never, multiple, switching
 
 # Mute linter warnings
 # ruff: noqa: F821
