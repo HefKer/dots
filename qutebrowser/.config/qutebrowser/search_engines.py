@@ -1,14 +1,19 @@
 # Search engines
 c.url.open_base_url = True
 c.url.searchengines = {
-    "DEFAULT": "https://duckduckgo.com/?q={}",
+    # Browser search engines
+    "DEFAULT": "https://search.brave.com/search?q={}",
+    "ddg": "https://noai.duckduckgo.com/?q={}",
+    "b": "https://search.brave.com/search?q={}",
+    "g": "https://www.google.com/search?q={}",
+    # Site search engines
     "yt": "https://www.youtube.com/results?search_query={}",
     "y": "https://www.youtube.com/results?search_query={}",
     "gh": "https://github.com/search?o=desc&q={}&s=stars",
-    # Nix
+    # Packages
     "nix": "https://search.nixos.org/packages?channel=unstable&include_modular_service_options=1&include_nixos_options=1&query={}",
+    "aur": "https://aur.archlinux.org/packages?O=0&K={}",
     # Google stuff
-    "g": "https://www.google.com/search?q={}",
     "g.m": "https://www.google.com/maps?q={}",
     "g.s": "https://scholar.google.com/scholar?q={}",
     # Wikis
@@ -23,6 +28,7 @@ c.url.searchengines = {
     "aliexpress": "https://www.aliexpress.com/wholesale?SearchText={}",
     "rb": "https://www.redbubble.com/shop/{}",
     "redbubble": "https://www.redbubble.com/shop/{}",
+    "mc": "https://www.microcenter.com/search/search_results.aspx?Ntt={}",
     # Socials
     "linkedin": "https://www.linkedin.com/search/results/all/?keywords={}&origin=GLOBAL_SEARCH_HEADER",
     "li": "https://www.linkedin.com/search/results/all/?keywords={}&origin=GLOBAL_SEARCH_HEADER",
@@ -30,6 +36,8 @@ c.url.searchengines = {
     "obsidian": "https://community.obsidian.md/search?q={}",
     "ob": "https://community.obsidian.md/search?q={}",
     "rmp": "https://www.ratemyprofessors.com/search/professors/2184?q={}",
+    # Temp
+    "mcb": "https://www.microcenter.com/search/search_results.aspx?fq=&Ntt={}&searchButton=search&fq=price:0-170",
 }
 
 # Mute linter warnings
