@@ -15,11 +15,12 @@ if status is-interactive
     set -gx FZF_CTRL_T_OPTS "--preview 'bat --style=numbers --color=always --line-range :500 {}'"
     set -gx FZF_ALT_C_OPTS "--preview 'eza --tree --level=2 --icons {}'"
     fzf --fish | source
-    # Rebind fzf: Ctrl+F for files, drop Alt+C (wezterm conflict)
+    # Use Ctrl+F for files instead of Ctrl+T
     bind \cf fzf-file-widget
     bind -M insert \cf fzf-file-widget
     bind --erase \ct
     bind -M insert --erase \ct
+    # Erase alt+C (finds dirs)
     bind --erase \ec
     bind -M insert --erase \ec
 
@@ -46,6 +47,7 @@ if status is-interactive
     abbr -a cpr 'rsync -ah --progress'
     abbr -a mvr 'rsync -ah --progress --remove-source-files'
     abbr -a mkdir 'mkdir -pv'
+    abbr -a du 'du -sh'
 
     # CLI programs
     abbr -a n nvim
