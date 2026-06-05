@@ -12,6 +12,31 @@ local function is_vim(pane)
   return pane:get_user_vars().IS_NVIM == "true"
 end
 
+local function is_claude(pane)
+  local proc = pane:get_foreground_process_name() or ""
+  if proc:find("claude") then return true end
+  local info = pane:get_foreground_process_info()
+  while info do
+    if info.name and info.name:find("claude") then return true end
+    info = info.children and next(info.children) and info.children[next(info.children)] or nil
+  end
+  return false
+end
+
+local function claude_or_scroll(key, direction)
+  return {
+    key = key,
+    mods = "ALT",
+    action = wezterm.action_callback(function(win, pane)
+      if is_claude(pane) then
+        win:perform_action({ SendKey = { key = key, mods = "ALT" } }, pane)
+      else
+        win:perform_action({ ScrollByLine = direction }, pane)
+      end
+    end),
+  }
+end
+
 local function split_nav(resize_or_move, key)
   local moveMod = "CTRL"
   local resizeMod = "CTRL|ALT"
@@ -89,16 +114,8 @@ local keys = {
     mods = "ALT",
     action = act.ActivateTabRelative(1),
   },
-  {
-    key = "k",
-    mods = "ALT",
-    action = act.ScrollByLine(-1),
-  },
-  {
-    key = "j",
-    mods = "ALT",
-    action = act.ScrollByLine(1),
-  },
+  claude_or_scroll("k", -1),
+  claude_or_scroll("j", 1),
   {
     key = "u",
     mods = "CTRL|ALT",
