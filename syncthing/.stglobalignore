@@ -1,0 +1,196 @@
+# Syncthing global ignore patterns
+# Include from per-folder .stignore via:  #include ~/.stglobalignore
+# Syntax: https://docs.syncthing.net/users/ignoring.html
+# Prefix: ! = include (override), (?i) = case-insensitive, (?d) = deletable
+
+// ===== OS junk =====
+(?d).DS_Store
+(?d)._*
+(?d).Spotlight-V100
+(?d).Trashes
+(?d).fseventsd
+(?d).TemporaryItems
+(?d).AppleDouble
+(?d).LSOverride
+(?d)Thumbs.db
+(?d)Thumbs.db:encryptable
+(?d)ehthumbs.db
+(?d)ehthumbs_vista.db
+(?d)Desktop.ini
+(?d)$RECYCLE.BIN
+(?d).directory
+(?d).Trash-*
+(?d)*~
+(?d).nfs*
+
+// ===== Editor / IDE =====
+.vscode
+.vs
+.idea
+*.swp
+*.swo
+*.swn
+.*.swp
+.*.swo
+.netrwhist
+*.sublime-workspace
+*.sublime-project
+.history
+.ionide
+.metals
+.bloop
+.ensime_cache
+nbproject/private/
+.project
+.classpath
+.settings
+.vimrc.local
+Session.vim
+
+// ===== Python =====
+.venv
+venv
+env
+ENV
+.env.local
+__pycache__
+*.py[cod]
+*$py.class
+*.egg-info
+.eggs
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.tox
+.nox
+.coverage
+.coverage.*
+htmlcov
+.hypothesis
+pip-wheel-metadata
+.python-version
+poetry.lock.bak
+.ipynb_checkpoints
+
+// ===== Node / JS =====
+node_modules
+.npm
+.yarn
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+.pnpm-store
+bower_components
+.next
+.nuxt
+.svelte-kit
+.turbo
+.parcel-cache
+.cache
+.vite
+dist
+out
+
+// ===== Rust =====
+target
+Cargo.lock.bak
+**/*.rs.bk
+
+// ===== Go =====
+vendor
+*.test
+*.out
+
+// ===== Java / JVM =====
+.gradle
+build
+.mvn/wrapper/maven-wrapper.jar
+*.class
+
+// ===== C / C++ =====
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+build
+cmake-build-*
+CMakeFiles
+CMakeCache.txt
+
+// ===== Ruby =====
+.bundle
+vendor/bundle
+*.gem
+.rvmrc
+.rbenv-version
+
+// ===== Elixir / Erlang =====
+_build
+deps
+.elixir_ls
+erl_crash.dump
+
+// ===== PHP =====
+vendor
+
+// ===== iOS / macOS dev =====
+DerivedData
+*.xcuserstate
+xcuserdata
+Pods
+
+// ===== Android =====
+.gradle
+local.properties
+*.apk
+*.aab
+
+// ===== Containers / VMs =====
+.vagrant
+*.box
+
+// ===== Terraform / Infra =====
+.terraform
+*.tfstate
+*.tfstate.backup
+.terragrunt-cache
+
+// ===== Logs / temp =====
+*.log
+logs
+*.pid
+*.seed
+*.tmp
+*.temp
+tmp
+temp
+*.bak
+*.old
+*.orig
+
+// ===== Archives mid-download =====
+*.crdownload
+*.part
+*.partial
+*.download
+
+// ===== Syncthing internals =====
+(?d).stversions
+(?d).stfolder
+(?d).syncthing.*.tmp
+
+// ===== Misc caches =====
+.cache
+.sass-cache
+.thumbnails
+
+// ===== Large binaries usually rebuild-able =====
+*.iso
+*.dmg
+*.img
