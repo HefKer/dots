@@ -1,30 +1,71 @@
 # dots
 
-My dotfiles (using [GNU Stow](https://www.gnu.org/software/stow/)).
+My dotfiles for my NixOS setup, managed with [GNU Stow](https://www.gnu.org/software/stow/).
 
-## qutebrowser
+## Layout
 
-A keyboard-focused browser with vim bindings. Although it doesn't have extensions, it is highly customizable through its config file. I'm still messing with it but the sessions are really powerful, essentially letting you create, load, and delete workspaces on the fly.
+Each top-level dir is a stow package. Its tree mirrors what gets symlinked into `$HOME`:
 
-### Dependencies
+```
+<pkg>/.config/<app>/...   →   ~/.config/<app>/...
+```
 
-To detach videos (download & play locally):
+Apply / remove / restow:
 
-- [mpv - player](https://mpv.io/)
-- [yt-dlp - download videos to play externally](https://github.com/yt-dlp/yt-dlp)
-- mpv-sponsorblock to block sponsored sections in mpv
+```sh
+stow -t ~ <pkg>
+stow -D -t ~ <pkg>
+stow -R -t ~ <pkg>
+```
 
-For bitwarden:
+## Packages
 
-- [Rofi for bitwarden login menu](https://wiki.archlinux.org/title/Rofi)
-- [tldextract · PyPI](https://pypi.org/project/tldextract/)
-- [pyperclip · PyPI](https://pypi.org/project/pyperclip/)
+| Pkg | App | Notes |
+|-----|-----|-------|
+| [`fish`](fish/) | fish shell | Vi keys, zoxide-shadowed `cd`, FZF widgets, custom `yt_chat` / `yt_summarize` functions wrapping the `claude` CLI. |
+| [`niri`](niri/) | [niri](https://github.com/YaLTeR/niri) Wayland compositor | `config.kdl` `include`s split files under `dms/` (binds, outputs, windowrules, …). Driven by DMS. |
+| [`DankMaterialShell`](DankMaterialShell/) | [DMS](https://github.com/AvengeMedia/DankMaterialShell) niri shell | Settings, themes, plugin metadata. |
+| [`nvim`](nvim/) | Neovim | [LazyVim](https://www.lazyvim.org/) base. User plugins in `lua/plugins/`, config in `lua/config/`. |
+| [`wezterm`](wezterm/) | [WezTerm](https://wezterm.org/) | `wezterm.lua` loads `keys.lua` + `dank-theme`.|
+| [`qutebrowser`](qutebrowser/) | [qutebrowser](https://qutebrowser.org/) | Multi-file config split across `appearance`, `privacy`, `filepicker`, `binds`, `search_engines`. Themes under `themes/`. See deps below. |
+| [`mpv`](mpv/) | mpv | `mpv.conf` + `input.conf`. |
+
+### Non-stow dirs
+
+- [`syncthing/`](syncthing/) — Shared `.stglobalignore` across all Syncthing folders/hosts. Symlinked, not stowed — see [`syncthing/README.md`](syncthing/README.md).
+- [`screenshots/`](screenshots/) — Preview images.
+
+## Screenshots
+
+| qutebrowser (everforest) | menu |
+|---|---|
+| ![qutebrowser](screenshots/qutebrowser-everforest.png) | ![menu](screenshots/qutebrowser-everforest-menu.png) |
+
+## qutebrowser deps
+
+Detach videos (download + play locally):
+
+- [mpv](https://mpv.io/)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+- mpv-sponsorblock
+
+Bitwarden:
+
+- [rofi](https://wiki.archlinux.org/title/Rofi)
+- [tldextract](https://pypi.org/project/tldextract/)
+- [pyperclip](https://pypi.org/project/pyperclip/)
 - bitwarden-cli
 
 > [!NOTE]
-> I'm still having issues with the Bitwarden setup. It's slow + doesn't autofill properly on a lot of sites.
+> Bitwarden setup still flaky — slow, doesn't autofill on many sites. Testing rbw workaround
 
-For the adblock:
+Adblock:
 
-- [adblock · PyPI](https://pypi.org/project/adblock/)
-- Run `:adblock-update` in qb to update adblock lists
+- [adblock](https://pypi.org/project/adblock/)
+- Run `:adblock-update` in qutebrowser to refresh lists.
+
+Spellcheck (en-US):
+
+```sh
+"$(find "$(nix-store --query --outputs "$(which qutebrowser)")" -iname 'dictcli.py' | head -1)" install en-US
+```
