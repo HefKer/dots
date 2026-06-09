@@ -36,8 +36,6 @@ c.url.searchengines = {
     "obsidian": "https://community.obsidian.md/search?q={}",
     "ob": "https://community.obsidian.md/search?q={}",
     "rmp": "https://www.ratemyprofessors.com/search/professors/2184?q={}",
-    # Temp
-    "mcb": "https://www.microcenter.com/search/search_results.aspx?fq=&Ntt={}&searchButton=search&fq=price:0-170",
 }
 
 # Mute linter warnings
