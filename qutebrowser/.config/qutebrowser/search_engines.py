@@ -12,6 +12,7 @@ c.url.searchengines = {
     "gh": "https://github.com/search?o=desc&q={}&s=stars",
     # Packages
     "nix": "https://search.nixos.org/packages?channel=unstable&include_modular_service_options=1&include_nixos_options=1&query={}",
+    "nur": "https://nur.nix-community.org/?query={}",
     "aur": "https://aur.archlinux.org/packages?O=0&K={}",
     # Google stuff
     "g.m": "https://www.google.com/maps?q={}",
