@@ -97,6 +97,7 @@ if status is-interactive
     abbr -a gp git push
     abbr -a calc kalker
     abbr -a ff fastfetch
+    abbr -a st syncthing
 
     abbr -a rg 'rg -i'
     abbr -a ns 'nix search nixpkgs'
