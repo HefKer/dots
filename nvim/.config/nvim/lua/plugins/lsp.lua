@@ -19,7 +19,6 @@ return {
         bashls = {},
         yamlls = {},
         pyright = {},
-        nil_ls = {},
         jsonls = {},
       },
     },
