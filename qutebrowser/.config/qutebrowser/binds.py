@@ -58,9 +58,10 @@ config.bind(
 
 
 # --- Sessions ---
-config.bind(",sl", "cmd-set-text -s :session-load ")
-config.bind(",ss", "cmd-set-text -s :session-save ")
-config.bind(",sd", "cmd-set-text -s :session-delete ")
+# Open cmd with quotes pre-filled, cursor moved inside via rl-backward-char
+config.bind(",sl", 'cmd-set-text :session-load "" ;; rl-backward-char')
+config.bind(",ss", 'cmd-set-text :session-save "" ;; rl-backward-char')
+config.bind(",sd", 'cmd-set-text :session-delete "" ;; rl-backward-char')
 
 # --- User Scripts ---
 # config.bind(",b", "spawn --userscript qute-bitwarden")
