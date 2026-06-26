@@ -59,8 +59,12 @@ config.bind(
 
 # --- Sessions ---
 # Open cmd with quotes pre-filled, cursor moved inside via rl-backward-char
-config.bind(",sl", 'cmd-set-text :session-load "" ;; rl-backward-char')
-config.bind(",ss", 'cmd-set-text :session-save "" ;; rl-backward-char')
+config.bind(
+    ",sl", 'cmd-set-text :session-load -c "" ;; rl-backward-char'
+)  # -c closes open windows on session load
+config.bind(
+    ",ss", 'cmd-set-text :session-save -o "" ;; rl-backward-char'
+)  # -o saves only active window
 config.bind(",sd", 'cmd-set-text :session-delete "" ;; rl-backward-char')
 
 # --- User Scripts ---
