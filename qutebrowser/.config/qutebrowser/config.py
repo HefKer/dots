@@ -9,9 +9,13 @@ config.source("search_engines.py")
 c.auto_save.session = False
 
 c.completion.shrink = True
-c.hints.auto_follow = "unique-match"
+c.completion.quick = True
+c.completion.use_best_match = True
+
+c.input.insert_mode.auto_load = True
 c.input.insert_mode.auto_enter = True
 c.input.insert_mode.auto_leave = True
+c.hints.auto_follow = "unique-match"
 c.session.lazy_restore = True
 c.confirm_quit = ["downloads"]
 c.spellcheck.languages = ["en-US"]
