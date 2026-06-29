@@ -124,6 +124,11 @@
       "id": "darkMode",
       "enabled": true,
       "width": 50
+    },
+    {
+      "id": "doNotDisturb",
+      "enabled": true,
+      "width": 50
     }
   ],
   "showWorkspaceIndex": true,
@@ -261,6 +266,7 @@
   "brightnessDevicePins": {},
   "wifiNetworkPins": {
     "preferredWifi": [
+      "KerFi 5.0",
       "Galaxy S24 Ultra FF94",
       "HCCprivate"
     ]
@@ -271,7 +277,12 @@
       "alsa_input.usb-MOTU_M2_M2MT15A38F-00.HiFi__Mic1__source"
     ]
   },
-  "audioOutputDevicePins": {},
+  "audioOutputDevicePins": {
+    "preferredOutput": [
+      "bluez_output.E8_7F_6B_E6_DF_98.1",
+      "bluez_output.F4_2B_8C_93_49_F5.1"
+    ]
+  },
   "gtkThemingEnabled": false,
   "qtThemingEnabled": false,
   "syncModeWithPortal": true,
@@ -603,6 +614,18 @@
           "height": 200,
           "x": 723,
           "y": 414.5
+        },
+        "DP-5": {
+          "width": 200,
+          "height": 200,
+          "x": 1620,
+          "y": 620
+        },
+        "DP-6": {
+          "width": 200,
+          "height": 200,
+          "x": 1620,
+          "y": 620
         }
       }
     }
