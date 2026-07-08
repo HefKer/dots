@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+TMPJS=$(mktemp /tmp/wl-hint-remove-XXXXXX.js)
+
+cat > "$TMPJS" << 'JSEOF'
+(function () {
+    if (window.__wlHintActive) return;
+    window.__wlHintActive = true;
+
+    const CHARS = 'ASDFGHJKLQWERTYUIOPZXCVBNM'.split('');
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    let labels = [];
+    let removing = false;
+
+    async function removeItem(item) {
+        if (removing) return;
+        removing = true;
+        const btn = item.querySelector('ytd-menu-renderer yt-icon-button#button');
+        if (!btn) { removing = false; return; }
+        btn.click();
+        await sleep(700);
+        const mis = document.querySelectorAll('ytd-menu-service-item-renderer');
+        for (const mi of mis) {
+            if ((mi.innerText || mi.textContent).includes('Remove')) {
+                mi.click();
+                await sleep(600);
+                break;
+            }
+        }
+        removing = false;
+        await sleep(300);
+        buildHints();
+    }
+
+    function clearLabels() {
+        labels.forEach(l => l.remove());
+        labels = [];
+    }
+
+    function buildHints() {
+        clearLabels();
+        const items = [...document.querySelectorAll('ytd-playlist-video-renderer')];
+        const charMap = {};
+        items.forEach((item, i) => {
+            if (i >= CHARS.length) return;
+            const rect = item.getBoundingClientRect();
+            if (rect.height === 0 || rect.bottom < 0 || rect.top > window.innerHeight) return;
+            const char = CHARS[i];
+            const label = document.createElement('div');
+            label.textContent = char;
+            label.style.cssText = [
+                'position:fixed',
+                `left:${rect.left + 8}px`,
+                `top:${rect.top + rect.height / 2 - 12}px`,
+                'background:#ffdd00',
+                'color:#000',
+                'font:bold 14px monospace',
+                'padding:2px 6px',
+                'z-index:999999',
+                'border-radius:3px',
+                'cursor:pointer',
+                'box-shadow:0 1px 4px rgba(0,0,0,.6)',
+                'user-select:none',
+            ].join(';');
+            label.addEventListener('click', e => { e.stopPropagation(); removeItem(item); });
+            document.body.appendChild(label);
+            labels.push(label);
+            charMap[char] = item;
+        });
+        return charMap;
+    }
+
+    let charMap = buildHints();
+
+    function exit() {
+        clearLabels();
+        window.__wlHintActive = false;
+        document.removeEventListener('keydown', keyHandler, true);
+    }
+
+    function keyHandler(e) {
+        if (e.key === 'Escape') { exit(); return; }
+        const char = e.key.toUpperCase();
+        if (!charMap[char]) return;
+        e.preventDefault();
+        e.stopPropagation();
+        removeItem(charMap[char]);
+        charMap = buildHints();
+    }
+
+    document.addEventListener('keydown', keyHandler, true);
+})();
+JSEOF
+
+printf 'jseval -q -f %s\n' "$TMPJS" >> "$QUTE_FIFO"

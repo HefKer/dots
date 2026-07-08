@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+DOWNLOADED="$HOME/.local/share/ytdl/downloaded.txt"
+
+if [[ ! -s "$DOWNLOADED" ]]; then
+    printf 'message-info "wl-clean: nothing to remove"\n' >> "$QUTE_FIFO"
+    exit 0
+fi
+
+IDS=()
+while IFS= read -r url; do
+    id=$(echo "$url" | grep -oP '(?<=v=)[^&]+')
+    [[ -n "$id" ]] && IDS+=("\"$id\"")
+done < "$DOWNLOADED"
+
+if [[ ${#IDS[@]} -eq 0 ]]; then
+    printf 'message-info "wl-clean: no video IDs parsed"\n' >> "$QUTE_FIFO"
+    exit 0
+fi
+
+printf 'message-info "wl-clean: removing %d video(s)"\n' "${#IDS[@]}" >> "$QUTE_FIFO"
+
+IDS_JSON="[$(IFS=,; echo "${IDS[*]}")]"
+
+TMPJS=$(mktemp /tmp/wl-clean-XXXXXX.js)
+cat > "$TMPJS" << JSEOF
+(async () => {
+    const ids = ${IDS_JSON};
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    for (const id of ids) {
+        let removed = false;
+        const items = document.querySelectorAll('ytd-playlist-video-renderer');
+        for (const item of items) {
+            const link = item.querySelector('a[href*="v=' + id + '"]');
+            if (!link) continue;
+            const btn = item.querySelector('ytd-menu-renderer yt-icon-button#button');
+            if (!btn) { console.log('wl-clean: no menu btn for', id); continue; }
+            btn.click();
+            await sleep(800);
+            const menuItems = document.querySelectorAll('ytd-menu-service-item-renderer');
+            for (const mi of menuItems) {
+                const text = mi.innerText || mi.textContent || '';
+                if (text.includes('Remove')) {
+                    mi.click();
+                    await sleep(600);
+                    removed = true;
+                    break;
+                }
+            }
+            break;
+        }
+        if (!removed) console.log('wl-clean: could not remove', id);
+        await sleep(300);
+    }
+    console.log('wl-clean: done');
+})();
+JSEOF
+
+printf 'jseval -q -f %s\n' "$TMPJS" >> "$QUTE_FIFO"
+
+> "$DOWNLOADED"
