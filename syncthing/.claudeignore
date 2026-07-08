@@ -1,0 +1,34 @@
+// Claude Code (~/.claude) ignore patterns.
+// Claude-scoped: symlinked into ~/.claude and #included from its .stignore.
+// Paths anchored with leading / = match at folder root only (avoid stray
+// matches under projects/, plugins/, skills/).
+// Prefix: (?d) = syncthing may delete when cleaning.
+
+// ===== auth: never sync, cross-host refresh invalidates the token =====
+(?d)/.credentials.json
+(?d)/mcp-needs-auth-cache.json
+
+// ===== host-local config / runtime state =====
+(?d)/settings.local.json
+(?d)/shell-snapshots
+(?d)/session-env
+(?d)/daemon
+(?d)/ide
+(?d)/jobs
+
+// ===== appended / churned per host (conflict spam) =====
+(?d)/history.jsonl
+(?d)/history.jsonl.premerge-bak
+(?d)/.last-cleanup
+(?d)/stats-cache.json
+(?d)/cache
+(?d)/paste-cache
+(?d)/telemetry
+
+// ===== sweep existing + future conflict / backup cruft =====
+(?d)*.sync-conflict-*
+(?d)*.premerge-bak
+
+// synced (implicit): commands/ skills/ plugins/ projects/ sessions/
+// tasks/ file-history/ backups/ memory/ settings.json keybindings.json
+// statusline.sh
