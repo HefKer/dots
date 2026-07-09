@@ -21,3 +21,4 @@ QtProject.conf
 quickmarks
 /qutebrowser/.config/qutebrowser/quickmarks.old
 /qutebrowser/.config/qutebrowser/docs
+/helium
