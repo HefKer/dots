@@ -48,137 +48,140 @@ nbproject/private/
 Session.vim
 
 // ===== Python =====
-.venv
-venv
-env
-ENV
+// (?d) = deletable: rebuildable, so syncthing may clear them to complete a
+//        remote dir-delete instead of blocking with a pull error.
+(?d).venv
+(?d)venv
+(?d)env
+(?d)ENV
 .env.local
-__pycache__
-*.py[cod]
-*$py.class
-*.egg-info
-.eggs
-.pytest_cache
-.mypy_cache
-.ruff_cache
-.tox
-.nox
-.coverage
-.coverage.*
-htmlcov
-.hypothesis
-pip-wheel-metadata
+(?d)__pycache__
+(?d)*.py[cod]
+(?d)*$py.class
+(?d)*.egg-info
+(?d).eggs
+(?d).pytest_cache
+(?d).mypy_cache
+(?d).ruff_cache
+(?d).tox
+(?d).nox
+(?d).coverage
+(?d).coverage.*
+(?d)htmlcov
+(?d).hypothesis
+(?d)pip-wheel-metadata
 .python-version
-poetry.lock.bak
-.ipynb_checkpoints
+(?d)poetry.lock.bak
+(?d).ipynb_checkpoints
 
 // ===== Node / JS =====
-node_modules
-.npm
-.yarn
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-.pnp.*
-.pnpm-store
-bower_components
-.next
-.nuxt
-.svelte-kit
-.turbo
-.parcel-cache
-.cache
-.vite
-dist
-out
+(?d)node_modules
+(?d).npm
+(?d).yarn
+(?d).yarn/cache
+(?d).yarn/unplugged
+(?d).yarn/build-state.yml
+(?d).yarn/install-state.gz
+(?d).pnp.*
+(?d).pnpm-store
+(?d)bower_components
+(?d).next
+(?d).nuxt
+(?d).svelte-kit
+(?d).turbo
+(?d).parcel-cache
+(?d).cache
+(?d).vite
+(?d)dist
+(?d)out
 
 // ===== Rust =====
-target
-Cargo.lock.bak
-**/*.rs.bk
+(?d)target
+(?d)Cargo.lock.bak
+(?d)**/*.rs.bk
 
 // ===== Go =====
-vendor
-*.test
-*.out
+(?d)vendor
+(?d)*.test
+(?d)*.out
 
 // ===== Java / JVM =====
-.gradle
-build
-.mvn/wrapper/maven-wrapper.jar
-*.class
+(?d).gradle
+(?d)build
+(?d).mvn/wrapper/maven-wrapper.jar
+(?d)*.class
 
 // ===== C / C++ =====
-*.o
-*.obj
-*.so
-*.dylib
-*.dll
-*.a
-*.lib
-*.exe
-build
-cmake-build-*
-CMakeFiles
-CMakeCache.txt
+(?d)*.o
+(?d)*.obj
+(?d)*.so
+(?d)*.dylib
+(?d)*.dll
+(?d)*.a
+(?d)*.lib
+(?d)*.exe
+(?d)build
+(?d)cmake-build-*
+(?d)CMakeFiles
+(?d)CMakeCache.txt
 
 // ===== Ruby =====
-.bundle
-vendor/bundle
-*.gem
+(?d).bundle
+(?d)vendor/bundle
+(?d)*.gem
 .rvmrc
 .rbenv-version
 
 // ===== Elixir / Erlang =====
-_build
-deps
-.elixir_ls
-erl_crash.dump
+(?d)_build
+(?d)deps
+(?d).elixir_ls
+(?d)erl_crash.dump
 
 // ===== PHP =====
-vendor
+(?d)vendor
 
 // ===== iOS / macOS dev =====
-DerivedData
-*.xcuserstate
-xcuserdata
-Pods
+(?d)DerivedData
+(?d)*.xcuserstate
+(?d)xcuserdata
+(?d)Pods
 
 // ===== Android =====
-.gradle
+(?d).gradle
 local.properties
-*.apk
-*.aab
+(?d)*.apk
+(?d)*.aab
 
 // ===== Containers / VMs =====
-.vagrant
+(?d).vagrant
 *.box
 
 // ===== Terraform / Infra =====
-.terraform
+// tfstate is precious — NOT deletable.
+(?d).terraform
 *.tfstate
 *.tfstate.backup
-.terragrunt-cache
+(?d).terragrunt-cache
 
 // ===== Logs / temp =====
-*.log
-logs
-*.pid
-*.seed
-*.tmp
-*.temp
-tmp
-temp
-*.bak
-*.old
-*.orig
+(?d)*.log
+(?d)logs
+(?d)*.pid
+(?d)*.seed
+(?d)*.tmp
+(?d)*.temp
+(?d)tmp
+(?d)temp
+(?d)*.bak
+(?d)*.old
+(?d)*.orig
 
 // ===== Archives mid-download =====
-*.crdownload
-*.part
-*.partial
-*.download
+(?d)*.crdownload
+(?d)*.part
+(?d)*.partial
+(?d)*.download
 
 // ===== Syncthing internals =====
 (?d).stversions
@@ -186,9 +189,9 @@ temp
 (?d).syncthing.*.tmp
 
 // ===== Misc caches =====
-.cache
-.sass-cache
-.thumbnails
+(?d).cache
+(?d).sass-cache
+(?d).thumbnails
 
 // ===== Large binaries usually rebuild-able =====
 *.iso
