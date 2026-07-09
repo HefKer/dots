@@ -18,6 +18,19 @@ config.bind("u", "fake-key <PgUp>")
 config.bind("U", "undo")
 config.bind("gD", "tab-clone")
 config.bind(";r", "hint all right-click")
+# --- testing ---
+# Hint outermost/overlay elements to escape stubborn dialogs
+c.hints.selectors["outer"] = [
+    "body",
+    "html",
+    "div[class*=overlay]",
+    "div[class*=modal]",
+    "div[class*=backdrop]",
+]
+config.bind(";o", "hint outer")
+# Trigger file picker for drag-n-drop sites that hide their <input type=file>
+config.bind(";u", "jseval -q document.querySelector('input[type=file]')?.click()")
+# --- \testing ---
 config.bind("<Ctrl-h>", "history")
 config.bind("cs", "config-source")
 config.bind("Q", "macro-record")
