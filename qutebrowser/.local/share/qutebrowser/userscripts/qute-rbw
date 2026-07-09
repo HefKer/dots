@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+##!/bin/bash
+
+[[ "$QUTE_URL" =~ https?://([^/]+) ]] || exit 0
+BASE_URL="${BASH_REMATCH[1]}" # "accounts.google.com" instead of just "google"
+
+if PASS=$(rbw get "$BASE_URL" 2>&1); then
+  TOTP=$(rbw code "$BASE_URL" 2>/dev/null)
+  USER="$(rbw get "$BASE_URL" --field username)"
+else
+  [[ "$PASS" =~ multiple\ entries\ found:\ (.*) ]]
+  ENTRIES="${BASH_REMATCH[1]}"
+  SELECTED_ENTRY=$(echo "$ENTRIES" | tr ',' '\n' | dmenu -i)
+  [ -z "$SELECTED_ENTRY" ] && exit 0
+  [[ "$SELECTED_ENTRY" =~ (.*)@[^@]* ]]
+  SELECTED_ENTRY=$(echo "${BASH_REMATCH[1]}" | xargs)
+
+  PASS=$(rbw get "$BASE_URL" "$SELECTED_ENTRY")
+  TOTP=$(rbw code "$BASE_URL" "$SELECTED_ENTRY" 2>/dev/null)
+  USER="$(rbw get "$BASE_URL" "$SELECTED_ENTRY" --field username)"
+fi
+
+javascript_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/'"'"'/\\'"'"'/g' | tr '\n' ' ' | sed 's/\r/\\r/g'
+}
+
+js() {
+  cat <<EOF
+    function isVisible(elem) {
+        var style = elem.ownerDocument.defaultView.getComputedStyle(elem, null);
+        if (style.getPropertyValue("visibility") !== "visible" ||
+            style.getPropertyValue("display") === "none" ||
+            style.getPropertyValue("opacity") === "0") {
+            return false;
+        }
+        return elem.offsetWidth > 0 && elem.offsetHeight > 0;
+    };
+    function hasPasswordField(form) {
+        var inputs = form.getElementsByTagName("input");
+        for (var j = 0; j < inputs.length; j++) {
+            var input = inputs[j];
+            if (input.type == "password") {
+                return true;
+            }
+        }
+        return false;
+    };
+    function loadData2Form (form) {
+        var inputs = form.getElementsByTagName("input");
+        for (var j = 0; j < inputs.length; j++) {
+            var input = inputs[j];
+            if (isVisible(input) && (input.type == "text" || input.type == "email")) {
+                input.focus();
+                input.value = "$(javascript_escape "${USER}")";
+                input.dispatchEvent(new Event('change'));
+                input.blur();
+            }
+            if (input.type == "password") {
+                input.focus();
+                input.value = "$(javascript_escape "${PASS}")";
+                input.dispatchEvent(new Event('change'));
+                input.blur();
+            }
+        }
+    };
+    var forms = document.getElementsByTagName("form");
+    for (i = 0; i < forms.length; i++) {
+        if (hasPasswordField(forms[i])) {
+            loadData2Form(forms[i]);
+        }
+    }
+EOF
+}
+
+printjs() {
+  js | sed 's,//.*$,,' | tr '\n' ' '
+}
+
+echo "jseval -q $(printjs)" >>"$QUTE_FIFO"
+echo "$PASS" | wl-copy
+if [ -n "$TOTP" ]; then
+  (
+    sleep 4
+    echo "$TOTP" | wl-copy
+  ) &
+fi
