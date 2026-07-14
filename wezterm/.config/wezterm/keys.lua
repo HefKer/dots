@@ -37,6 +37,20 @@ local function claude_or_scroll(key, direction)
   }
 end
 
+local function claude_or_scroll_page(key, amount)
+  return {
+    key = key,
+    mods = "ALT",
+    action = wezterm.action_callback(function(win, pane)
+      if is_claude(pane) then
+        win:perform_action({ SendKey = { key = key, mods = "ALT" } }, pane)
+      else
+        win:perform_action({ ScrollByPage = amount }, pane)
+      end
+    end),
+  }
+end
+
 local function split_nav(resize_or_move, key)
   local moveMod = "CTRL"
   local resizeMod = "CTRL|ALT"
@@ -116,6 +130,8 @@ local keys = {
   },
   claude_or_scroll("k", -1),
   claude_or_scroll("j", 1),
+  claude_or_scroll_page("u", -0.5),
+  claude_or_scroll_page("d", 0.5),
   {
     key = "u",
     mods = "CTRL|ALT",
