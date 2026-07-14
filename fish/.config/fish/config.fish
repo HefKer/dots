@@ -66,6 +66,7 @@ if status is-interactive
     alias ls='eza -lh --group-directories-first --icons=auto'
     alias lt='eza --tree --level=2 --long --icons --git'
     alias groot=sudo
+    alias clanker=claude
 
     # - Abbreviations -
     # Core utils
@@ -92,12 +93,16 @@ if status is-interactive
     abbr -a g git
     abbr -a gs git status
     abbr -a ga git add
-    abbr -a gc --set-cursor 'git commit -m "%"'
+    abbr -a gcm --set-cursor 'git commit -m "%"'
     abbr -a gcam --set-cursor 'git commit -am "%"'
     abbr -a gp git push
+    abbr -a glo git log --oneline --decorate --graph --all
+
     abbr -a calc kalker
     abbr -a ff fastfetch
     abbr -a st syncthing
+    abbr -a C claude
+    abbr -a CC claude -r
 
     abbr -a rg 'rg -i'
     abbr -a ns 'nix search nixpkgs'
