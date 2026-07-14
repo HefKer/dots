@@ -14,6 +14,7 @@ c.url.searchengines = {
     "nix": "https://search.nixos.org/packages?channel=unstable&include_modular_service_options=1&include_nixos_options=1&query={}",
     "nur": "https://nur.nix-community.org/?query={}",
     "aur": "https://aur.archlinux.org/packages?O=0&K={}",
+    "hm": "https://home-manager-options.extranix.com/?query={}&release=master",
     # Google stuff
     "g.m": "https://www.google.com/maps?q={}",
     "g.s": "https://scholar.google.com/scholar?q={}",
