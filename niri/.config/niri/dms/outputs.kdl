@@ -26,7 +26,7 @@ output "DP-6" {
 }
 
 output "eDP-1" {
-    mode "2880x1800@60.000"
+    mode "2880x1800@120.000"
     scale 1.75
     position x=4987 y=1440
 }
