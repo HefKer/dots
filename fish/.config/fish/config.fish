@@ -103,6 +103,7 @@ if status is-interactive
     abbr -a st syncthing
     abbr -a C claude
     abbr -a CC claude -r
+    abbr -a H herdr --session
 
     abbr -a rg 'rg -i'
     abbr -a ns 'nix search nixpkgs'
