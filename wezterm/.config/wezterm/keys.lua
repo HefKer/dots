@@ -2,190 +2,194 @@ local wezterm = require("wezterm")
 local act = wezterm.action
 
 local direction_keys = {
-  h = "Left",
-  j = "Down",
-  k = "Up",
-  l = "Right",
+	h = "Left",
+	j = "Down",
+	k = "Up",
+	l = "Right",
 }
 
 local function is_vim(pane)
-  return pane:get_user_vars().IS_NVIM == "true"
+	return pane:get_user_vars().IS_NVIM == "true"
 end
 
 local function is_claude(pane)
-  local proc = pane:get_foreground_process_name() or ""
-  if proc:find("claude") then return true end
-  local info = pane:get_foreground_process_info()
-  while info do
-    if info.name and info.name:find("claude") then return true end
-    info = info.children and next(info.children) and info.children[next(info.children)] or nil
-  end
-  return false
+	local proc = pane:get_foreground_process_name() or ""
+	if proc:find("claude") then
+		return true
+	end
+	local info = pane:get_foreground_process_info()
+	while info do
+		if info.name and info.name:find("claude") then
+			return true
+		end
+		info = info.children and next(info.children) and info.children[next(info.children)] or nil
+	end
+	return false
 end
 
 local function claude_or_scroll(key, direction)
-  return {
-    key = key,
-    mods = "ALT",
-    action = wezterm.action_callback(function(win, pane)
-      if is_claude(pane) then
-        win:perform_action({ SendKey = { key = key, mods = "ALT" } }, pane)
-      else
-        win:perform_action({ ScrollByLine = direction }, pane)
-      end
-    end),
-  }
+	return {
+		key = key,
+		mods = "ALT",
+		action = wezterm.action_callback(function(win, pane)
+			if is_claude(pane) then
+				win:perform_action({ SendKey = { key = key, mods = "ALT" } }, pane)
+			else
+				win:perform_action({ ScrollByLine = direction }, pane)
+			end
+		end),
+	}
 end
 
 local function claude_or_scroll_page(key, amount)
-  return {
-    key = key,
-    mods = "ALT",
-    action = wezterm.action_callback(function(win, pane)
-      if is_claude(pane) then
-        win:perform_action({ SendKey = { key = key, mods = "ALT" } }, pane)
-      else
-        win:perform_action({ ScrollByPage = amount }, pane)
-      end
-    end),
-  }
+	return {
+		key = key,
+		mods = "ALT",
+		action = wezterm.action_callback(function(win, pane)
+			if is_claude(pane) then
+				win:perform_action({ SendKey = { key = key, mods = "ALT" } }, pane)
+			else
+				win:perform_action({ ScrollByPage = amount }, pane)
+			end
+		end),
+	}
 end
 
 local function split_nav(resize_or_move, key)
-  local moveMod = "CTRL"
-  local resizeMod = "CTRL|ALT"
-  return {
-    key = key,
-    mods = resize_or_move == "resize" and resizeMod or moveMod,
-    action = wezterm.action_callback(function(win, pane)
-      if is_vim(pane) then
-        -- pass the keys through to vim/nvim
-        win:perform_action({
-          SendKey = { key = key, mods = resize_or_move == "resize" and resizeMod or moveMod },
-        }, pane)
-      else
-        if resize_or_move == "resize" then
-          win:perform_action({ AdjustPaneSize = { direction_keys[key], 3 } }, pane)
-        else
-          win:perform_action({ ActivatePaneDirection = direction_keys[key] }, pane)
-        end
-      end
-    end),
-  }
+	local moveMod = "CTRL"
+	local resizeMod = "CTRL|ALT"
+	return {
+		key = key,
+		mods = resize_or_move == "resize" and resizeMod or moveMod,
+		action = wezterm.action_callback(function(win, pane)
+			if is_vim(pane) then
+				-- pass the keys through to vim/nvim
+				win:perform_action({
+					SendKey = { key = key, mods = resize_or_move == "resize" and resizeMod or moveMod },
+				}, pane)
+			else
+				if resize_or_move == "resize" then
+					win:perform_action({ AdjustPaneSize = { direction_keys[key], 3 } }, pane)
+				else
+					win:perform_action({ ActivatePaneDirection = direction_keys[key] }, pane)
+				end
+			end
+		end),
+	}
 end
 
 local function activateTab(n)
-  return {
-    key = tostring(n),
-    mods = "ALT",
-    action = act.ActivateTab(n - 1),
-  }
+	return {
+		key = tostring(n),
+		mods = "ALT",
+		action = act.ActivateTab(n - 1),
+	}
 end
 
 local keys = {
-  {
-    key = "t",
-    mods = "ALT",
-    action = act.SpawnTab("CurrentPaneDomain"),
-  },
-  {
-    key = 'q',
-    mods = 'ALT',
-    action = wezterm.action.CloseCurrentTab { confirm = true },
-  },
-  {
-    key = "Space",
-    mods = "ALT",
-    action = act.QuickSelect,
-  },
-  {
-    key = "c",
-    mods = "ALT",
-    action = act.ActivateCopyMode,
-  },
-  {
-    key = "/",
-    mods = "ALT",
-    action = act.Search({ CaseInSensitiveString = "" }),
-  },
-  {
-    key = "\\",
-    mods = "ALT",
-    action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }),
-  },
-  {
-    key = "-",
-    mods = "ALT",
-    action = act.SplitVertical({ domain = "CurrentPaneDomain" }),
-  },
-  {
-    key = "h",
-    mods = "ALT",
-    action = act.ActivateTabRelative(-1),
-  },
-  {
-    key = "l",
-    mods = "ALT",
-    action = act.ActivateTabRelative(1),
-  },
-  claude_or_scroll("k", -1),
-  claude_or_scroll("j", 1),
-  claude_or_scroll_page("u", -0.5),
-  claude_or_scroll_page("d", 0.5),
-  {
-    key = "u",
-    mods = "CTRL|ALT",
-    action = act.ScrollByPage(-0.5),
-  },
-  {
-    key = "d",
-    mods = "CTRL|ALT",
-    action = act.ScrollByPage(0.5),
-  },
-  {
-    key = "b",
-    mods = "CTRL|ALT",
-    action = act.ScrollByPage(-1),
-  },
-  {
-    key = "f",
-    mods = "CTRL|ALT",
-    action = act.ScrollByPage(1),
-  },
-  {
-    key = "h",
-    mods = "ALT|SHIFT",
-    action = act.MoveTabRelative(-1),
-  },
-  {
-    key = "l",
-    mods = "ALT|SHIFT",
-    action = act.MoveTabRelative(1),
-  },
-  {
-    key = "l",
-    mods = "CTRL|SHIFT",
-    action = wezterm.action.DisableDefaultAssignment,
-  },
-  {
-    key = "k",
-    mods = "CTRL|SHIFT",
-    action = wezterm.action.DisableDefaultAssignment,
-  },
-  -- move between split panes
-  split_nav("move", "h"),
-  split_nav("move", "j"),
-  split_nav("move", "k"),
-  split_nav("move", "l"),
-  -- resize panes
-  split_nav("resize", "h"),
-  split_nav("resize", "j"),
-  split_nav("resize", "k"),
-  split_nav("resize", "l"),
+	{
+		key = "t",
+		mods = "ALT",
+		action = act.SpawnTab("CurrentPaneDomain"),
+	},
+	{
+		key = "q",
+		mods = "ALT",
+		action = wezterm.action.CloseCurrentTab({ confirm = true }),
+	},
+	{
+		key = "Space",
+		mods = "ALT",
+		action = act.QuickSelect,
+	},
+	{
+		key = "c",
+		mods = "ALT",
+		action = act.ActivateCopyMode,
+	},
+	{
+		key = "/",
+		mods = "ALT",
+		action = act.Search({ CaseInSensitiveString = "" }),
+	},
+	{
+		key = "\\",
+		mods = "ALT",
+		action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }),
+	},
+	{
+		key = "-",
+		mods = "ALT",
+		action = act.SplitVertical({ domain = "CurrentPaneDomain" }),
+	},
+	{
+		key = "h",
+		mods = "ALT",
+		action = act.ActivateTabRelative(-1),
+	},
+	{
+		key = "l",
+		mods = "ALT",
+		action = act.ActivateTabRelative(1),
+	},
+	claude_or_scroll("k", -1),
+	claude_or_scroll("j", 1),
+	claude_or_scroll_page("u", -0.5),
+	claude_or_scroll_page("d", 0.5),
+	{
+		key = "u",
+		mods = "CTRL|ALT",
+		action = act.ScrollByPage(-0.5),
+	},
+	{
+		key = "d",
+		mods = "CTRL|ALT",
+		action = act.ScrollByPage(0.5),
+	},
+	{
+		key = "b",
+		mods = "CTRL|ALT",
+		action = act.ScrollByPage(-1),
+	},
+	{
+		key = "f",
+		mods = "CTRL|ALT",
+		action = act.ScrollByPage(1),
+	},
+	{
+		key = "h",
+		mods = "ALT|SHIFT",
+		action = act.MoveTabRelative(-1),
+	},
+	{
+		key = "l",
+		mods = "ALT|SHIFT",
+		action = act.MoveTabRelative(1),
+	},
+	{
+		key = "l",
+		mods = "CTRL|SHIFT",
+		action = wezterm.action.DisableDefaultAssignment,
+	},
+	{
+		key = "k",
+		mods = "CTRL|SHIFT",
+		action = wezterm.action.DisableDefaultAssignment,
+	},
+	-- move between split panes
+	split_nav("move", "h"),
+	split_nav("move", "j"),
+	split_nav("move", "k"),
+	split_nav("move", "l"),
+	-- resize panes
+	split_nav("resize", "h"),
+	split_nav("resize", "j"),
+	split_nav("resize", "k"),
+	split_nav("resize", "l"),
 }
 
 for i = 1, 9 do
-  table.insert(keys, activateTab(i))
+	table.insert(keys, activateTab(i))
 end
 
 return keys
