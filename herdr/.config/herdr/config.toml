@@ -6,7 +6,15 @@ auto_switch = false
 default_shell = "fish"
 new_cwd = "follow"
 
+[session]
+resume_agents_on_restore = true
+
 [keys]
 prefix = "ctrl+space"
+goto = "prefix+space"
+new_tab = "prefix+t"
 split_vertical = "prefix+|"
 split_horizontal = "prefix+minus"
+copy_mode = "prefix+c"
+navigate_workspace_up = "k"
+navigate_workspace_down = "j"
