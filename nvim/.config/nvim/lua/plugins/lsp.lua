@@ -20,6 +20,7 @@ return {
         yamlls = {},
         pyright = {},
         jsonls = {},
+        nil_ls = { mason = false }, -- nil_ls provided by nix
       },
     },
   },
