@@ -103,6 +103,8 @@ if status is-interactive
     abbr -a st syncthing
     abbr -a C claude
     abbr -a CC claude -r
+    abbr -a CO 'claude --model opus'
+    abbr -a CS 'claude --model sonnet'
     abbr -a H herdr --session
 
     abbr -a rg 'rg -i'
