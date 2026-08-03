@@ -389,26 +389,6 @@
   "fadeToDpmsEnabled": true,
   "fadeToDpmsGracePeriod": 5,
   "launchPrefix": "",
-  "brightnessDevicePins": {},
-  "wifiNetworkPins": {
-    "preferredWifi": [
-      "KerFi 5.0",
-      "Galaxy S24 Ultra FF94",
-      "HCCprivate"
-    ]
-  },
-  "bluetoothDevicePins": {},
-  "audioInputDevicePins": {
-    "preferredInput": [
-      "alsa_input.usb-MOTU_M2_M2MT15A38F-00.HiFi__Mic1__source"
-    ]
-  },
-  "audioOutputDevicePins": {
-    "preferredOutput": [
-      "bluez_output.E8_7F_6B_E6_DF_98.1",
-      "bluez_output.F4_2B_8C_93_49_F5.1"
-    ]
-  },
   "gtkThemingEnabled": false,
   "qtThemingEnabled": false,
   "syncModeWithPortal": true,
@@ -829,5 +809,5 @@
   "barInsetPaddingShared": -1,
   "barInsetPaddingSyncAll": false,
   "frameBarInsetPadding": -1,
-  "configVersion": 12
+  "configVersion": 13
 }
