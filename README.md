@@ -26,9 +26,13 @@ stow -R -t ~ <pkg>
 | [`niri`](niri/) | [niri](https://github.com/YaLTeR/niri) Wayland compositor | `config.kdl` `include`s split files under `dms/` (binds, outputs, windowrules, …). Driven by DMS. |
 | [`DankMaterialShell`](DankMaterialShell/) | [DMS](https://github.com/AvengeMedia/DankMaterialShell) niri shell | Settings, themes, plugin metadata. |
 | [`nvim`](nvim/) | Neovim | [LazyVim](https://www.lazyvim.org/) base. User plugins in `lua/plugins/`, config in `lua/config/`. |
-| [`wezterm`](wezterm/) | [WezTerm](https://wezterm.org/) | `wezterm.lua` loads `keys.lua` + `dank-theme`.|
+| [`wezterm`](wezterm/) | [WezTerm](https://wezterm.org/) | `wezterm.lua` loads `keys.lua` and sets `color_scheme = "dank-theme"` from `colors/dank-theme.toml`. |
+| [`herdr`](herdr/) | [herdr](https://herdr.dev) agent multiplexer | `config.toml` only — see note below. |
 | [`qutebrowser`](qutebrowser/) | [qutebrowser](https://qutebrowser.org/) | Multi-file config split across `appearance`, `privacy`, `filepicker`, `binds`, `search_engines`. Themes under `themes/`. See deps below. |
-| [`mpv`](mpv/) | mpv | `mpv.conf` + `input.conf`. |
+| [`mpv`](mpv/) | [mpv](https://mpv.io/) | `mpv.conf` + `input.conf`. |
+
+> [!NOTE]
+> `~/.config/herdr/` is also herdr's runtime state dir (`*.sock`, `session.json`, logs), so only `config.toml` is stowed rather than the whole directory.
 
 ### Non-stow dirs
 
