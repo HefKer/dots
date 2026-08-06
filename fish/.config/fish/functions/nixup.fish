@@ -1,5 +1,5 @@
 function nixup --description "Check if a nixpkgs package (or all installed) has a newer version on a channel before rebuilding"
-    argparse a/all c/changed-only h/help -- $argv
+    argparse a/all u/up-to-date h/help -- $argv
     or return 1
 
     if set -q _flag_help; or begin; test (count $argv) -eq 0; and not set -q _flag_all; end
@@ -10,7 +10,7 @@ function nixup --description "Check if a nixpkgs package (or all installed) has 
         echo "  nixup neovim stable          # vs the current stable channel"
         echo "  nixup ripgrep nixos-25.05    # vs an explicit release channel"
         echo "  nixup --all                  # sweep all installed pkgs, unstable"
-        echo "  nixup -a -c stable           # sweep, list ONLY pkgs with a diff"
+        echo "  nixup -a -u stable           # sweep, also list up-to-date pkgs"
         echo ""
         echo "branch: unstable (default) | unstable-small | stable | master"
         echo "        | nixos-X<.YY> | any flake ref"
@@ -174,7 +174,7 @@ function nixup --description "Check if a nixpkgs package (or all installed) has 
         switch $dir
             case '=='
                 set n_same (math $n_same + 1)
-                set -q _flag_changed_only; and continue
+                set -q _flag_up_to_date; or continue
                 printf '  %-28s %s\n' $pn "$cur (up to date)"
             case '->'
                 set n_update (math $n_update + 1)
