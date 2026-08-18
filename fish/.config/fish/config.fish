@@ -105,7 +105,8 @@ if status is-interactive
     abbr -a CC claude -r
     abbr -a CO 'claude --model opus'
     abbr -a CS 'claude --model sonnet'
-    abbr -a H herdr --session
+    abbr -a H herdr
+    abbr -a HH herdr --session
 
     abbr -a rg 'rg -i'
     abbr -a ns 'nix search nixpkgs'
