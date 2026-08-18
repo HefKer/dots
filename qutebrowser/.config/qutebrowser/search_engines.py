@@ -38,6 +38,9 @@ c.url.searchengines = {
     "obsidian": "https://community.obsidian.md/search?q={}",
     "ob": "https://community.obsidian.md/search?q={}",
     "rmp": "https://www.ratemyprofessors.com/search/professors/2184?q={}",
+    # MTG
+    "mtg.cards": "https://moxfield.com/search/cards?q={}",
+    "mtg.decks": "https://moxfield.com/decks/public?q={}",
 }
 
 # Mute linter warnings
