@@ -23,7 +23,7 @@ c.url.searchengines = {
     "w": "https://www.wikipedia.org/w/index.php?search={}",
     "aw": "https://wiki.archlinux.org/?search={}",
     # Game wikis
-    "sv": "https://wiki.stardewvalley.net/mediawiki/index.php?search={}&title=Special%3ASearch&go=Go",
+    "sdv": "https://wiki.stardewvalley.net/mediawiki/index.php?search={}&title=Special%3ASearch&go=Go",
     # Shopping
     "amazon": "https://www.amazon.com/s?k={}",
     "amz": "https://www.amazon.com/s?k={}",
