@@ -86,9 +86,8 @@ config.bind(",b", "spawn --userscript qute-rbw")
 
 # --- [E]xternal Spawn Commands ---
 # [b]rowsers
-config.bind("ebf", "spawn firefox {url}")
-config.bind("ebz", "spawn zen-browser {url}")
-config.bind("ebb", "spawn brave {url}")
+config.bind("ebz", "spawn zen-beta {url}")
+config.bind("ebnz", "spawn zen-beta --blank-window {url}")
 config.bind("ebh", "spawn helium {url}")
 config.bind("ebnh", "spawn helium --new-window {url}")
 
