@@ -104,6 +104,16 @@ config.bind(
 )
 config.bind("emdF", "hint --rapid links spawn /home/hefker/.local/bin/ytdl {hint-url}")
 config.bind("emdd", "spawn wezterm -e /home/hefker/.local/bin/ytdl {url}")
+# [d]ownloads — act on the most recently downloaded file
+config.bind(
+    "edo",
+    "spawn --detach sh -c 'f=$(find ~/Downloads -maxdepth 1 -type f -printf \"%T@ %p\\n\" 2>/dev/null | sort -rn | head -1 | cut -d\" \" -f2-); [ -n \"$f\" ] && exec xdg-open \"$f\"'",
+)
+config.bind(
+    "edz",
+    "spawn --detach sh -c 'f=$(find ~/Downloads -maxdepth 1 -type f -printf \"%T@ %p\\n\" 2>/dev/null | sort -rn | head -1 | cut -d\" \" -f2-); [ -n \"$f\" ] && exec zathura \"$f\"'",
+)
+
 config.bind("ewlc", "spawn --userscript wl-clean")
 config.bind("ewlr", "spawn --userscript wl-hint-remove")
 
