@@ -90,6 +90,9 @@ config.bind("ebz", "spawn zen-beta {url}")
 config.bind("ebnz", "spawn zen-beta --blank-window {url}")
 config.bind("ebh", "spawn helium {url}")
 config.bind("ebnh", "spawn helium --new-window {url}")
+# [f]ollow a hinted link into a new browser window
+config.bind("ebfz", "hint links spawn zen-beta --blank-window {hint-url}")
+config.bind("ebfh", "hint links spawn helium --new-window {hint-url}")
 
 # Video binds ([m]pv)
 config.bind(
