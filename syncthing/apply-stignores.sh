@@ -8,6 +8,7 @@
 #   3. in ~/.claude, also ensures .claudeignore -> ~/dots/syncthing/.claudeignore
 #   4. if the root has no .stignore, writes one that #includes whichever of
 #      .stglobalignore / .claudeignore / .globalignore exist in that root
+#      (in ~/dots, also syncthing/.dotsignore, reachable by a relative path)
 #
 # Idempotent: never overwrites an existing .stignore, never clobbers symlinks.
 set -euo pipefail
@@ -51,6 +52,7 @@ for R in "${ROOTS[@]}"; do
   if [ ! -f "$si" ]; then
     {
       echo '#include .stglobalignore'
+      [ "$R" = "$DOTS" ] && echo '#include syncthing/.dotsignore'
       [ -e "$R/.claudeignore" ] && echo '#include .claudeignore'
       [ -e "$R/.globalignore" ] && echo '#include .globalignore'
     } > "$si"

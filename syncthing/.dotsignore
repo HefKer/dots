@@ -1,0 +1,30 @@
+// Dotfiles-root ignore patterns, shared across hosts.
+//
+// Included from ~/dots/.stignore via a folder-relative path:
+//     #include syncthing/.dotsignore
+//
+// Why a separate file: Syncthing never syncs .stignore, so a rule written there
+// lives on one host only. This file is committed, so a rule added here reaches
+// every host on the next git pull. Keep host-specific overrides in .stignore.
+//
+// Syntax: https://docs.syncthing.net/users/ignoring.html
+// Prefix: ! = include (override), (?d) = deletable
+
+// ===== Per-host, application-generated =====
+// DMS regenerates this from the compositor's live outputs, so each host must
+// keep its own copy. Syncing it gives the laptop the desktop's monitor layout.
+niri/.config/niri/dms/outputs.kdl
+
+// Backups left behind when DMS rewrites niri's config.
+(?d)niri/.config/niri/config.kdl.backup*
+
+// ===== DMS runtime state =====
+(?d)DankMaterialShell/.config/DankMaterialShell/.firstlaunch
+(?d)DankMaterialShell/.config/DankMaterialShell/.changelog-*
+// Plugin-manager state: git clones, their symlinks, and repo bookkeeping.
+// Not (?d) — re-cloning a plugin is not free, so never let a remote delete it.
+DankMaterialShell/.config/DankMaterialShell/plugins
+
+// ===== fish =====
+// Universal variables, rewritten at runtime and holding machine-local paths.
+fish/.config/fish/fish_variables

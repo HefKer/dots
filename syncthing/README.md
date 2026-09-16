@@ -10,6 +10,27 @@ folder still needs the file reachable by a relative path. Instead, every Syncthi
 folder root gets a symlink named `.stglobalignore` pointing at this file, and the
 folder's `.stignore` does `#include .stglobalignore`.
 
+## `.dotsignore` — rules for the dotfiles root
+
+`.stglobalignore` is shared by *every* folder, so it only holds patterns that
+make sense anywhere. Rules that name a path inside `~/dots` live in
+`.dotsignore` instead, included from `~/dots/.stignore` by a folder-relative
+path:
+
+```
+#include syncthing/.dotsignore
+```
+
+No symlink is needed here — unlike other folders, `~/dots` can reach
+`syncthing/` relatively. The file is committed, so a rule added on one host
+reaches the others on `git pull`; `.stignore` itself never syncs, so anything
+written directly there stays on one machine.
+
+This is where application-written state gets contained. The niri config
+directory is linked whole, so everything DMS writes lands in the dotfiles root
+by design — including `niri/dms/outputs.kdl`, which describes the monitors of
+whichever machine generated it and must not be shared.
+
 ## Per-host setup
 
 Assumes `~/dots` is cloned on the host. For each Syncthing folder root `<DIR>`:
