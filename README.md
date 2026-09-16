@@ -39,6 +39,20 @@ stow -R -t ~ <pkg>
 - [`syncthing/`](syncthing/) — Shared `.stglobalignore` across all Syncthing folders/hosts. Symlinked, not stowed — see [`syncthing/README.md`](syncthing/README.md).
 - [`screenshots/`](screenshots/) — Preview images.
 
+## Application-written state
+
+Config directories are stowed whole, so anything an application writes at
+runtime lands here too. That is contained with ignore rules rather than by
+stowing individual files:
+
+- **git** — `.gitignore`, so `git status` reports only what is authored here.
+- **Syncthing** — [`syncthing/.dotsignore`](syncthing/.dotsignore), so each host
+  keeps its own copy instead of receiving the other's.
+
+Both lists must stay in step. The load-bearing case is
+`niri/.config/niri/dms/outputs.kdl`: DMS regenerates it from the compositor's
+live outputs, so syncing it hands the laptop the desktop's monitor layout.
+
 ## Screenshots
 
 | qutebrowser (everforest) | menu |
