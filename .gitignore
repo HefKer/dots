@@ -3,8 +3,23 @@ __pycache__/
 
 # other
 *.backup*
+*.sync-conflict-*
 .stfolder/
 .stignore
+
+# Application-written state. These files live in the dotfiles root because the
+# config directories are linked whole; they are not authored here.
+
+# niri — DMS regenerates this from the live compositor, so it is per-host
+niri/.config/niri/dms/outputs.kdl
+
+# fish — universal variables, rewritten at runtime
+fish/.config/fish/fish_variables
+
+# DMS — upgrade markers and plugin-manager state (git clones, symlinks, meta)
+DankMaterialShell/.config/DankMaterialShell/.firstlaunch
+DankMaterialShell/.config/DankMaterialShell/.changelog-*
+DankMaterialShell/.config/DankMaterialShell/plugins/
 
 # qutebrowser
 autoconfig.yml
