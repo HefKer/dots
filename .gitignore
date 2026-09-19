@@ -30,3 +30,7 @@ quickmarks
 /qutebrowser/.config/qutebrowser/docs
 /helium
 /.stglobalignore
+
+# claude — the global ignore drops /.claude entirely; keep the repo-specific
+# skills, which are authored here
+!/.claude/skills/
