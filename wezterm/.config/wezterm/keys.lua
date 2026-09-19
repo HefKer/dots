@@ -9,7 +9,15 @@ local direction_keys = {
 }
 
 local function is_vim(pane)
-	return pane:get_user_vars().IS_NVIM == "true"
+	if pane:get_user_vars().IS_NVIM == "true" then
+		return true
+	end
+
+	-- Inside herdr the foreground process of this pane is herdr, not nvim, so
+	-- nvim's IS_NVIM user var never reaches wezterm and the keys would be eaten
+	-- here. Hand them to herdr and let it (and nvim inside it) decide.
+	local proc = pane:get_foreground_process_name()
+	return proc ~= nil and proc:gsub("\\", "/"):match("([^/]+)$") == "herdr"
 end
 
 -- Alt+j/k/u/d scrolling.
