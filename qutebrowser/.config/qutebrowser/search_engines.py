@@ -10,6 +10,7 @@ c.url.searchengines = {
     "yt": "https://www.youtube.com/results?search_query={}",
     "y": "https://www.youtube.com/results?search_query={}",
     "gh": "https://github.com/search?o=desc&q={}&s=stars",
+    "khan": "https://www.khanacademy.org/search?page_search_query={}&content_kinds=Article",
     # Packages
     "nix": "https://search.nixos.org/packages?channel=unstable&include_modular_service_options=1&include_nixos_options=1&query={}",
     "nur": "https://nur.nix-community.org/?query={}",
