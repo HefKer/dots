@@ -65,8 +65,7 @@ config.bind("ce", "config-edit")
 # Toggle dark mode for ONLY the current website and reload
 config.bind(
     ",tw",
-    "config-cycle -u {url} colors.webpage.darkmode.enabled true false",
-    # ",tw", "config-cycle -u {url} colors.webpage.darkmode.enabled true false ;; reload"
+    "config-cycle -u {url} colors.webpage.darkmode.enabled true false ;; reload",
 )
 
 
