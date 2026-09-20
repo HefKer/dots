@@ -37,6 +37,8 @@ stow -R -t ~ <pkg>
 ### Non-stow dirs
 
 - [`syncthing/`](syncthing/) — Shared `.stglobalignore` across all Syncthing folders/hosts. Symlinked, not stowed — see [`syncthing/README.md`](syncthing/README.md).
+- [`docs/`](docs/) — Written for agents working in this repo, not symlinked anywhere. [`agents/`](docs/agents/) says where issues live and how the triage labels and domain docs are read; [`adr/`](docs/adr/) records decisions that are hard to reverse.
+- [`.claude/`](.claude/) — Repo-specific Claude Code skills, one per package. The global ignore drops `/.claude` wholesale, so `.gitignore` re-includes `skills/` on its own.
 - [`screenshots/`](screenshots/) — Preview images.
 
 ## Application-written state
