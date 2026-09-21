@@ -47,6 +47,8 @@ abbr -a ff fastfetch
 abbr -a st syncthing
 abbr -a H herdr
 abbr -a HH herdr --session
+abbr -a HSL herdr session list
+abbr -a HSS herdr session stop
 abbr -a Y yazi
 abbr -a cdi zi
 abbr -a py python
