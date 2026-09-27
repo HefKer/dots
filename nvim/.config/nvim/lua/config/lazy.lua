@@ -34,6 +34,7 @@ require("lazy").setup({
   checker = {
     enabled = true, -- check for plugin updates periodically
     notify = false, -- notify on update
+    concurrency = 4, -- unbounded fetches flood nsncd and freeze nvim/fish (nixos-issues#46)
   }, -- automatically check for plugin updates
   performance = {
     rtp = {
