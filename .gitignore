@@ -20,6 +20,10 @@ fish/.config/fish/fish_variables
 DankMaterialShell/.config/DankMaterialShell/.firstlaunch
 DankMaterialShell/.config/DankMaterialShell/.changelog-*
 DankMaterialShell/.config/DankMaterialShell/plugins/
+# DMS — input.kdl is regenerated from settings.json on start; plugin_settings
+# holds a recentEmojis list that changes on every use. Both still sync.
+DankMaterialShell/.config/DankMaterialShell/plugin_settings.json
+niri/.config/niri/dms/input.kdl
 
 # qutebrowser
 autoconfig.yml
