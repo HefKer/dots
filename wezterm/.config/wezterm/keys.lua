@@ -59,14 +59,6 @@ local function split_nav(resize_or_move, key)
 	}
 end
 
-local function activateTab(n)
-	return {
-		key = tostring(n),
-		mods = "ALT",
-		action = act.ActivateTab(n - 1),
-	}
-end
-
 local keys = {
 	{
 		key = "t",
@@ -168,9 +160,5 @@ local keys = {
 	split_nav("resize", "k"),
 	split_nav("resize", "l"),
 }
-
-for i = 1, 9 do
-	table.insert(keys, activateTab(i))
-end
 
 return keys
