@@ -73,8 +73,6 @@ config.bind(
 config.bind(
     ",td", "config-cycle colors.webpage.darkmode.enabled true false ;; reload"
 )  # Toggle dark mode and reload the page automatically
-config.unbind("tt")
-config.unbind("tf")
 
 # --- Spawn configs in nvim ---
 config.bind("ce", "config-edit")
@@ -96,9 +94,6 @@ config.bind(
     ",ss", 'cmd-set-text :session-save -o "" ;; rl-backward-char'
 )  # -o saves only active window
 config.bind(",sd", 'cmd-set-text :session-delete "" ;; rl-backward-char')
-
-# --- User Scripts ---
-config.unbind(",b")  # qute-rbw, replaced by qutewarden (,q*)
 
 # --- [E]xternal Spawn Commands ---
 # [b]rowsers
