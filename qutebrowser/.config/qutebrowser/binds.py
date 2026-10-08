@@ -112,16 +112,25 @@ config.bind("emdd", "spawn wezterm -e /home/hefker/.local/bin/ytdl {url}")
 # [d]ownloads — act on the most recently downloaded file
 config.bind(
     "edo",
-    "spawn --detach sh -c 'f=$(find ~/Downloads -maxdepth 1 -type f -printf \"%T@ %p\\n\" 2>/dev/null | sort -rn | head -1 | cut -d\" \" -f2-); [ -n \"$f\" ] && exec xdg-open \"$f\"'",
+    'spawn --detach sh -c \'f=$(find ~/Downloads -maxdepth 1 -type f -printf "%T@ %p\\n" 2>/dev/null | sort -rn | head -1 | cut -d" " -f2-); [ -n "$f" ] && exec xdg-open "$f"\'',
 )
 config.bind(
     "edz",
-    "spawn --detach sh -c 'f=$(find ~/Downloads -maxdepth 1 -type f -printf \"%T@ %p\\n\" 2>/dev/null | sort -rn | head -1 | cut -d\" \" -f2-); [ -n \"$f\" ] && exec zathura \"$f\"'",
+    'spawn --detach sh -c \'f=$(find ~/Downloads -maxdepth 1 -type f -printf "%T@ %p\\n" 2>/dev/null | sort -rn | head -1 | cut -d" " -f2-); [ -n "$f" ] && exec zathura "$f"\'',
 )
 
 config.bind("ewlc", "spawn --userscript wl-clean")
 config.bind("ewlr", "spawn --userscript wl-hint-remove")
 
+## qutewarden
+config.bind(",qf", "spawn --userscript qutewarden fill")
+config.bind(",qt", "spawn --userscript qutewarden totp")
+config.bind(",qg", "spawn --userscript qutewarden generate")
+config.bind(",qv", "spawn --userscript qutewarden vault --vault-allow-copy")
+config.bind(",qu", "spawn --userscript qutewarden unlock")
+config.bind(",ql", "spawn --userscript qutewarden lock")
+config.bind(",qs", "spawn --userscript qutewarden sync")
+config.bind(",qS", "spawn --userscript qutewarden status")
 
 # Mute linter warnings
 # ruff: noqa: F821
