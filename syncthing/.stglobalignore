@@ -1,7 +1,7 @@
-# Syncthing global ignore patterns
-# Include from per-folder .stignore via:  #include ~/.stglobalignore
-# Syntax: https://docs.syncthing.net/users/ignoring.html
-# Prefix: ! = include (override), (?i) = case-insensitive, (?d) = deletable
+// Syncthing global ignore patterns
+// Include from per-folder .stignore via:  #include .stglobalignore
+// Syntax: https://docs.syncthing.net/users/ignoring.html
+// Prefix: ! = include (override), (?i) = case-insensitive, (?d) = deletable
 
 // ===== OS junk =====
 (?d).DS_Store
