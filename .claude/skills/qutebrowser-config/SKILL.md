@@ -24,10 +24,13 @@ Prefer `cs` over telling the user to restart.
 
 ## Removing a keybind
 
-Deleting a `config.bind()` line doesn't unbind the key — `cs` only applies what's in the file now, it doesn't diff against what a prior run left bound. The key stays live until explicitly unbound. So removal is two turns:
+`cs` rebuilds bindings from qutebrowser's defaults plus the config as it is now, so the key's default status decides the edit:
 
-1. Delete the `config.bind()` line and add `config.unbind("key")` in its place. Tell the user to `cs`.
-2. Once they confirm the `cs`, delete the `config.unbind()` line too — its job is done, and leaving it in is dead weight on every future `cs`.
+- **Custom key** (absent from the defaults): delete its `config.bind()` line; `cs` drops it. `config.unbind()` on such a key errors with `Can't find binding`.
+- **Default key overridden by the config** (e.g. `d`, `u`): deleting the line restores qutebrowser's default action.
+- **Default key to disable**: keep `config.unbind("key")` in the config permanently.
+
+The defaults are listed under `bindings.default` in `qute://help/settings.html`.
 
 ## Editor integration
 
