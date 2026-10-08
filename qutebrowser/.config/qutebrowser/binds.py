@@ -31,6 +31,26 @@ config.bind(";o", "hint outer")
 # Trigger file picker for drag-n-drop sites that hide their <input type=file>
 config.bind(";u", "jseval -q document.querySelector('input[type=file]')?.click()")
 # --- \testing ---
+# Hint a paragraph and drop the caret at its start (Tridactyl-style caret placement)
+# Source: https://github.com/vlify/qutebrowser-hint-caret
+c.hints.selectors["para"] = [
+    "p",
+    "li",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "blockquote",
+    "dd",
+    "dt",
+    "pre",
+    "td",
+    "th",
+    "figcaption",
+]
+config.bind("v", "hint para userscript caret-anchor")
 config.bind("<Ctrl-h>", "history")
 config.bind("cs", "config-source")
 config.bind("Q", "macro-record")

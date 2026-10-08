@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Source: https://github.com/vlify/qutebrowser-hint-caret (GPL-3.0-or-later)
+# Vendored at 60f5bfd9b6681b8f22b4874f6ffdb3533f1f8f75 — hint a paragraph, caret lands at its start.
+# caret-anchor v4: hint 选中段落 → 光标锚到段首 + 进 caret(默认光标态)
+#
+# 绑定: config.bind('v', 'hint para userscript caret-anchor')
+#
+# 通道: qutebrowser 原生 userscript(QUTE_*) → QUTE_FIFO 回发命令, 零 qutebrowser 包改动。
+#
+# ── 修复史(2026-09-25, 均为实测根因, 非推测) ──────────────────────────────
+# v2【命令串被击穿】页面文本内联进命令串 → 文本里的【换行】把一条 jseval 劈成多行,
+#    qute 逐行当命令执行 → 报 "no command given" / "第二行文本: no such command"。
+#    B 站评论区 与 Firefox help 页均由此触发; 也解释了"光标跳到网页开头"(选区没设上)。
+#    修法: 文本/标签改经 base64 传递(字符集 A-Za-z0-9+/=, 不含换行/引号/$/反斜杠)。
+#
+# v3【嵌套元素匹配失败】hint 给的元素常带嵌套子元素:
+#    <p id="contents"><span>正文</span><a href="...">搜索词</a>...</p>
+#    QUTE_SELECTED_TEXT 只是其中一段, 而 p.textContent 含全部子元素文本 → 长度不等。
+#    修法: 匹配改为【包含】, 多个候选时【取 textContent 最短者】(嵌套最深、最贴近所选文本)。
+#
+# v4【元素不在主文档】实测 B 站评论区: byId=null / inBodyText=false / containers=0,
+#    而 iframes=3。查询的根源是元素位于【shadow root】内 —— document.querySelectorAll
+#    看不到 shadow 树。qute 自己的 hint 能找到, 是因为它遍历了 shadow root
+#    (见 javascript/webelem.js funcs.find_css: 容器 = document + 同源 iframe + 所有
+#     open shadow root)。此处照抄同一套容器遍历逻辑。
+#    修法: 查找范围从 document 扩展为 [document, 同源 iframe 的 document, 所有 open
+#          shadow root(递归)]。⚠️ closed shadow root 是浏览器硬限制, qute 自身也拿不到。
+#
+# ── 核心机制(不变, 实测依据) ──────────────────────────────────────────────
+#   锚点用 Selection.setBaseAndExtent(node, 1, node, 0) 造【非空】选区:
+#     非空 → 过 caret.js setInitialCursor 的 `toString().length === 0` 判据, 光标不被甩回文首
+#     focus 端在段首 → caret 光标落段首
+#     非空 → caret.js 置 selectionState = NORMAL → 进模式即处于选择态
+#   随后折叠该单字符选区 + selection-toggle → 回到"默认只移光标, 按 v 才扩选"。
+#   Range 无方向, 故 createRange()+setStart(1)+setEnd(0) 不行(会被规范化成折叠选区)。
+set -uo pipefail
+
+TEXT="${QUTE_SELECTED_TEXT:-}"
+HTML="${QUTE_SELECTED_HTML:-}"
+FIFO="${QUTE_FIFO:-}"
+
+[ -n "$TEXT" ] && [ -n "$FIFO" ] && [ -e "$FIFO" ] || exit 0
+
+# 元素标签名, 从序列化 HTML 里取(如 "<dd>...</dd>" → "dd")
+TAG=$(printf '%s' "$HTML" | sed -n 's/^<\([a-zA-Z0-9]*\).*/\1/p')
+[ -n "$TAG" ] || TAG="*"
+
+# base64 传参: 不含换行/引号/$, 免疫命令串解析(见 v2 修复)
+TEXT_B64=$(printf '%s' "$TEXT" | base64 -w0)
+TAG_B64=$(printf '%s' "$TAG" | base64 -w0)
+
+# 定位元素并设非空选区。
+#   查找范围: document + 同源 iframe + 所有 open shadow root(照抄 webelem.js find_css)
+#   匹配: L1 全等 → L2 归一化全等 → L3 包含(取最短候选) → L4 包含(前缀退化)
+#   返回 ANCHORED / NOT_FOUND / NO_TEXT / ERR:...
+JS="jseval --world main (function(){try{var dec=function(s){return decodeURIComponent(escape(atob(s)));};var want=dec('${TEXT_B64}'),tag=dec('${TAG_B64}');var norm=function(s){return (s||'').replace(/[\u200b-\u200d\ufeff]/g,'').replace(/\s+/g,' ').trim();};var wn=norm(want),wt=want.trim();function roots(c){var r=[];var all;try{all=c.querySelectorAll('*');}catch(e){return r;}for(var i=0;i<all.length;i++){var sh=all[i].shadowRoot;if(sh){r.push(sh);var sub=roots(sh);for(var j=0;j<sub.length;j++)r.push(sub[j]);}}return r;}var cont=[document];for(var fi=0;fi<window.frames.length;fi++){try{var fd=window.frames[fi].document;if(fd)cont.push(fd);}catch(e){}}var rs=roots(document);for(var ri=0;ri<rs.length;ri++)cont.push(rs[ri]);var els=[];for(var ci=0;ci<cont.length;ci++){try{var list=cont[ci].querySelectorAll(tag);for(var li=0;li<list.length;li++)els.push(list[li]);}catch(e){}}var i,e,hit=null,c,clen,best,bestlen;for(i=0;i<els.length;i++){e=els[i];if(e.textContent.trim()===wt){hit=e;break;}}if(!hit){for(i=0;i<els.length;i++){e=els[i];if(norm(e.textContent)===wn){hit=e;break;}}}if(!hit&&wn){best=null;bestlen=0;for(i=0;i<els.length;i++){e=els[i];c=norm(e.textContent);if(c&&c.indexOf(wn)!==-1){clen=c.length;if(best===null||clen<bestlen){best=e;bestlen=clen;}}}hit=best;}if(!hit&&wn){best=null;bestlen=0;for(i=0;i<els.length;i++){e=els[i];c=norm(e.textContent);if(c&&c.indexOf(wn.slice(0,20))!==-1){clen=c.length;if(best===null||clen<bestlen){best=e;bestlen=clen;}}}hit=best;}if(!hit)return 'NOT_FOUND cont='+cont.length+' els='+els.length;var t=hit;while(t.firstChild){t=t.firstChild;if(t.nodeType===3)break;}if(t.nodeType!==3)t=hit;if(!t.textContent||!t.textContent.length)return 'NO_TEXT';var L=t.textContent.length;var s=window.getSelection();s.removeAllRanges();s.setBaseAndExtent(t,Math.min(1,L),t,0);return s.toString().length>0?'ANCHORED':'COLLAPSED';}catch(err){return 'ERR:'+err;}})()"
+
+# ③ 折叠掉那个用于"骗过 setInitialCursor 判据"的单字符选区:
+#    进 caret 后 setInitialCursor 已执行完, 此刻折叠不触发 positionCaret, 光标留段首且高亮消失。
+JS_COLLAPSE="jseval --world main (function(){try{var s=window.getSelection();if(!s.focusNode)return 'NOCUR';var n=s.focusNode,o=s.focusOffset;s.removeAllRanges();var r=document.createRange();r.setStart(n,o);r.collapse(true);s.addRange(r);return 'COLLAPSED';}catch(e){return 'ERR:'+e;}})()"
+
+# ④ 折叠后 caret 重新评估选区又把 state 置回 NORMAL, 故 toggle 轮转回 NONE
+{ printf '%s\n' "$JS"; printf '%s\n' "mode-enter caret"; printf '%s\n' "$JS_COLLAPSE"; printf '%s\n' "selection-toggle"; } > "$FIFO" 2> /dev/null
+
+exit 0
