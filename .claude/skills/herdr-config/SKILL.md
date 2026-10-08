@@ -17,17 +17,21 @@ herdr is packaged in NixOS — upgrade it in `~/nixos/`. Do **not** use the upst
 
 ## Applying and validating config changes
 
-Apply edits to a running server with:
+Each named session runs its own server, and a bare `herdr server reload-config` reaches only `default`. Apply edits to every running session:
 
 ```sh
-herdr server reload-config
+for s in $(herdr session list | awk 'NR>1 && $2=="running" {print $1}'); do
+  herdr --session "$s" server reload-config
+done
 ```
 
 Read the JSON `diagnostics` array in its output — that is the real validator. `herdr config check` will catch unknown keys but **not** invalid values, so a config that passes `config check` can still be wrong.
 
 ## Key syntax gotchas
 
-Verify these against the installed herdr version before relying on them — the schema has changed across releases.
+`herdr --default-config` prints the installed version's full schema: every bindable action with its default, including actions unset by default (commented `""`). Read it before searching docs or the binary.
+
+Verify these against that output — the schema has changed across releases.
 
 - The config table for bindings has been `[keys]`, not `[keybindings]`.
 - The pipe binding is written as the literal `prefix+|`.
