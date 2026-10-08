@@ -94,6 +94,9 @@ config.bind(
     ",ss", 'cmd-set-text :session-save -o "" ;; rl-backward-char'
 )  # -o saves only active window
 config.bind(",sd", 'cmd-set-text :session-delete "" ;; rl-backward-char')
+# Append a tab to a saved session without loading it (fuzzel picks the session)
+config.bind(",sa", "spawn --userscript session-append")
+config.bind(",sA", "hint links userscript session-append")  # a hinted link instead
 
 # --- [E]xternal Spawn Commands ---
 # [b]rowsers

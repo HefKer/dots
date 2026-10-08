@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""Append the current tab (or a hinted link) to a saved session without loading it.
+
+Usage:
+    :spawn --userscript session-append [NAME]
+    :hint links userscript session-append
+
+With no NAME, pick a session with fuzzel; typing a new name creates that session.
+The tab goes at the end of the session's last window.
+
+Session files are edited as text (no PyYAML on the system python): qutebrowser
+dumps keys sorted, so `tabs:` is the last key of the last window and appending
+indented lines to the end of the file extends that window's tab list.
+"""
+
+import datetime
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+
+def msg(level, text):
+    with open(os.environ["QUTE_FIFO"], "a") as fifo:
+        fifo.write(f"message-{level} {json.dumps('session-append: ' + text)}\n")
+
+
+def pick(sessions_dir):
+    names = sorted(
+        p.stem
+        for p in sessions_dir.glob("*.yml")
+        if not p.stem.startswith("_") and "sync-conflict" not in p.stem
+    )
+    result = subprocess.run(
+        ["fuzzel", "--dmenu", "--prompt", "append to session: "],
+        input="\n".join(names),
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def tab_yaml(url, title):
+    # JSON strings are valid YAML double-quoted scalars.
+    now = datetime.datetime.now().replace(microsecond=0).isoformat()
+    return (
+        "  - active: false\n"
+        "    history:\n"
+        "    - active: true\n"
+        f"      last_visited: '{now}'\n"
+        "      pinned: false\n"
+        f"      title: {json.dumps(title)}\n"
+        f"      url: {json.dumps(url)}\n"
+        "      zoom: 1.0\n"
+    )
+
+
+def ends_in_tab_list(text):
+    """True if the last window-level key in the file is `tabs:`."""
+    window_keys = re.findall(r"^  ([a-z_-]+):", text, flags=re.M)
+    return text.startswith("windows:\n") and window_keys[-1:] == ["tabs"]
+
+
+def main():
+    sessions_dir = Path(os.environ["QUTE_DATA_DIR"]) / "sessions"
+    name = sys.argv[1] if len(sys.argv) > 1 else pick(sessions_dir)
+    if not name:
+        return
+
+    url = os.environ["QUTE_URL"]
+    if os.environ.get("QUTE_MODE") == "hints":
+        title = os.environ.get("QUTE_SELECTED_TEXT", "").strip() or url
+    else:
+        title = os.environ.get("QUTE_TITLE") or url
+
+    path = sessions_dir / f"{name}.yml"
+    if path.exists():
+        text = path.read_text()
+        if not ends_in_tab_list(text):
+            msg("error", f"unexpected layout in {path.name}, not touching it")
+            return
+        text = text.rstrip("\n") + "\n"
+        # An empty last window is dumped as `tabs: []`; open it up as a block list.
+        if text.endswith("\n  tabs: []\n"):
+            text = text[: -len("[]\n")].rstrip() + "\n"
+        path.write_text(text + tab_yaml(url, title))
+        msg("info", f"added {title!r} to {name}")
+    else:
+        # qutebrowser indexes win["geometry"] directly; null means default geometry.
+        header = "windows:\n- active: true\n  geometry: null\n  tabs:\n"
+        path.write_text(header + tab_yaml(url, title))
+        msg("info", f"created session {name} with {title!r}")
+
+
+main()
