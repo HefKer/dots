@@ -14,6 +14,8 @@ config.set("content.cookies.store", True)
 c.content.blocking.enabled = True
 c.content.blocking.method = "both"  # "adblock" / "both"
 c.content.blocking.adblock.lists = [
+    "https://easylist.to/easylist/easylist.txt",
+    "https://easylist.to/easylist/easyprivacy.txt",
     "https://github.com/uBlockOrigin/uAssets/raw/master/filters/filters.txt",
     "https://github.com/uBlockOrigin/uAssets/raw/master/filters/quick-fixes.txt",
     "https://github.com/uBlockOrigin/uAssets/raw/master/filters/unbreak.txt",
@@ -26,11 +28,8 @@ c.content.blocking.adblock.lists = [
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/filters-2022.txt",
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/filters-2023.txt",
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/filters-2024.txt",
-    # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/badlists.txt",
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/annoyances.txt",
     "https://github.com/uBlockOrigin/uAssets/raw/master/filters/annoyances-others.txt",
-    # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/badlists.txt",
-    # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/quick-fixes.txt",
     # "https://github.com/uBlockOrigin/uAssets/raw/master/filters/resource-abuse.txt",
 ]
 
