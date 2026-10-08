@@ -52,7 +52,7 @@ c.hints.selectors["para"] = [
 ]
 config.bind("v", "hint para userscript caret-anchor")
 config.bind("<Ctrl-h>", "history")
-config.bind("cs", "config-source")
+config.bind("cs", "config-source --clear")  # --clear so deleted binds drop
 config.bind("Q", "macro-record")
 config.bind("q", "fake-key <Escape>")
 config.bind("<Alt-Esc>", "fake-key <Escape>")

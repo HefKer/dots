@@ -14,9 +14,9 @@ Themes are a Python package under `themes/`.
 ## Reload
 
 - `ce` → config-edit
-- `cs` → re-source the config without restarting the browser
+- `cs` → `config-source --clear`: resets every setting and binding to qutebrowser's defaults, then re-runs `config.py`. `config.py` loads `autoconfig.yml` first, so GUI-set settings survive the clear.
 
-Prefer `cs` over telling the user to restart.
+Prefer `cs` over telling the user to restart. Keep `--clear` on it: plain `config-source` layers the config onto the live state, so deleted or renamed binds linger until a restart.
 
 ## Don't hand-edit
 
@@ -24,7 +24,7 @@ Prefer `cs` over telling the user to restart.
 
 ## Removing a keybind
 
-`cs` rebuilds bindings from qutebrowser's defaults plus the config as it is now, so the key's default status decides the edit:
+Because `cs` clears first, it rebuilds bindings from qutebrowser's defaults plus the config as it is now, so the key's default status decides the edit:
 
 - **Custom key** (absent from the defaults): delete its `config.bind()` line; `cs` drops it. `config.unbind()` on such a key errors with `Can't find binding`.
 - **Default key overridden by the config** (e.g. `d`, `u`): deleting the line restores qutebrowser's default action.
