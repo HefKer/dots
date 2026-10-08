@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Syntax/format checks for staged config files. Enable with:
+#   git config core.hooksPath .githooks
+# Checks the working-tree copy of each staged file. Bypass with --no-verify.
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+fail=0
+run() {
+	if ! out=$("$@" 2>&1); then
+		printf '\n✗ %s\n%s\n' "$*" "$out"
+		fail=1
+	fi
+}
+
+while IFS= read -r f; do
+	case "$f" in
+	reference/*) ;;
+	*/colors/dms.lua) ;; # matugen output, not ours to format
+	*.lua) run stylua --check "$f" ;;
+	*.fish) run fish -n "$f" ;;
+	qutebrowser/*.py) run python3 -m py_compile "$f" ;;
+	*/greasemonkey/*.js) run node --check "$f" ;;
+	esac
+done <<<"$staged"
+
+grep -q '^niri/.*\.kdl$' <<<"$staged" && run niri validate -c niri/.config/niri/config.kdl
+grep -q '^herdr/.config/herdr/config.toml$' <<<"$staged" && run herdr config check
+
+exit $fail
