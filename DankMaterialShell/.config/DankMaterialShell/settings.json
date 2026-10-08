@@ -109,6 +109,7 @@
     }
   ],
   "osdPowerProfileEnabled": true,
+  "displayShowDisconnected": true,
   "barConfigs": [
     {
       "id": "default",
