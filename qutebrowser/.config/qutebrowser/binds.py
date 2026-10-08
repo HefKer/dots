@@ -53,19 +53,17 @@ config.bind(
 config.bind(
     ",td", "config-cycle colors.webpage.darkmode.enabled true false ;; reload"
 )  # Toggle dark mode and reload the page automatically
-for mode in ["true", "false"]:
-    config.bind(
-        f"t{mode[0]}", f"set -u {{url}} colors.webpage.darkmode.enabled {mode}"
-    )  # Custom function to toggle darkmode for the current domain
+config.unbind("tt")
+config.unbind("tf")
 
 # --- Spawn configs in nvim ---
 config.bind("ce", "config-edit")
 
 
-# Toggle dark mode for ONLY the current website and reload
+# Toggle dark mode for the current site (whole host, not just this page) and reload
 config.bind(
     ",tw",
-    "config-cycle -u {url} colors.webpage.darkmode.enabled true false ;; reload",
+    "config-cycle -u *://{url:host}/* colors.webpage.darkmode.enabled true false ;; reload",
 )
 
 
