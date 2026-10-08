@@ -21,6 +21,7 @@ c.confirm_quit = ["downloads"]
 c.spellcheck.languages = ["en-US"]
 c.downloads.location.directory = "~/Downloads"
 c.hints.scatter = False
+c.content.autoplay = False
 c.editor.command = [
     "wezterm",
     "start",
