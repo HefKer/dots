@@ -78,8 +78,7 @@ config.bind(
 config.bind(",sd", 'cmd-set-text :session-delete "" ;; rl-backward-char')
 
 # --- User Scripts ---
-# config.bind(",b", "spawn --userscript qute-bitwarden")
-config.bind(",b", "spawn --userscript qute-rbw")
+config.unbind(",b")  # qute-rbw, replaced by qutewarden (,q*)
 
 # --- [E]xternal Spawn Commands ---
 # [b]rowsers
