@@ -87,12 +87,13 @@ config.bind(
 
 # --- Sessions ---
 # Open cmd with quotes pre-filled, cursor moved inside via rl-backward-char
+config.bind(",sL", 'cmd-set-text :session-load "" ;; rl-backward-char')
 config.bind(
-    ",sl", 'cmd-set-text :session-load -c "" ;; rl-backward-char'
-)  # -c closes open windows on session load
+    ",sl", 'cmd-set-text :session-load --delete "" ;; rl-backward-char'
+)  # --delete deletes saved session once loaded
 config.bind(
-    ",ss", 'cmd-set-text :session-save -o "" ;; rl-backward-char'
-)  # -o saves only active window
+    ",ss", 'cmd-set-text :session-save --only-active-window "" ;; rl-backward-char'
+)
 config.bind(",sd", 'cmd-set-text :session-delete "" ;; rl-backward-char')
 # Append a tab to a saved session without loading it (fuzzel picks the session)
 config.bind(",sa", "spawn --userscript session-append")
