@@ -21,7 +21,15 @@ c.confirm_quit = ["downloads"]
 c.spellcheck.languages = ["en-US"]
 c.downloads.location.directory = "~/Downloads"
 c.hints.scatter = False
-c.editor.command = ["wezterm", "start", "--always-new-process", "--", "nvim", "{}"]
+c.editor.command = [
+    "wezterm",
+    "start",
+    "--always-new-process",
+    "--",
+    "nvim",
+    "+call cursor({line}, {column})",
+    "{file}",
+]
 
 # Change start and default page
 # Default: https://start.duckduckgo.com/
