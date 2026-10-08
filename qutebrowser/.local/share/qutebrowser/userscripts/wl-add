@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Add the current video (or a hinted video link) to YouTube's Watch later.
+
+Usage:
+    :spawn --userscript wl-add
+    :hint yt-video userscript wl-add
+
+Calls YouTube's internal API (youtubei edit_playlist on the "WL" playlist) from
+the current tab, authenticated with the page's own SAPISID cookie — no menu
+clicking. The public Data API can't touch Watch later. The tab must be on
+youtube.com, since the request has to be same-origin to carry the cookies.
+"""
+
+import json
+import os
+import re
+import tempfile
+from urllib.parse import parse_qs, urlparse
+
+
+def msg(level, text):
+    with open(os.environ["QUTE_FIFO"], "a") as fifo:
+        fifo.write(f"message-{level} {json.dumps('wl-add: ' + text)}\n")
+
+
+def video_id(url):
+    u = urlparse(url)
+    if u.hostname == "youtu.be":
+        return u.path.strip("/").split("/")[0] or None
+    if u.hostname and u.hostname.endswith("youtube.com"):
+        if v := parse_qs(u.query).get("v"):
+            return v[0]
+        if m := re.match(r"/(?:shorts|live|embed)/([\w-]{11})", u.path):
+            return m.group(1)
+    return None
+
+
+JS = r"""
+(async () => {
+    const toast = (text, ok) => {
+        const el = document.createElement('div');
+        el.textContent = 'wl-add: ' + text;
+        Object.assign(el.style, {
+            position: 'fixed', bottom: '24px', right: '24px', zIndex: 2147483647,
+            padding: '8px 14px', borderRadius: '6px', font: '14px sans-serif',
+            color: '#fff', background: ok ? '#2e7d32' : '#c62828',
+        });
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 2500);
+    };
+    try {
+        if (!location.hostname.endsWith('youtube.com') || typeof ytcfg === 'undefined') {
+            return toast('current tab must be a youtube.com page', false);
+        }
+        const cookie = name => document.cookie.match('(?:^|; )' + name + '=([^;]*)')?.[1];
+        const sapisid = cookie('SAPISID') || cookie('__Secure-3PAPISID');
+        if (!sapisid) return toast('not logged in', false);
+
+        const ts = Math.floor(Date.now() / 1000);
+        const digest = await crypto.subtle.digest(
+            'SHA-1', new TextEncoder().encode(`${ts} ${sapisid} ${location.origin}`));
+        const hash = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+
+        const res = await fetch(
+            `/youtubei/v1/browse/edit_playlist?key=${ytcfg.get('INNERTUBE_API_KEY')}&prettyPrint=false`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `SAPISIDHASH ${ts}_${hash}`,
+                'X-Origin': location.origin,
+                'X-Goog-AuthUser': ytcfg.get('SESSION_INDEX') ?? '0',
+                'X-Youtube-Client-Name': String(ytcfg.get('INNERTUBE_CONTEXT_CLIENT_NAME')),
+                'X-Youtube-Client-Version': ytcfg.get('INNERTUBE_CLIENT_VERSION'),
+            },
+            body: JSON.stringify({
+                context: ytcfg.get('INNERTUBE_CONTEXT'),
+                playlistId: 'WL',
+                actions: [{ action: 'ACTION_ADD_VIDEO', addedVideoId: VIDEO_ID }],
+            }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.status === 'STATUS_SUCCEEDED') toast('saved ' + VIDEO_ID, true);
+        else toast(`failed (HTTP ${res.status}) ` + (data.error?.message ?? ''), false);
+    } catch (e) {
+        toast('error: ' + e, false);
+    }
+})();
+"""
+
+
+def main():
+    url = os.environ.get("QUTE_URL", "")
+    vid = video_id(url)
+    if not vid:
+        msg("error", f"no video id in {url}")
+        return
+    fd, path = tempfile.mkstemp(prefix="wl-add-", suffix=".js")
+    with os.fdopen(fd, "w") as f:
+        f.write(JS.replace("VIDEO_ID", json.dumps(vid)))
+    # Main world: ytcfg is a page global, invisible from the isolated world.
+    with open(os.environ["QUTE_FIFO"], "a") as fifo:
+        fifo.write(f"jseval -q -w main -f {path}\n")
+
+
+main()

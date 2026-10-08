@@ -129,8 +129,32 @@ config.bind("emdd", "spawn wezterm -e /home/hefker/.local/bin/ytdl {url}")
 config.bind("edo", "download-open")
 config.bind("edz", "download-open zathura {}")
 
-config.bind("ewlc", "spawn --userscript wl-clean")
-config.bind("ewlr", "spawn --userscript wl-hint-remove")
+# [y]outube [w]atch later — [a]dd, hinted [f], [c]lean downloaded, [r]emove hinted
+config.bind("eywc", "spawn --userscript wl-clean")
+config.bind("eywr", "spawn --userscript wl-hint-remove")
+c.hints.selectors["yt-video"] = ['a[href*="/watch?v="]', 'a[href*="/shorts/"]']
+config.bind("eywa", "spawn --userscript wl-add")
+config.bind("eywf", "hint yt-video userscript wl-add")
+
+# [r]eddit — save a post (current page or hinted post link)
+c.hints.selectors["reddit-post"] = ['a[href*="/comments/"]']
+config.bind("ers", "spawn --userscript reddit-save")
+config.bind("erf", "hint reddit-post userscript reddit-save")
+
+
+# Playback speed of the page's video; mirrors YouTube's own >/< keys
+def video_speed(expr):
+    return (
+        "jseval (v => v ? 'speed ' + (v.playbackRate = "
+        + expr
+        + ") + 'x' : 'no video')"
+        "(document.querySelector('#movie_player video') || document.querySelector('video'))"
+    )
+
+
+config.bind("<Alt-.>", video_speed("Math.min(4, v.playbackRate + 0.25)"))
+config.bind("<Alt-,>", video_speed("Math.max(0.25, v.playbackRate - 0.25)"))
+config.bind("<Alt-/>", video_speed("1"))
 
 ## qutewarden
 config.bind(",qf", "spawn --userscript qutewarden fill")

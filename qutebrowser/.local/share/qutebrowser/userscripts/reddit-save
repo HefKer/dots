@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Save the current Reddit post (or a hinted post link) to your saved items.
+
+Usage:
+    :spawn --userscript reddit-save
+    :hint reddit-post userscript reddit-save
+
+The post id comes from the URL (/comments/<id>/ or redd.it/<id>), so nothing is
+clicked: the current tab POSTs /api/save with the modhash from /api/me.json,
+riding the logged-in session. The tab must be on reddit.com for the cookies to
+go along. Share links (/r/<sub>/s/<code>) carry no id — open them first.
+"""
+
+import json
+import os
+import re
+import tempfile
+from urllib.parse import urlparse
+
+
+def msg(level, text):
+    with open(os.environ["QUTE_FIFO"], "a") as fifo:
+        fifo.write(f"message-{level} {json.dumps('reddit-save: ' + text)}\n")
+
+
+def post_id(url):
+    u = urlparse(url)
+    if u.hostname == "redd.it":
+        return u.path.strip("/").split("/")[0] or None
+    if u.hostname and u.hostname.endswith("reddit.com"):
+        if m := re.search(r"/comments/([a-z0-9]+)", u.path):
+            return m.group(1)
+    return None
+
+
+JS = r"""
+(async () => {
+    const toast = (text, ok) => {
+        const el = document.createElement('div');
+        el.textContent = 'reddit-save: ' + text;
+        Object.assign(el.style, {
+            position: 'fixed', bottom: '24px', right: '24px', zIndex: 2147483647,
+            padding: '8px 14px', borderRadius: '6px', font: '14px sans-serif',
+            color: '#fff', background: ok ? '#2e7d32' : '#c62828',
+        });
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 2500);
+    };
+    try {
+        if (!location.hostname.endsWith('reddit.com')) {
+            return toast('current tab must be a reddit.com page', false);
+        }
+        const me = await fetch('/api/me.json', { credentials: 'include' }).then(r => r.json());
+        const uh = me.data?.modhash;
+        if (!uh) return toast('not logged in', false);
+
+        const res = await fetch('/api/save', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Modhash': uh },
+            body: new URLSearchParams({ id: 't3_' + POST_ID, uh }),
+        });
+        if (res.ok) toast('saved ' + POST_ID, true);
+        else toast(`failed (HTTP ${res.status})`, false);
+    } catch (e) {
+        toast('error: ' + e, false);
+    }
+})();
+"""
+
+
+def main():
+    url = os.environ.get("QUTE_URL", "")
+    pid = post_id(url)
+    if not pid:
+        msg("error", f"no post id in {url}")
+        return
+    fd, path = tempfile.mkstemp(prefix="reddit-save-", suffix=".js")
+    with os.fdopen(fd, "w") as f:
+        f.write(JS.replace("POST_ID", json.dumps(pid)))
+    with open(os.environ["QUTE_FIFO"], "a") as fifo:
+        fifo.write(f"jseval -q -f {path}\n")
+
+
+main()
