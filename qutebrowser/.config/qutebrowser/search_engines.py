@@ -44,7 +44,7 @@ c.url.searchengines = {
     "mtg.decks": "https://moxfield.com/decks/public?q={}",
     # osu!
     "om": "https://osu.ppy.sh/beatmapsets?q={}",
-    "ou": "https://osu.ppy.sh/home/search?mode=user&query={}",
+    "ou": "https://osu.ppy.sh/users/{}",
 }
 
 # Mute linter warnings

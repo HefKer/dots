@@ -56,6 +56,7 @@ abbr -a wifi impala
 abbr -a taskman btop
 abbr -a bt bluetui
 abbr -a bluetooth bluetui
+abbr -a vol wiremix
 
 # Search
 abbr -a rg 'rg -i'
