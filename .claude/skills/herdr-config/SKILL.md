@@ -1,15 +1,15 @@
 ---
 name: herdr-config
-description: Edit the herdr config in this dotfiles repo (herdr/.config/herdr/config.toml) — what is safe to stow, how to apply changes to a running server, and how to validate them. Use when editing herdr's config.toml, adding or changing herdr keybindings, or stowing/restowing the herdr package. Not for driving herdr itself (that is the vendor `herdr` skill).
+description: Edit the herdr config in this dotfiles repo (herdr/.config/herdr/config.toml) — what is safe to link, how to apply changes to a running server, and how to validate them. Use when editing herdr's config.toml, adding or changing herdr keybindings, or changing which herdr files are linked into $HOME. Not for driving herdr itself (that is the vendor `herdr` skill).
 ---
 
 # herdr config (dots)
 
-## Stow safety
+## Link safety
 
-Only `config.toml` is stowed. `~/.config/herdr/` is also herdr's **runtime state directory** — it holds `*.sock`, `*.log`, `session.json`, `release-notes.json`.
+Only `config.toml` is linked, by home-manager's link set in `~/nixos/main/homes/modules/dotfiles.nix`. `~/.config/herdr/` is also herdr's **runtime state directory** — it holds `*.sock`, `*.log`, `session.json`, `release-notes.json`.
 
-**Never stow the whole `~/.config/herdr/` dir.** Add individual files to `herdr/.config/herdr/` in this repo instead.
+**Never link the whole `~/.config/herdr/` dir.** Add individual files to `herdr/.config/herdr/` in this repo, each with its own entry in the link set.
 
 ## Upgrading herdr
 

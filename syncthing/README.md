@@ -2,10 +2,10 @@
 
 Single-source `.stglobalignore` shared across all Syncthing folders on all hosts.
 
-## Why not stow
+## Why not a home-manager link
 
 Syncthing's `#include` directive resolves **relative to the folder root** — absolute
-paths and `~` are not supported. Stowing to `~/.stglobalignore` wouldn't help; each
+paths and `~` are not supported. Linking it to `~/.stglobalignore` wouldn't help; each
 folder still needs the file reachable by a relative path. Instead, every Syncthing
 folder root gets a symlink named `.stglobalignore` pointing at this file, and the
 folder's `.stignore` does `#include .stglobalignore`.
