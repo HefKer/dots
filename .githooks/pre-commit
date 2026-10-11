@@ -28,4 +28,11 @@ done <<<"$staged"
 grep -q '^niri/.*\.kdl$' <<<"$staged" && run niri validate -c niri/.config/niri/config.kdl
 grep -q '^herdr/.config/herdr/config.toml$' <<<"$staged" && run herdr config check
 
+# A .gitignore rule has no effect on a file git already tracks; untrack it with git rm --cached.
+tracked_ignored=$(git ls-files --cached --ignored --exclude-per-directory=.gitignore)
+if [ -n "$tracked_ignored" ]; then
+	printf '\n✗ tracked but matched by .gitignore (git rm --cached them):\n%s\n' "$tracked_ignored"
+	fail=1
+fi
+
 exit $fail
