@@ -4,3 +4,4 @@
 reference/
 /.claude
 /.scratch
+**/.claude/settings.local.json
