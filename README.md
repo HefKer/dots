@@ -22,7 +22,7 @@ The links are **out-of-store symlinks**: `~/.config/<app>` resolves to this
 directory, not to a copy in the Nix store. Editing a file here takes effect
 immediately, with no rebuild, and applications that rewrite their own config
 keep working. That is deliberate — store copies were considered and rejected
-for machines I sit at, so don't "fix" it. See
+for machines I sit at, so don't "fix" it. See the NixOS config's
 [ADR-0001](https://github.com/HefKer/nixos-config/blob/main/docs/adr/0001-dotfiles-wired-by-home-manager-as-out-of-store-symlinks.md) for the reasoning and the
 [glossary](https://github.com/HefKer/nixos-config/blob/main/GLOSSARY.md) for the terms.
 
@@ -57,6 +57,7 @@ destroys a file-level link.
 ### Unlinked dirs
 
 - [`syncthing/`](syncthing/) — Shared `.stglobalignore` across all Syncthing folders/hosts. Not in the link set; placed by hand per Syncthing folder — see [`syncthing/README.md`](syncthing/README.md).
+- [`helium/`](helium/) — Browser extension settings (vimiumc), imported by hand in the browser rather than linked.
 - [`docs/`](docs/) — Written for agents working in this repo, not symlinked anywhere. [`agents/`](docs/agents/) says where issues live and how the triage labels and domain docs are read; [`adr/`](docs/adr/) records decisions that are hard to reverse.
 - [`.claude/`](.claude/) — Repo-specific Claude Code skills, one per package. The global ignore drops `/.claude` wholesale, so `.gitignore` re-includes `skills/` on its own.
 - [`.githooks/`](.githooks/) — Pre-commit syntax/format checks for staged configs (stylua, `fish -n`, `niri validate`, …). Enable once per clone with `git config core.hooksPath .githooks`.
