@@ -1,0 +1,14 @@
+// Per-host niri settings for desktop: two 1080p screens at scale 1, a mouse.
+// Linked to ~/.config/niri-host.kdl by the nixos flake; config.kdl includes that name.
+
+layout {
+    gaps 16
+
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+    }
+
+    default-column-width { proportion 0.5; }
+}

@@ -1,0 +1,22 @@
+// Per-host niri settings for lenovo: a small panel at scale 1.75, a touchpad.
+// Linked to ~/.config/niri-host.kdl by the nixos flake; config.kdl includes that name.
+
+input {
+    touchpad {
+        tap
+        natural-scroll
+        dwt
+    }
+}
+
+layout {
+    gaps 8
+
+    preset-column-widths {
+        proportion 0.5
+        proportion 0.75
+        proportion 1.0
+    }
+
+    default-column-width { proportion 1.0; }
+}
