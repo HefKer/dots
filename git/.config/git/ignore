@@ -1,0 +1,6 @@
+.stglobalignore
+.stignore
+.stfolder/
+reference/
+/.claude
+/.scratch

@@ -1,0 +1,9 @@
+[user]
+	name = hefker
+	email = nelsonjulioaviles@gmail.com
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = false
