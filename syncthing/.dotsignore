@@ -5,7 +5,7 @@
 //
 // Why a separate file: Syncthing never syncs .stignore, so a rule written there
 // lives on one host only. This file is committed, so a rule added here reaches
-// every host on the next git pull. Keep host-specific overrides in .stignore.
+// every host through Syncthing, .git included. Keep host-specific overrides in .stignore.
 //
 // Syntax: https://docs.syncthing.net/users/ignoring.html
 // Prefix: ! = include (override), (?d) = deletable

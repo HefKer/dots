@@ -22,9 +22,9 @@ path:
 ```
 
 No symlink is needed here — unlike other folders, `~/dots` can reach
-`syncthing/` relatively. The file is committed, so a rule added on one host
-reaches the others on `git pull`; `.stignore` itself never syncs, so anything
-written directly there stays on one machine.
+`syncthing/` relatively. Syncthing syncs `~/dots` whole, `.git` included, so a
+rule added on one host reaches the others with no `git pull`; `.stignore` itself
+never syncs, so anything written directly there stays on one machine.
 
 This is where application-written state gets contained. The niri config
 directory is linked whole, so everything DMS writes lands in the dotfiles root
@@ -63,8 +63,9 @@ Assumes `~/dots` is cloned on the host. For each Syncthing folder root `<DIR>`:
 
 ## Editing `.stglobalignore`
 
-Edit `~/dots/syncthing/.stglobalignore` directly. Commit + push from any host;
-other hosts pick it up on `git pull`. No symlink retargeting needed.
+Edit `~/dots/syncthing/.stglobalignore` directly and commit from any host.
+Syncthing carries the file and the commit to the other hosts; there is nothing
+to pull. No symlink retargeting needed.
 
 ## Removing from a host
 
