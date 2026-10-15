@@ -39,7 +39,7 @@ abbr -a CC claude -r
 abbr -a CO 'claude --model opus'
 abbr -a CS 'claude --model sonnet'
 abbr -a CF 'claude --model fable'
-abbr -a CH 'claude --model haiku'
+abbr -a CH claude-hulio
 
 # CLI programs
 abbr -a n nvim
