@@ -14,12 +14,14 @@ function claude --description 'claude-code, behind the launch guard, with the hu
     # The hulio account shares the main account's settings.json, plus its own
     # settings.override.json on top. Claude refuses to write through a symlink,
     # so the merge is a real file, rebuilt every launch: edit the override, not
-    # settings.json. jq's * merges objects deeply but replaces arrays wholesale,
+    # settings.json -- a change Claude saves there (/config, /model) is lost on
+    # the next launch. jq's * merges objects deeply but replaces arrays wholesale,
     # so an override touching permissions.allow replaces the whole list. Written
     # to a temp file and moved into place, so a failed merge keeps the last one.
     if test "$CLAUDE_CONFIG_DIR" = $HOME/.claude-hulio
         set -l tmp (mktemp $CLAUDE_CONFIG_DIR/settings.json.XXXXXX)
         if test -n "$tmp"; and jq -s '.[0] * .[1]' $HOME/.claude/settings.json $CLAUDE_CONFIG_DIR/settings.override.json >$tmp
+            chmod 644 $tmp
             command mv -f $tmp $CLAUDE_CONFIG_DIR/settings.json
         else
             test -n "$tmp"; and command rm -f $tmp
