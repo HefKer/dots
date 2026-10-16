@@ -1,0 +1,5 @@
+#!/bin/sh
+# Uploads Git LFS objects (wallpapers/) before the push, or GitHub gets pointers with no content.
+# Only pre-push is installed: LFS's post-checkout/commit/merge hooks serve file locking, which this repo doesn't use.
+command -v git-lfs >/dev/null 2>&1 || { printf >&2 '\ngit-lfs not found on PATH; this repo stores wallpapers/ in Git LFS.\n\n'; exit 2; }
+git lfs pre-push "$@"
