@@ -82,10 +82,12 @@ config.bind(
 config.bind("ce", "config-edit")
 
 
-# Toggle dark mode for the current site (whole host, not just this page) and reload
+# Toggle dark mode for the current site (whole host, not just this page) and reload.
+# false comes first: a host with no override reads as unset, and config-cycle
+# then picks the first value, so true-first made the first press a no-op.
 config.bind(
     ",tw",
-    "config-cycle -u *://{url:host}/* colors.webpage.darkmode.enabled true false ;; reload",
+    "config-cycle -u *://{url:host}/* colors.webpage.darkmode.enabled false true ;; reload",
 )
 
 

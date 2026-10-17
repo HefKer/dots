@@ -16,7 +16,11 @@ c.scrolling.bar = "never"
 ## --- dark mode setup ---
 c.colors.webpage.darkmode.enabled = True
 c.colors.webpage.darkmode.algorithm = "lightness-cielab"
-c.colors.webpage.darkmode.policy.images = "never"
+c.colors.webpage.darkmode.policy.images = "smart"  # invert icons/logos, leave photos
+# Leave already-dark backgrounds alone instead of flipping them light
+c.colors.webpage.darkmode.threshold.background = 205
+# Ask sites for their native dark theme; Chromium skips its filter on pages that declare one
+c.colors.webpage.preferred_color_scheme = "dark"
 config.set("colors.webpage.darkmode.enabled", False, "file://*")
 
 ## --- fonts ---
