@@ -10,6 +10,14 @@ config.set("content.cookies.accept", "all")  # Options: all, no-3rdparty
 config.set("content.cookies.store", True)
 # config.set("content.javascript.enabled", False) # tsh keybind to toggle
 
+# Brave Search's bot check keeps re-flagging the stock QtWebEngine UA, which
+# reports an old Chromium major; present as current desktop Chrome instead.
+config.set(
+    "content.headers.user_agent",
+    "Mozilla/5.0 ({os_info}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+    "https://search.brave.com/*",
+)
+
 # Adblocking
 c.content.blocking.enabled = True
 c.content.blocking.method = "both"  # "adblock" / "both"
