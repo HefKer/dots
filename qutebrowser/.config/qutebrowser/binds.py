@@ -57,6 +57,8 @@ config.bind("cc", "config-source --clear")  # --clear so deleted binds drop
 config.bind("cb", "bookmarks-reload")
 config.bind("cm", "quickmarks-reload")
 config.bind("cg", "greasemonkey-reload")
+# refresh the adblock lists and regenerate the uBO scriptlets qutebrowser's adblock skips
+config.bind("cu", "adblock-update ;; spawn --userscript ubo-scriptlets")
 config.bind("Q", "macro-record")
 config.bind("q", "fake-key <Escape>")
 config.bind("<Alt-Esc>", "fake-key <Escape>")

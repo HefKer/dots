@@ -1,0 +1,426 @@
+#!/usr/bin/env python3
+"""Port uBlock Origin's popup scriptlets from the adblock lists into a greasemonkey script.
+
+Usage:
+    :spawn --userscript ubo-scriptlets
+    ubo-scriptlets            (outside qutebrowser; prints instead of messaging)
+
+qutebrowser's adblock applies only the network rules of the lists in privacy.py; it
+skips every scriptlet (##+js) line. uBO stops popunders and the tab redirects that come
+with them through two of those scriptlets, so this script reads the same lists,
+extracts every `nowoif` and `set-cookie` rule, and writes them into one greasemonkey
+script. That script runs on every page but acts only on the hosts the rules name.
+
+The lists are read from the `c.content.blocking.adblock.lists` assignment in
+privacy.py, following uBO's `!#include` and `!#if` directives the way desktop
+Chromium uBO would. The output goes to qutebrowser's data dir, beside the adblock
+cache, since it is regenerated state rather than config.
+"""
+
+import ast
+import json
+import os
+import re
+import sys
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib.parse import urljoin
+
+CONFIG_DIR = Path(os.environ.get("QUTE_CONFIG_DIR", "~/.config/qutebrowser")).expanduser()
+DATA_DIR = Path(os.environ.get("QUTE_DATA_DIR", "~/.local/share/qutebrowser")).expanduser()
+OUTPUT = DATA_DIR / "greasemonkey" / "ubo-scriptlets.js"
+LISTS_TARGET = "c.content.blocking.adblock.lists"
+
+# uBO's `!#if` tokens as desktop Chromium uBO sets them; any other token is false
+TRUE_TOKENS = {"ext_ublock", "env_chromium", "cap_user_stylesheet"}
+
+SCRIPTLETS = {
+    "nowoif": "nowoif",
+    "no-window-open-if": "nowoif",
+    "window.open-defuser": "nowoif",
+    "set-cookie": "set-cookie",
+}
+
+SCRIPTLET_RE = re.compile(r"^(.*?)(#@?#)\+js\((.*)\)$")
+HOST_RE = re.compile(r"^[a-z0-9.*_-]+$")
+
+
+def message(level, text):
+    fifo = os.environ.get("QUTE_FIFO")
+    if fifo:
+        with open(fifo, "w") as f:
+            f.write(f"message-{level} {json.dumps(text)}\n")
+    else:
+        print(text, file=sys.stderr if level == "error" else sys.stdout)
+
+
+def read_list_urls():
+    tree = ast.parse((CONFIG_DIR / "privacy.py").read_text())
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(
+            ast.unparse(t) == LISTS_TARGET for t in node.targets
+        ):
+            return ast.literal_eval(node.value)
+    raise SystemExit(f"no {LISTS_TARGET} assignment in privacy.py")
+
+
+def fetch(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "qutebrowser ubo-scriptlets"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return resp.read().decode("utf-8", "replace")
+
+
+def eval_condition(expr):
+    """Evaluate a `!#if` expression: tokens joined by !, &&, || and parentheses."""
+    py = re.sub(r"[A-Za-z_][A-Za-z0-9_]*", lambda m: str(m[0] in TRUE_TOKENS), expr)
+    py = py.replace("&&", " and ").replace("||", " or ").replace("!", " not ")
+    try:
+        return bool(eval(py, {"__builtins__": {}}))
+    except SyntaxError:
+        return False
+
+
+def preprocess(text):
+    """Yield the lines uBO would keep, plus `!#include` targets, after `!#if` blocks."""
+    stack = []  # one bool per open block: is it active
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("!#if "):
+            stack.append(eval_condition(line[5:]))
+        elif line == "!#else":
+            if stack:
+                stack[-1] = not stack[-1]
+        elif line == "!#endif":
+            if stack:
+                stack.pop()
+        elif all(stack):
+            yield line
+
+
+def load_all(urls):
+    """Fetch every list and the lists they include, returning {url: [lines]}."""
+    texts, pending, seen = {}, list(urls), set(urls)
+    with ThreadPoolExecutor(8) as pool:
+        while pending:
+            batch, pending = pending, []
+            for url, text in zip(batch, pool.map(fetch, batch)):
+                lines = list(preprocess(text))
+                texts[url] = lines
+                for line in lines:
+                    if line.startswith("!#include "):
+                        child = urljoin(url, line.split(None, 1)[1])
+                        if child not in seen:
+                            seen.add(child)
+                            pending.append(child)
+    return texts
+
+
+def split_hosts(s):
+    """Split a filter's host list on commas, keeping /regex/ entries whole."""
+    hosts, i = [], 0
+    while i < len(s):
+        neg = s[i] == "~"
+        j = i + 1 if neg else i
+        if j < len(s) and s[j] == "/":
+            end = s.find("/,", j + 1)
+            end = len(s) if end == -1 else end + 1
+        else:
+            end = s.find(",", j)
+            end = len(s) if end == -1 else end
+        hosts.append(s[i:end])
+        i = end + 1
+    return [h for h in hosts if h]
+
+
+def split_args(s):
+    """Split scriptlet arguments the way uBO does: commas, `\\,` escapes, quoted args."""
+    args, i, n = [], 0, len(s)
+    while i < n:
+        while i < n and s[i] == " ":
+            i += 1
+        buf = []
+        if i < n and s[i] in "'\"`":
+            quote, i = s[i], i + 1
+            while i < n and s[i] != quote:
+                if s[i] == "\\" and i + 1 < n and s[i + 1] == quote:
+                    i += 1
+                buf.append(s[i])
+                i += 1
+            i = s.find(",", i)
+            i = n if i == -1 else i
+            args.append("".join(buf))
+        else:
+            while i < n and s[i] != ",":
+                if s[i] == "\\" and i + 1 < n and s[i + 1] == ",":
+                    i += 1
+                buf.append(s[i])
+                i += 1
+            args.append("".join(buf).strip())
+        i += 1
+    return args
+
+
+class Table:
+    """Hosts, entities (`name.*`) and hostname regexes, each mapped to rule ids."""
+
+    def __init__(self):
+        self.hosts, self.entities, self.regexes = {}, {}, {}
+
+    def add(self, host, rule_id):
+        if host.startswith("/") and host.endswith("/") and len(host) > 2:
+            target, key = self.regexes, host[1:-1]
+        elif host.endswith(".*"):
+            target, key = self.entities, host[:-2]
+        else:
+            target, key = self.hosts, host
+        ids = target.setdefault(key, [])
+        if rule_id not in ids:
+            ids.append(rule_id)
+
+    def dump(self):
+        return {"h": self.hosts, "e": self.entities, "r": list(self.regexes.items())}
+
+
+def build(texts):
+    rules, rule_ids = [], {}
+    include, exclude, exempt = Table(), Table(), Table()
+    stats = {"rules": 0, "generic": 0, "bad_host": 0}
+
+    def rule_id(name, args):
+        key = json.dumps([name, args])
+        if key not in rule_ids:
+            rule_ids[key] = len(rules)
+            rules.append([name, args])
+        return rule_ids[key]
+
+    for lines in texts.values():
+        for line in lines:
+            if line.startswith("!") or "+js(" not in line:
+                continue
+            m = SCRIPTLET_RE.match(line)
+            if not m:
+                continue
+            host_part, sep, body = m.groups()
+            args = split_args(body)
+            exception = sep == "#@#"
+            if exception and not args:
+                name, rid = None, -1  # `#@#+js()` turns off every scriptlet on the host
+            else:
+                name = SCRIPTLETS.get(args[0].removesuffix(".js")) if args else None
+                if name is None:
+                    continue
+                rid = rule_id(name, args[1:])
+            hosts = split_hosts(host_part)
+            if not hosts or hosts == ["*"]:
+                # uBO only injects scriptlets for named hosts
+                stats["generic"] += 1
+                continue
+            stats["rules"] += 1
+            for host in hosts:
+                neg = host.startswith("~")
+                host = host[1:] if neg else host
+                is_regex = host.startswith("/") and host.endswith("/")
+                if not is_regex and not HOST_RE.match(host):
+                    stats["bad_host"] += 1
+                    continue
+                if exception:
+                    exempt.add(host, rid)
+                else:
+                    (exclude if neg else include).add(host, rid)
+
+    data = {
+        "rules": rules,
+        "include": include.dump(),
+        "exclude": exclude.dump(),
+        "exempt": exempt.dump(),
+    }
+    return data, stats
+
+
+# The scriptlet bodies follow uBO's no-window-open-if and set-cookie (uBlock
+# src/js/resources/scriptlets.js), minus the debug logging. nowoif's iframe decoy is
+# replaced by its fallback: a proxy of the current window that reports itself open.
+TEMPLATE = r"""// ==UserScript==
+// @name         ubo-scriptlets
+// @namespace    https://github.com/hefker/dots
+// @version      1.0.0
+// @description  uBlock Origin's nowoif and set-cookie scriptlets, applied on the hosts uBO's lists name.
+// @match        *://*/*
+// @run-at       document-start
+// @grant        none
+// @license      MIT
+// ==/UserScript==
+
+// GENERATED by the ubo-scriptlets userscript at /*GENERATED_AT*/. Don't edit; rerun it with `cu`.
+// Sources:
+/*SOURCES*/
+
+(function () {
+  'use strict';
+
+  const host = location.hostname.replace(/\.$/, '');
+  if (!host) return;
+  const data = JSON.parse(/*DATA*/);
+
+  // a filter for example.com also covers its subdomains
+  const labels = host.split('.');
+  const suffixes = labels.map((_, i) => labels.slice(i).join('.'));
+  // a `name.*` entity stands for name plus any public suffix; without a suffix list,
+  // allow the dropped tail to be one or two labels (`.to`, `.co.uk`)
+  const entities = [];
+  for (let i = 0; i < labels.length; i++) {
+    for (let j = Math.max(i + 1, labels.length - 2); j < labels.length; j++) {
+      entities.push(labels.slice(i, j).join('.'));
+    }
+  }
+
+  function lookup(table) {
+    const ids = new Set();
+    const add = (map, key) => Object.hasOwn(map, key) && map[key].forEach((id) => ids.add(id));
+    suffixes.forEach((s) => add(table.h, s));
+    entities.forEach((e) => add(table.e, e));
+    for (const [re, list] of table.r) {
+      try {
+        if (new RegExp(re).test(host)) list.forEach((id) => ids.add(id));
+      } catch {}
+    }
+    return ids;
+  }
+
+  const exempt = lookup(data.exempt);
+  if (exempt.has(-1)) return;
+  const exclude = lookup(data.exclude);
+  const active = [...lookup(data.include)].filter((id) => !exclude.has(id) && !exempt.has(id));
+  if (!active.length) return;
+
+  function toRegex(pattern) {
+    if (pattern === '') return /^/;
+    const m = /^\/(.+)\/([imsu]*)g?([imsu]*)$/.exec(pattern);
+    if (!m) return new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    try {
+      return new RegExp(m[1], m[2] + m[3] || undefined);
+    } catch {
+      return /^/;
+    }
+  }
+
+  function nowoif(pattern = '', delay = '') {
+    const blockOnMatch = !pattern.startsWith('!');
+    const re = toRegex(blockOnMatch ? pattern : pattern.slice(1));
+    const noop = function () {};
+    window.open = new Proxy(window.open, {
+      apply(target, thisArg, args) {
+        if (re.test(Array.from(args).join(' ')) !== blockOnMatch) {
+          return Reflect.apply(target, thisArg, args);
+        }
+        console.debug('[ubo-scriptlets] nowoif blocked window.open:', ...args);
+        if (delay === '') return null;
+        // a delay means the page checks for a live popup, so hand back one that looks open
+        return new Proxy(window, {
+          get(target, prop) {
+            if (prop === 'closed') return false;
+            const value = Reflect.get(target, prop);
+            return typeof value === 'function' ? noop : value;
+          },
+          set: Reflect.set,
+        });
+      },
+    });
+  }
+
+  const SAFE_COOKIE_VALUES = new Set([
+    'accept', 'reject', 'accepted', 'rejected', 'notaccepted', 'allow', 'disallow',
+    'deny', 'allowed', 'denied', 'approved', 'disapproved', 'checked', 'unchecked',
+    'dismiss', 'dismissed', 'enable', 'disable', 'enabled', 'disabled', 'essential',
+    'nonessential', 'forbidden', 'forever', 'hide', 'hidden', 'necessary', 'required',
+    'ok', 'on', 'off', 'true', 't', 'false', 'f', 'yes', 'y', 'no', 'n', 'all', 'none',
+    'functional', 'granted', 'done', 'decline', 'declined', 'closed', 'next',
+    'mandatory', 'disagree', 'agree',
+  ]);
+
+  function getCookie(name) {
+    for (const part of document.cookie.split(/\s*;\s*/)) {
+      const pos = part.indexOf('=');
+      if (pos !== -1 && part.slice(0, pos) === name) return part.slice(pos + 1).trim();
+    }
+  }
+
+  function setCookie(name = '', value = '', path = '', ...extra) {
+    if (name === '') return;
+    const lower = value.toLowerCase();
+    const unquoted = (/^("?)(.+)\1$/.exec(lower) || [])[2] || lower;
+    if (!SAFE_COOKIE_VALUES.has(unquoted)) {
+      if (!/^-?\d+$/.test(unquoted)) return;
+      const n = parseInt(value, 10) || 0;
+      if (n < -32767 || n > 32767) return;
+    }
+    const options = {};
+    for (let i = 0; i + 1 < extra.length; i += 2) options[extra[i]] = extra[i + 1];
+    if (/[^!#$&+\-.0-9A-Z[\]^_`a-z|~]/.test(name)) name = encodeURIComponent(name);
+    if (/[^ -:<-[\]-~]/.test(value)) value = encodeURIComponent(value);
+    const before = getCookie(name);
+    if (before !== undefined && options.dontOverwrite) return;
+    if (before === value && options.reload) return;
+    if (path === '') path = '/';
+    else if (path === 'none') path = '';
+    if (path !== '' && path !== '/') return;
+    document.cookie = name + '=' + value + (path === '/' ? '; path=/' : '');
+    if (options.reload && getCookie(name) === value) window.location.reload();
+  }
+
+  const scriptlets = { nowoif: nowoif, 'set-cookie': setCookie };
+  for (const id of active) {
+    const [name, args] = data.rules[id];
+    try {
+      scriptlets[name](...args);
+    } catch (e) {
+      console.debug('[ubo-scriptlets]', name, args, e);
+    }
+  }
+})();
+"""
+
+
+def render(data, urls):
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    sources = "\n".join(f"//   {u}" for u in urls)
+    return (
+        TEMPLATE.replace("/*GENERATED_AT*/", stamp)
+        .replace("/*SOURCES*/", sources)
+        .replace("/*DATA*/", json.dumps(json.dumps(data, separators=(",", ":"))))
+    )
+
+
+def main():
+    urls = read_list_urls()
+    try:
+        texts = load_all(urls)
+    except OSError as e:
+        message("error", f"ubo-scriptlets: fetching lists failed: {e}")
+        return 1
+    data, stats = build(texts)
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    tmp = OUTPUT.with_suffix(".tmp")
+    tmp.write_text(render(data, list(texts)))
+    tmp.replace(OUTPUT)
+
+    # includes are network rules too, and qutebrowser's adblock doesn't follow them
+    missing = [u for u in texts if u not in urls]
+    counts = {name: sum(1 for r in data["rules"] if r[0] == name) for name in set(SCRIPTLETS.values())}
+    summary = (
+        f"ubo-scriptlets: {stats['rules']} filters from {len(texts)} lists "
+        f"({counts['nowoif']} nowoif, {counts['set-cookie']} set-cookie variants)"
+    )
+    message("info", summary)
+    if missing:
+        message("warning", "ubo-scriptlets: included lists missing from privacy.py: " + ", ".join(missing))
+    if os.environ.get("QUTE_FIFO"):
+        with open(os.environ["QUTE_FIFO"], "w") as f:
+            f.write("greasemonkey-reload --quiet\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
