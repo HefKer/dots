@@ -111,6 +111,14 @@ config.bind("ebfh", "hint links spawn helium --new-window {hint-url}")
 # [a]pp window (chromeless, no tabs/toolbar)
 config.bind("ebah", "spawn helium --app={url}")
 config.bind("ebfah", "hint links spawn helium --app={hint-url}")
+# [p]hone (opened on mobile thru KDE Connect)
+config.bind(
+    "epp", "spawn kdeconnect-cli -d accffc5cb450442587102664350cbe3f --share {url}"
+)
+config.bind(
+    "epf",
+    "hint links spawn kdeconnect-cli -d accffc5cb450442587102664350cbe3f --share {hint-url}",
+)
 
 # Video binds ([m]pv)
 config.bind(
