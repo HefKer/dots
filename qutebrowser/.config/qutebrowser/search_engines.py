@@ -25,6 +25,7 @@ c.url.searchengines = {
     "aw": "https://wiki.archlinux.org/?search={}",
     # Game wikis
     "sdv": "https://wiki.stardewvalley.net/mediawiki/index.php?search={}&title=Special%3ASearch&go=Go",
+    "er": "https://eldenring.wiki.fextralife.com/Special:Search?search={}",
     # Shopping
     "amazon": "https://www.amazon.com/s?k={}",
     "amz": "https://www.amazon.com/s?k={}",
@@ -45,6 +46,8 @@ c.url.searchengines = {
     # osu!
     "om": "https://osu.ppy.sh/beatmapsets?q={}",
     "ou": "https://osu.ppy.sh/users/{}",
+    # media
+    "manga": "https://mangafire.to/browse?keyword={}&sort=relevance:desc",
 }
 
 # Mute linter warnings
