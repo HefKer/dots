@@ -8,6 +8,7 @@
   "cornerRadius": 0,
   "clockFormat": "12h",
   "useFahrenheit": true,
+  "lockBeforeSuspend": true,
   "barElevationEnabled": false,
   "blurWallpaperOnOverview": true,
   "controlCenterShowMicPercent": true,
