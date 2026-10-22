@@ -364,6 +364,8 @@ TEMPLATE = r"""// ==UserScript==
 // @version      2.0.0
 // @description  uBlock Origin's popup filtering, nowoif and set-cookie, ported from the lists in privacy.py.
 // @match        *://*/*
+// @exclude      *://*.youtube.com/*
+// @exclude      *://*.youtube-nocookie.com/*
 // @run-at       document-start
 // @grant        none
 // @license      MIT
@@ -615,22 +617,28 @@ TEMPLATE = r"""// ==UserScript==
         },
       });
 
+      // hooks are Proxies so they keep a native toString: anti-adblock checks (YouTube's
+      // among them) flag a page whose built-ins no longer read `[native code]`
+      const hook = (obj, name, apply) => {
+        obj[name] = new Proxy(obj[name], { apply });
+      };
+
       // links a script clicks, attached or not; detached ones never reach onClick
-      const click = win.HTMLElement.prototype.click;
-      win.HTMLElement.prototype.click = function () {
-        if (blockedLink(this)) return;
-        return click.call(this);
-      };
-      const dispatch = win.EventTarget.prototype.dispatchEvent;
-      win.EventTarget.prototype.dispatchEvent = function (ev) {
-        if (ev && ev.type === 'click' && blockedLink(this, ev)) return false;
-        return dispatch.call(this, ev);
-      };
-      const submit = win.HTMLFormElement.prototype.submit;
-      win.HTMLFormElement.prototype.submit = function () {
-        if (opensNewWindow(this.target, this.ownerDocument) && popupBlocked(this.action)) return;
-        return submit.call(this);
-      };
+      hook(win.HTMLElement.prototype, 'click', (target, thisArg, args) => {
+        if (blockedLink(thisArg)) return;
+        return Reflect.apply(target, thisArg, args);
+      });
+      hook(win.EventTarget.prototype, 'dispatchEvent', (target, thisArg, args) => {
+        const ev = args[0];
+        if (ev && ev.type === 'click' && blockedLink(thisArg, ev)) return false;
+        return Reflect.apply(target, thisArg, args);
+      });
+      hook(win.HTMLFormElement.prototype, 'submit', (target, thisArg, args) => {
+        if (opensNewWindow(thisArg.target, thisArg.ownerDocument) && popupBlocked(thisArg.action)) {
+          return;
+        }
+        return Reflect.apply(target, thisArg, args);
+      });
       win.addEventListener('click', onClick, true);
       win.addEventListener('auxclick', onClick, true);
 
@@ -642,12 +650,14 @@ TEMPLATE = r"""// ==UserScript==
           if (!desc || !desc.get) continue;
           Object.defineProperty(C.prototype, prop, {
             ...desc,
-            get() {
-              const value = desc.get.call(this);
-              const child = prop === 'contentWindow' ? value : value && value.defaultView;
-              if (child) install(child);
-              return value;
-            },
+            get: new Proxy(desc.get, {
+              apply(target, thisArg, args) {
+                const value = Reflect.apply(target, thisArg, args);
+                const child = prop === 'contentWindow' ? value : value && value.defaultView;
+                if (child) install(child);
+                return value;
+              },
+            }),
           });
         }
       }
