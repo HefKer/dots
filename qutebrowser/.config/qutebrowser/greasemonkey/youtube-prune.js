@@ -11,7 +11,8 @@
 // @grant        none
 // ==/UserScript==
 
-// Vendored unmodified from https://github.com/urtzienriquez/config_files/blob/e31b2f8215d9749fd9a8b689bb23d21604a5cf8c/qutebrowser/greasemonkey/youtube-prune.js
+// Vendored from https://github.com/urtzienriquez/config_files/blob/e31b2f8215d9749fd9a8b689bb23d21604a5cf8c/qutebrowser/greasemonkey/youtube-prune.js
+// antiSsap synced to uAssets quick-fixes.txt as of 2026-10-21 (strategies, start time, playlist restore)
 // Latest: https://github.com/urtzienriquez/config_files/tree/main/qutebrowser/greasemonkey
 
 (function () {
@@ -225,7 +226,7 @@
   // If the server makes the player wait out an ad (stuck buffering, nothing
   // loaded), reload the video with the next strategy. Seek past SSAP ads.
   (function antiSsap() {
-    const STRATEGIES = ['channel', 'lactmilli', 'instream', 'yahi'];
+    const STRATEGIES = ['channel', 'lactmilli', 'inline', 'yahi'];
     let strategies = STRATEGIES;
     let reloadPending = false;
     let disabled = false;
@@ -291,7 +292,8 @@
       if (!response) return;
       const videoId = response.videoDetails && response.videoDetails.videoId;
       const start = (response.playerConfig && response.playerConfig.playbackStartConfig &&
-        response.playerConfig.playbackStartConfig.startSeconds) || 0;
+        response.playerConfig.playbackStartConfig.startSeconds) ||
+        parseInt(new URLSearchParams(location.search).get('t'), 10) || 0;
       const ps = response.playabilityStatus;
       const err = ps && ps.errorScreen;
       const pem = err && err.playerErrorMessageRenderer;
@@ -318,7 +320,7 @@
         setStrategy(strategies[0]);
         reloadPending = false;
         player.loadVideoById(videoId, start);
-      } else if (!reloadPending && progress && progress.current - start < 5 &&
+      } else if (!reloadPending && progress && progress.current - start > 0.1 && progress.current - start < 5 &&
         location.href.includes('&list=') && player.getPlaylistId && player.getPlaylistId() === null) {
         // reloading drops the playlist; restore it
         const manager = document.querySelector('yt-playlist-manager');
