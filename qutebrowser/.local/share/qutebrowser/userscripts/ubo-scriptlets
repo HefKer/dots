@@ -366,6 +366,7 @@ TEMPLATE = r"""// ==UserScript==
 // @match        *://*/*
 // @exclude      *://*.youtube.com/*
 // @exclude      *://*.youtube-nocookie.com/*
+// @exclude      *://accounts.google.com/*
 // @run-at       document-start
 // @grant        none
 // @license      MIT
@@ -618,7 +619,9 @@ TEMPLATE = r"""// ==UserScript==
       });
 
       // hooks are Proxies so they keep a native toString: anti-adblock checks (YouTube's
-      // among them) flag a page whose built-ins no longer read `[native code]`
+      // among them) flag a page whose built-ins no longer read `[native code]`. Google's
+      // sign-in sees through them anyway and flags the browser as insecure, so the
+      // header keeps the script off accounts.google.com.
       const hook = (obj, name, apply) => {
         obj[name] = new Proxy(obj[name], { apply });
       };
