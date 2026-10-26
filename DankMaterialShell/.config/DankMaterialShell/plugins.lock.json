@@ -1,0 +1,40 @@
+{
+  "lockfileVersion": 1,
+  "plugins": {
+    "activateLinux": {
+      "repo": "https://github.com/hthienloc/dms-plugins",
+      "path": "activateLinux",
+      "commit": "3404210e38583d25d2dadfd17ef29331bdb26706"
+    },
+    "alarmClock": {
+      "repo": "https://github.com/lucyfire/dms-plugins",
+      "path": "alarmClock",
+      "commit": "c99ba77c848721fbb8b8c3307638ea10d5dccdd9"
+    },
+    "dankDesktopWeather": {
+      "repo": "https://github.com/AvengeMedia/dms-plugins",
+      "path": "DankDesktopWeather",
+      "commit": "69fcc477de31616807bfc6ee03492319cc7e2484"
+    },
+    "emojiLauncher": {
+      "repo": "https://github.com/devnullvoid/dms-emoji-launcher",
+      "commit": "fc385900e6df292f0a7e5bdda4e3e37169897d7c"
+    },
+    "niriWindows": {
+      "repo": "https://github.com/rochacbruno/DankNiriWindows",
+      "commit": "411d5ee9f7707029f4c12c824ec3b24ca6756a0d"
+    },
+    "quickCapture": {
+      "repo": "https://github.com/hthienloc/dms-quick-capture",
+      "commit": "d9e4475404e29223fd68d60feadf2eab810d098e"
+    },
+    "usbManager": {
+      "repo": "https://github.com/NordicsSys/dms-usb-manager",
+      "commit": "483d97c108314b1cf0c5df62141517e79636d937"
+    },
+    "worldClock": {
+      "repo": "https://github.com/rochacbruno/WorldClock",
+      "commit": "92dafcd81244dc128c1efc26589c5db17b0c3c16"
+    }
+  }
+}

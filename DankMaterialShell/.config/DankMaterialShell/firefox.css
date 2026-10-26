@@ -4,7 +4,7 @@
     --md-sys-color-surface-tint: #8ca101;
     --md-sys-color-on-primary: #e5dfc5;
     --md-sys-color-primary-container: #92b259;
-    --md-sys-color-on-primary-container: #5c6a72;
+    --md-sys-color-on-primary-container: #000000;
     --md-sys-color-secondary: #dea000;
     --md-sys-color-on-secondary: #e5dfc5;
     --md-sys-color-secondary-container: #ddd8be;
@@ -75,7 +75,7 @@
     --md-sys-color-surface-tint: #a7c080;
     --md-sys-color-on-primary: #293136;
     --md-sys-color-primary-container: #6c8446;
-    --md-sys-color-on-primary-container: #d3c6aa;
+    --md-sys-color-on-primary-container: #000000;
     --md-sys-color-secondary: #7fbbb3;
     --md-sys-color-on-secondary: #293136;
     --md-sys-color-secondary-container: #434f55;
@@ -134,5 +134,5 @@
 
 /* idk if this even works, but the suggestion in the material updated readme bricks symbols no matter how many fallbacks I add */
 :root {
-  font-family: system-ui, "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+  font-family: system-ui, "Google Sans Flex", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
 }
