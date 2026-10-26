@@ -22,15 +22,22 @@
 
 (defvar
   hrm-timeout 200
-  hrm-idle    150)
+  hrm-idle    150
+  ;; A same-hand mod waits instead of tapping, so a+f still chords to Super+Shift.
+  left-mods  (neutral-keys a s d f)
+  right-mods (neutral-keys j k l ;))
 
-(deftemplate hrm (key mod)
-  (tap-hold-opposite-hand $hrm-timeout $key $mod (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle)))
+;; -release: an opposite-hand key must go down and up while held, so a roll (f↓ o↓ f↑) stays "fo".
+(deftemplate hrm (key mod mods)
+  (tap-hold-opposite-hand-release $hrm-timeout $key $mod
+    (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle) $mods))
 
 ;; lalt, not ralt, on the right too: ralt turns AltGr under an intl xkb variant.
 (defalias
-  hra (t! hrm a lmet)  hrs (t! hrm s lalt)  hrd (t! hrm d lctl)  hrf (t! hrm f lsft)
-  hrj (t! hrm j rsft)  hrk (t! hrm k rctl)  hrl (t! hrm l lalt)  hr; (t! hrm ; rmet))
+  hra (t! hrm a lmet $left-mods)   hrs (t! hrm s lalt $left-mods)
+  hrd (t! hrm d lctl $left-mods)   hrf (t! hrm f lsft $left-mods)
+  hrj (t! hrm j rsft $right-mods)  hrk (t! hrm k rctl $right-mods)
+  hrl (t! hrm l lalt $right-mods)  hr; (t! hrm ; rmet $right-mods))
 
 ;; First layer defined, so the one kanata starts on.
 (deflayermap (hrm)
