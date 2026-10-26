@@ -35,8 +35,13 @@ function cmv --description 'mv a directory and carry its claude sessions along, 
         test -d $dir; or continue
         # The encoding is lossy (/a/b-c and /a/b/c collide), so trust the cwd a
         # transcript recorded over the dir name. A dir with no transcript yet
-        # (memory only) is only taken on an exact name match.
-        set -l cwd (command grep -rhom1 '"cwd":"[^"]*"' --include='*.jsonl' $dir 2>/dev/null | head -1 | string sub -s 8 -e -1)
+        # (memory only) is only taken on an exact name match. Only top-level
+        # transcripts count: a subagent's under <session>/subagents/ records
+        # wherever the session had cd'd to, which may be a subdirectory.
+        set -l transcripts $dir/*.jsonl
+        set -l cwd
+        set -q transcripts[1]
+        and set cwd (command grep -hom1 '"cwd":"[^"]*"' $transcripts 2>/dev/null | head -1 | string sub -s 8 -e -1)
         test -z "$cwd"; and test $dir = $projects/$enc_old; and set cwd $old
         test "$cwd" = $old; or string match -q -- "$old/*" "$cwd"; or continue
 
