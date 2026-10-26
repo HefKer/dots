@@ -24,16 +24,13 @@
   hrm-timeout 200
   hrm-idle    150)
 
+(deftemplate hrm (key mod)
+  (tap-hold-opposite-hand $hrm-timeout $key $mod (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle)))
+
+;; lalt, not ralt, on the right too: ralt turns AltGr under an intl xkb variant.
 (defalias
-  hra (tap-hold-opposite-hand $hrm-timeout a lmet (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle))
-  hrs (tap-hold-opposite-hand $hrm-timeout s lalt (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle))
-  hrd (tap-hold-opposite-hand $hrm-timeout d lctl (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle))
-  hrf (tap-hold-opposite-hand $hrm-timeout f lsft (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle))
-  hrj (tap-hold-opposite-hand $hrm-timeout j rsft (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle))
-  hrk (tap-hold-opposite-hand $hrm-timeout k rctl (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle))
-  hrl (tap-hold-opposite-hand $hrm-timeout l lalt (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle))
-  hr; (tap-hold-opposite-hand $hrm-timeout ; rmet (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle))
-)
+  hra (t! hrm a lmet)  hrs (t! hrm s lalt)  hrd (t! hrm d lctl)  hrf (t! hrm f lsft)
+  hrj (t! hrm j rsft)  hrk (t! hrm k rctl)  hrl (t! hrm l lalt)  hr; (t! hrm ; rmet))
 
 ;; First layer defined, so the one kanata starts on.
 (deflayermap (hrm)
@@ -45,10 +42,10 @@
 
 (defalias
   cap (tap-hold-release 200 200 esc (layer-while-held fn1))
-  ;; Both Shifts + Esc toggles passthrough, independent of the osu watcher.
+  ;; Both physical Shifts + Esc toggles passthrough, independent of the osu watcher; HRM's f+j shifts don't count.
   esc (switch
-        ((and lsft rsft (base-layer passthrough))) (layer-switch $home) break
-        ((and lsft rsft)) (layer-switch passthrough) break
+        ((and (input real lsft) (input real rsft) (base-layer passthrough))) (layer-switch $home) break
+        ((and (input real lsft) (input real rsft))) (layer-switch passthrough) break
         () esc break)
   fn2 (layer-while-held fn2)
   ;; Fn Lock: keeps Fn1 on until pressed again.
