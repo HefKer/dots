@@ -6,6 +6,8 @@ c.url.searchengines = {
     "ddg": "https://noai.duckduckgo.com/?q={}",
     "b": "https://search.brave.com/search?q={}",
     "g": "https://www.google.com/search?q={}",
+    # AI
+    "ai": "https://claude.ai/new?q={}",
     # Site search engines
     "yt": "https://www.youtube.com/results?search_query={}",
     "y": "https://www.youtube.com/results?search_query={}",
