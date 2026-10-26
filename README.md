@@ -57,7 +57,7 @@ destroys a file-level link.
 ### Unlinked dirs
 
 - [`syncthing/`](syncthing/) — Shared `.stglobalignore` across all Syncthing folders/hosts. Not in the link set; placed by hand per Syncthing folder — see [`syncthing/README.md`](syncthing/README.md).
-- [`kanata/`](kanata/) — The [kanata](https://github.com/jtroo/kanata) keymap shared by every keyboard. Not in the link set: the NixOS config's kanata services read `keymap.kbd` straight from here through a read-only bind, and each instance's `defcfg` (devices, TCP port) is generated there and `include`s this file. Edit it, then press Fn2+`\` (`lrld`) to live-reload.
+- [`kanata/`](kanata/) — The [kanata](https://github.com/jtroo/kanata) keymap shared by every keyboard. Not in the link set: the NixOS config's kanata services read `keymap.kbd` straight from here through a read-only bind, and each instance's `defcfg` (devices, TCP port) is generated there and `include`s this file. Edit it, then press Fn2+`\` (`lrld`) to live-reload. `keymap-drawer.yaml` gives the keymap viewer (Mod+/) legends for the aliases its parser can't read; the viewer redraws on every save.
 - [`helium/`](helium/) — Browser extension settings (vimiumc), imported by hand in the browser rather than linked.
 - [`wallpapers/`](wallpapers/) — Wallpapers, stored as lossless JPEG XL in Git LFS (needs `git-lfs`; `.githooks/pre-push` uploads them). DMS points at them directly via its saved `wallpaperPath`, so nothing links them.
 - [`docs/`](docs/) — Written for agents working in this repo, not symlinked anywhere. [`agents/`](docs/agents/) says where issues live and how the triage labels and domain docs are read; [`adr/`](docs/adr/) records decisions that are hard to reverse.

@@ -304,6 +304,14 @@ window-rule {
     open-floating true
 }
 
+// The kanata keymap viewer (Mod+/), a reminder floating over the windows.
+window-rule {
+    match app-id="^kanata-keymap$"
+    open-floating true
+    default-column-width { proportion 0.5; }
+    default-window-height { proportion 0.9; }
+}
+
 // Example: block out two password managers from screen capture.
 // (This example rule is commented out with a "/-" in front.)
 /-window-rule {
@@ -341,6 +349,8 @@ binds {
     // Mod-Shift-/, which is usually the same as Mod-?,
     // shows a list of important hotkeys.
     Mod+Shift+Slash { show-hotkey-overlay; }
+    // Toggles the kanata keymap, every layer (from the nixos flake's kanata-keymap module).
+    Mod+Slash hotkey-overlay-title="Show the Keymap" { spawn "kanata-keymap"; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     // Mod+T hotkey-overlay-title="Open a Terminal: alacritty" { spawn "alacritty"; }
