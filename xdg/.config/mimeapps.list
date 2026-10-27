@@ -1,0 +1,61 @@
+[Default Applications]
+# Browser
+text/html=org.qutebrowser.qutebrowser.desktop
+application/xhtml+xml=org.qutebrowser.qutebrowser.desktop
+x-scheme-handler/http=org.qutebrowser.qutebrowser.desktop
+x-scheme-handler/https=org.qutebrowser.qutebrowser.desktop
+x-scheme-handler/about=org.qutebrowser.qutebrowser.desktop
+x-scheme-handler/unknown=org.qutebrowser.qutebrowser.desktop
+
+# Files
+inode/directory=yazi.desktop
+application/zip=org.gnome.Nautilus.desktop
+application/pdf=org.pwmt.zathura-pdf-mupdf.desktop
+
+# Text
+text/plain=nvim.desktop
+text/markdown=nvim.desktop
+application/json=nvim.desktop
+application/toml=nvim.desktop
+application/yaml=nvim.desktop
+application/x-shellscript=nvim.desktop
+
+# Images
+image/png=imv.desktop
+image/jpeg=imv.desktop
+image/gif=imv.desktop
+image/webp=imv.desktop
+image/avif=imv.desktop
+image/heif=imv.desktop
+image/bmp=imv.desktop
+image/tiff=imv.desktop
+image/svg+xml=imv.desktop
+
+# Video and audio
+video/mp4=mpv.desktop
+video/matroska=mpv.desktop
+video/webm=mpv.desktop
+video/quicktime=mpv.desktop
+video/vnd.avi=mpv.desktop
+audio/mpeg=mpv.desktop
+audio/flac=mpv.desktop
+audio/ogg=mpv.desktop
+audio/x-opus+ogg=mpv.desktop
+audio/vnd.wave=mpv.desktop
+audio/mp4=mpv.desktop
+audio/aac=mpv.desktop
+
+# osu!
+application/x-osu-beatmap-archive=osu-lazer.desktop
+application/x-osu-skin-archive=osu-lazer.desktop
+application/x-osu-beatmap=osu-lazer.desktop
+application/x-osu-storyboard=osu-lazer.desktop
+application/x-osu-replay=osu-lazer.desktop
+x-scheme-handler/osu=osu-lazer.desktop
+
+# Registered by apps via xdg-mime; the discord-<id> line is osu!lazer's Rich Presence, re-added on each launch
+x-scheme-handler/discord=vesktop.desktop
+x-scheme-handler/discord-1216669957799018608=discord-1216669957799018608.desktop
+x-scheme-handler/claude-cli=claude-code-url-handler.desktop
+x-scheme-handler/wootwoot=wootility.desktop
+x-scheme-handler/web+wootwoot=wootility.desktop
