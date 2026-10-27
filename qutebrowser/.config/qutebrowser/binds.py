@@ -64,6 +64,15 @@ config.bind("cn", "clear-messages")
 config.bind("Q", "macro-record")
 config.bind("q", "fake-key <Escape>")
 config.bind("<Alt-Esc>", "fake-key <Escape>")
+
+# --- Focus ---
+JS = config.configdir / "js"
+# Drop focus back to the page, e.g. off YouTube's volume slider
+config.bind(";q", f"jseval -q -f {JS / 'blur.js'}")
+# Hint a scrollable element or iframe to focus, so j/k etc. scroll it
+config.bind(";s", "spawn --userscript scroll-hint")
+c.hints.selectors["scrollable"] = ["[data-qb-scroll]"]
+
 config.bind("gG", "tab-give")
 
 config.bind("T", "cmd-set-text -s :tab-select")
@@ -160,19 +169,24 @@ config.bind("ers", "spawn --userscript reddit-save")
 config.bind("erf", "hint reddit-post userscript reddit-save")
 
 
-# Playback speed of the page's video; mirrors YouTube's own >/< keys
-def video_speed(expr):
-    return (
-        "jseval (v => v ? 'speed ' + (v.playbackRate = "
-        + expr
-        + ") + 'x' : 'no video')"
-        "(document.querySelector('#movie_player video') || document.querySelector('video'))"
-    )
+# Speed and volume of the page's video; speed mirrors YouTube's own >/< keys
+# Binds can't hold newlines, so the file goes in as one line, minus its comments
+VIDEO_JS = " ".join(
+    line.strip()
+    for line in (JS / "video.js").read_text().splitlines()
+    if not line.lstrip().startswith("//")
+)
 
 
-config.bind("<Alt-.>", video_speed("Math.min(4, v.playbackRate + 0.25)"))
-config.bind("<Alt-,>", video_speed("Math.max(0.25, v.playbackRate - 0.25)"))
-config.bind("<Alt-/>", video_speed("1"))
+def video(action, step):
+    return f"jseval -w main ({VIDEO_JS})('{action}', {step})"
+
+
+config.bind("<Alt-.>", video("speed", 0.25))
+config.bind("<Alt-,>", video("speed", -0.25))
+config.bind("<Alt-/>", video("speed", 0))
+config.bind("<Alt-k>", video("volume", 0.05))
+config.bind("<Alt-j>", video("volume", -0.05))
 
 ## qutewarden
 config.bind(",qf", "spawn --userscript qutewarden fill")
