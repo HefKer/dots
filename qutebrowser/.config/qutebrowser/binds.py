@@ -29,8 +29,6 @@ c.hints.selectors["outer"] = [
     "div[class*=backdrop]",
 ]
 config.bind(";o", "hint outer")
-# Trigger file picker for drag-n-drop sites that hide their <input type=file>
-config.bind(";u", "jseval -q document.querySelector('input[type=file]')?.click()")
 # --- \testing ---
 # Hint a paragraph and drop the caret at its start (Tridactyl-style caret placement)
 # Source: https://github.com/vlify/qutebrowser-hint-caret
@@ -70,8 +68,11 @@ JS = config.configdir / "js"
 # Drop focus back to the page, e.g. off YouTube's volume slider
 config.bind(";q", f"jseval -q -f {JS / 'blur.js'}")
 # Hint a scrollable element or iframe to focus, so j/k etc. scroll it
-config.bind(";s", "spawn --userscript scroll-hint")
-c.hints.selectors["scrollable"] = ["[data-qb-scroll]"]
+config.bind(";s", "spawn --userscript js-hint scrollable")
+c.hints.selectors["scrollable"] = ["[data-qb-hint=scrollable]"]
+# Hint a file input, hidden ones too (drag-and-drop sites), to open the picker
+config.bind(";u", "spawn --userscript js-hint upload normal")
+c.hints.selectors["upload"] = ["[data-qb-hint=upload]"]
 
 config.bind("gG", "tab-give")
 

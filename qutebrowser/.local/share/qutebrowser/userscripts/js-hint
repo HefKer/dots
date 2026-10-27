@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Hint elements no built-in hint group finds, like scrollable areas or hidden
+# file inputs: js/hint-<group>.js in the config dir marks them. See
+# js/hint-marks.js there.
+#
+# A userscript only to run the commands in a row: jseval takes the rest of its
+# line as code, ;; included, so a bind can't chain anything after it.
+#
+# Usage: :spawn --userscript js-hint <group> [<hint target> [<args>...]]
+# The target defaults to handing the picked element to the group's qbHint.onPick.
+group=$1
+shift
+target="run jseval -q qbHint.pick('{hint-url}')"
+(($#)) && target=$*
+js=$QUTE_CONFIG_DIR/js
+printf '%s\n' \
+  "jseval -q -f $js/hint-marks.js" \
+  "jseval -q -f $js/hint-$group.js" \
+  "hint $group $target" \
+  >"$QUTE_FIFO"
