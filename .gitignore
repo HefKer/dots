@@ -38,3 +38,5 @@ quickmarks
 # claude — the global ignore drops /.claude entirely; keep the repo-specific
 # skills, which are authored here
 !/.claude/skills/
+/qutebrowser/.local/share/qutebrowser/userscripts/qutewarden
+/qutebrowser/.local/share/qutebrowser/userscripts/aniqute
