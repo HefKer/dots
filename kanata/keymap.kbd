@@ -23,6 +23,8 @@
 (defvar
   hrm-timeout 200
   hrm-idle    150
+  ;; Tap then hold within this many ms to hold the letter itself (key repeat, e.g. j/k in vim).
+  hrm-repress 200
   ;; A same-hand mod waits instead of tapping, so a+f still chords to Super+Shift.
   left-mods  (neutral-keys a s d f)
   right-mods (neutral-keys j k l ;))
@@ -30,7 +32,7 @@
 ;; -release: an opposite-hand key must go down and up while held, so a roll (f↓ o↓ f↑) stays "fo".
 (deftemplate hrm (key mod mods)
   (tap-hold-opposite-hand-release $hrm-timeout $key $mod
-    (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle) $mods))
+    (same-hand tap) (timeout hold) (require-prior-idle $hrm-idle) (tap-repress-timeout $hrm-repress) $mods))
 
 ;; lalt, not ralt, on the right too: ralt turns AltGr under an intl xkb variant.
 (defalias
@@ -83,5 +85,6 @@
   rsft @fnl)
 
 ;; Every key stock, no tap-hold; the osu watcher's target. Esc keeps the manual toggle.
+;; Caps is a plain hold for Fn1 (WASD arrows, F-keys): no tap-hold, so no delay, and a stray tap does nothing.
 (deflayermap (passthrough)
-  esc @esc)
+  esc @esc  caps (layer-while-held fn1))
