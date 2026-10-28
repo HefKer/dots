@@ -14,6 +14,7 @@
 // Vendored from https://github.com/urtzienriquez/config_files/blob/e31b2f8215d9749fd9a8b689bb23d21604a5cf8c/qutebrowser/greasemonkey/youtube-prune.js
 // antiSsap synced to uAssets quick-fixes.txt as of 2026-10-21 (strategies, start time, playlist restore)
 // Latest: https://github.com/urtzienriquez/config_files/tree/main/qutebrowser/greasemonkey
+// What YouTube detects, and how to find a new trigger: .claude/skills/qutebrowser-config/youtube-adblock.md in the dots repo
 
 (function () {
   'use strict';
@@ -76,13 +77,30 @@
     return text;
   }
 
-  const FETCH_URL = /\/player\?|\/playlist\?|\/get_watch\?/;
+  // YouTube posts bait /player requests whose responses hold placeholder ad
+  // keys ({"adPlacements":true,"playerAds":true,...}) and serves the ad-blocker
+  // enforcement screen if they come back altered (as of 2026-10-28)
+  const BAIT = /"(?:adPlacements|playerAds)":true\b/;
+  function isBait(body) {
+    if (typeof body === 'string') return BAIT.test(body);
+    try {
+      return !!body && typeof body === 'object' && BAIT.test(stringify(body));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // not /player: YouTube checks the ad keys in the real /player response, and any
+  // change to them, even one renamed character, gets the enforcement screen
+  // served (as of 2026-10-28); its ads now play through and youtube-ab.js skips them
+  const FETCH_URL = /\/playlist\?|\/get_watch\?/;
   hook(win, 'fetch', (target, thisArg, args) => {
     const promise = Reflect.apply(target, thisArg, args);
     if (!FETCH_URL.test(requestUrl(args[0]))) return promise;
     return promise
       .then((before) =>
         before.clone().text().then((text) => {
+          if (isBait(text)) return before;
           let after = text;
           try {
             const obj = parse(text);
@@ -126,7 +144,9 @@
     const cached = xhrCache.get(xhr);
     if (cached && cached.inner === inner) return cached.outer;
     let outer = inner;
-    if (typeof inner === 'string') {
+    if (isBait(inner)) {
+      // leave bait responses as they came
+    } else if (typeof inner === 'string') {
       outer = stripXhrAds(inner, url);
       try {
         const obj = parse(outer);
@@ -273,11 +293,32 @@
       reloadPending = true;
     };
 
+    let retried; // the enforcement response last retried, so each is retried once
+    const startOf = (response) => (response.playerConfig && response.playerConfig.playbackStartConfig &&
+      response.playerConfig.playbackStartConfig.startSeconds) ||
+      parseInt(new URLSearchParams(location.search).get('t'), 10) || 0;
+
     const check = () => {
       if (disabled) return;
       const { player, response, stats, progress, buffering } = state();
       if (!player || !location.href.includes('/watch?')) {
         strategies = STRATEGIES;
+        return;
+      }
+      // The newer "Ad blockers violate YouTube's Terms of Service" screen
+      // (status ERROR, an enforcementMessageViewModel; seen 2026-10-28) loads
+      // nothing, so it never passes the playing check below. Retry once per
+      // response with the next strategy, as for the older screen.
+      const enforced = response && response.playabilityStatus &&
+        response.playabilityStatus.status === 'ERROR' && response.playabilityStatus.errorScreen &&
+        response.playabilityStatus.errorScreen.enforcementMessageViewModel;
+      if (enforced) {
+        if (response === retried || strategies.length === 0) return;
+        retried = response;
+        strategies = strategies.slice(1);
+        setStrategy(strategies[0] || '');
+        reloadPending = false;
+        player.loadVideoById(response.videoDetails && response.videoDetails.videoId, startOf(response));
         return;
       }
       const playing = (progress && progress.duration > 0 &&
@@ -291,9 +332,7 @@
       }
       if (!response) return;
       const videoId = response.videoDetails && response.videoDetails.videoId;
-      const start = (response.playerConfig && response.playerConfig.playbackStartConfig &&
-        response.playerConfig.playbackStartConfig.startSeconds) ||
-        parseInt(new URLSearchParams(location.search).get('t'), 10) || 0;
+      const start = startOf(response);
       const ps = response.playabilityStatus;
       const err = ps && ps.errorScreen;
       const pem = err && err.playerErrorMessageRenderer;
@@ -419,7 +458,8 @@
     'ytd-ad-slot-renderer',
     'ad-slot-renderer',
     'ytd-rich-item-renderer:has(ytd-ad-slot-renderer)',
-    '#player-ads',
+    // not #player-ads: YouTube serves its ad-blocker enforcement screen when
+    // it's hidden (as of 2026-10-28), and uBO keeps it shown with #@##player-ads
     'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"]',
     'yt-mealbar-promo-renderer',
     'ytm-companion-ad-renderer',

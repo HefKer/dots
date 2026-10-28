@@ -36,3 +36,7 @@ The defaults are listed under `bindings.default` in `qute://help/settings.html`.
 ## Editor integration
 
 `<Ctrl-e>` opens the external editor: wezterm running nvim.
+
+## YouTube anti-adblock
+
+When YouTube detects the adblocker, or before changing `greasemonkey/youtube-*.js`, read [`youtube-adblock.md`](youtube-adblock.md). It lists what YouTube detects and how to bisect a new trigger in a throwaway instance.

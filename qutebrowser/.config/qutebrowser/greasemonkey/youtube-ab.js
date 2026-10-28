@@ -12,8 +12,11 @@
 // @license      MIT
 // ==/UserScript==
 
-// Vendored unmodified from https://github.com/urtzienriquez/config_files/blob/e31b2f8215d9749fd9a8b689bb23d21604a5cf8c/qutebrowser/greasemonkey/youtube-ab.js
+// Vendored from https://github.com/urtzienriquez/config_files/blob/e31b2f8215d9749fd9a8b689bb23d21604a5cf8c/qutebrowser/greasemonkey/youtube-ab.js
 // Latest: https://github.com/urtzienriquez/config_files/tree/main/qutebrowser/greasemonkey
+// What YouTube detects, and how to find a new trigger: .claude/skills/qutebrowser-config/youtube-adblock.md in the dots repo
+// Changed: dropped '#related #player-ads', since hiding #player-ads gets the
+// enforcement screen served (2026-10-28); see youtube-prune.js
 
 (function () {
   'use strict';
@@ -27,7 +30,6 @@
     '.video-ads.ytp-ad-module',
     'tp-yt-paper-dialog:has(yt-mealbar-promo-renderer)',
     'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"]',
-    '#related #player-ads',
     '#related ytd-ad-slot-renderer',
     'ytd-ad-slot-renderer',
     'yt-mealbar-promo-renderer',
