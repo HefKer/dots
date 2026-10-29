@@ -43,8 +43,23 @@ def pick(sessions_dir):
     return result.stdout.strip()
 
 
+# What YAML can't hold raw: PyYAML's non-printable set, plus NEL and U+2028/9,
+# which it reads as line breaks.
+YAML_UNSAFE = re.compile("[^\x09\x0a\x0d\x20-\x7e\xa0-\u2027\u202a-\ud7ff\ue000-\ufffd\U00010000-\U0010ffff]")
+
+
+def yaml_str(text):
+    """A YAML double-quoted scalar for text."""
+    # A lone surrogate (an undecodable byte in the environment) can't be written.
+    text = text.encode("utf-8", "replace").decode("utf-8")
+    # JSON strings are valid YAML double-quoted scalars, but only with non-ASCII
+    # left raw: JSON escapes an emoji as a \ud83c\udf4b surrogate pair, which YAML
+    # reads as two broken halves.
+    quoted = json.dumps(text, ensure_ascii=False)
+    return YAML_UNSAFE.sub(lambda m: f"\\u{ord(m.group()):04x}", quoted)
+
+
 def tab_yaml(url, title):
-    # JSON strings are valid YAML double-quoted scalars.
     now = datetime.datetime.now().replace(microsecond=0).isoformat()
     return (
         "  - active: false\n"
@@ -52,8 +67,8 @@ def tab_yaml(url, title):
         "    - active: true\n"
         f"      last_visited: '{now}'\n"
         "      pinned: false\n"
-        f"      title: {json.dumps(title)}\n"
-        f"      url: {json.dumps(url)}\n"
+        f"      title: {yaml_str(title)}\n"
+        f"      url: {yaml_str(url)}\n"
         "      zoom: 1.0\n"
     )
 
@@ -82,7 +97,7 @@ def main():
 
     path = sessions_dir / f"{name}.yml"
     if path.exists():
-        text = path.read_text()
+        text = path.read_text(encoding="utf-8")
         if not ends_in_tab_list(text):
             msg("error", f"unexpected layout in {path.name}, not touching it")
             return
@@ -90,12 +105,12 @@ def main():
         # An empty last window is dumped as `tabs: []`; open it up as a block list.
         if text.endswith("\n  tabs: []\n"):
             text = text[: -len("[]\n")].rstrip() + "\n"
-        path.write_text(text + tab_yaml(url, title))
+        path.write_text(text + tab_yaml(url, title), encoding="utf-8")
         msg("info", f"added {title!r} to {name}")
     else:
         # qutebrowser indexes win["geometry"] directly; null means default geometry.
         header = "windows:\n- active: true\n  geometry: null\n  tabs:\n"
-        path.write_text(header + tab_yaml(url, title))
+        path.write_text(header + tab_yaml(url, title), encoding="utf-8")
         msg("info", f"created session {name} with {title!r}")
 
     if close and os.environ.get("QUTE_MODE") != "hints":

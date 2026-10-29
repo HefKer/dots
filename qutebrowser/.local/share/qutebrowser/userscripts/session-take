@@ -137,7 +137,9 @@ def double_quoted(body):
         else:
             out.append(YAML_ESCAPES.get(e, e))
             i += 2
-    return "".join(out)
+    # Join a \ud83c\udf4b surrogate pair (older session-append output) into one
+    # character; a lone half can't be encoded, so it becomes U+FFFD.
+    return "".join(out).encode("utf-16", "surrogatepass").decode("utf-16", "replace")
 
 
 def find_tabs(lines):
@@ -230,7 +232,7 @@ def main():
         msg("error", f"no session named {name}")
         return
 
-    lines = path.read_text().splitlines(keepends=True)
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
     tabs = find_tabs(lines)
     if not tabs:
         msg("error", f"no tabs found in {name}")
@@ -252,7 +254,7 @@ def main():
         path.unlink()
         msg("info", f"took {title!r}, the last tab of {name}, and deleted the session")
         return
-    path.write_text("".join(rest))
+    path.write_text("".join(rest), encoding="utf-8")
     msg("info", f"took {title!r} from {name}")
 
 
