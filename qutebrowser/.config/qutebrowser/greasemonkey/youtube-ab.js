@@ -17,6 +17,8 @@
 // What YouTube detects, and how to find a new trigger: .claude/skills/qutebrowser-config/youtube-adblock.md in the dots repo
 // Changed: dropped '#related #player-ads', since hiding #player-ads gets the
 // enforcement screen served (2026-10-28); see youtube-prune.js
+// Changed: only .ad-showing counts as an ad, not a skip button or ad overlay
+// in the DOM, which seeked restored videos to their last second (2026-10-29)
 
 (function () {
   'use strict';
@@ -79,10 +81,9 @@
     const skipButton = document.querySelector(
       '.ytp-ad-skip-button, .ytp-skip-ad-button, .ytp-ad-skip-button-modern',
     );
-    const adOverlay = document.querySelector(
-      '.video-ads.ytp-ad-module .ytp-ad-player-overlay, .ytp-ad-button-icon',
-    );
-    const isAd = skipButton || adOverlay || document.querySelector('.ad-showing');
+    // only the player's class says an ad is playing: a skip button can be in
+    // the DOM while the real video loads, and seeking then jumps it to its end
+    const isAd = document.querySelector('.ad-showing');
 
     if (isAd) {
       if (!adState) adState = { muted: video.muted, rate: video.playbackRate };
@@ -101,7 +102,7 @@
       adState = null;
     }
 
-    if (skipButton) {
+    if (isAd && skipButton) {
       skipButton.click();
       nativeTouch(skipButton);
     }
