@@ -2,11 +2,12 @@
 """Append the current tab (or a hinted link) to a saved session without loading it.
 
 Usage:
-    :spawn --userscript session-append [NAME]
+    :spawn --userscript session-append [--close] [NAME]
     :hint links userscript session-append
 
 With no NAME, pick a session with fuzzel; typing a new name creates that session.
 The tab goes at the end of the session's last window.
+--close closes the tab once it's saved (ignored for a hinted link).
 
 Session files are edited as text (no PyYAML on the system python): qutebrowser
 dumps keys sorted, so `tabs:` is the last key of the last window and appending
@@ -64,8 +65,12 @@ def ends_in_tab_list(text):
 
 
 def main():
+    args = sys.argv[1:]
+    close = "--close" in args
+    args = [a for a in args if a != "--close"]
+
     sessions_dir = Path(os.environ["QUTE_DATA_DIR"]) / "sessions"
-    name = sys.argv[1] if len(sys.argv) > 1 else pick(sessions_dir)
+    name = args[0] if args else pick(sessions_dir)
     if not name:
         return
 
@@ -92,6 +97,11 @@ def main():
         header = "windows:\n- active: true\n  geometry: null\n  tabs:\n"
         path.write_text(header + tab_yaml(url, title))
         msg("info", f"created session {name} with {title!r}")
+
+    if close and os.environ.get("QUTE_MODE") != "hints":
+        # By index, not the current tab: focus may have moved while fuzzel was up.
+        with open(os.environ["QUTE_FIFO"], "a") as fifo:
+            fifo.write(f"cmd-run-with-count {os.environ['QUTE_TAB_INDEX']} tab-close\n")
 
 
 main()

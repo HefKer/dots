@@ -115,8 +115,9 @@ config.bind(
     ",ss", 'cmd-set-text :session-save --only-active-window "" ;; rl-backward-char'
 )
 config.bind(",sd", 'cmd-set-text :session-delete "" ;; rl-backward-char')
-# Append a tab to a saved session without loading it (fuzzel picks the session)
-config.bind(",sa", "spawn --userscript session-append")
+# Move a tab into a saved session without loading it (fuzzel picks the session):
+# append it, then close it
+config.bind(",sa", "spawn --userscript session-append --close")
 config.bind(",sA", "hint links userscript session-append")  # a hinted link instead
 # Open a tab from a saved session in a new tab (fuzzel picks session, then tab);
 # like ,sl/,sL, lowercase removes it from the session and uppercase keeps it
