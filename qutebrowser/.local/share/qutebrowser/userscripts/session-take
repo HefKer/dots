@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+"""Open one tab of a saved session in a new tab, removing it from the session.
+
+Usage:
+    :spawn --userscript session-take [--keep] [NAME]
+
+With no NAME, pick a session with fuzzel; then pick the tab with fuzzel.
+--keep opens the tab but leaves the session file alone.
+
+Only the tab's current page is opened, not its back/forward history.
+
+Session files are edited as text (no PyYAML on the system python): a tab is the
+run of lines from its `- ` item under `tabs:` up to the next item, and removing
+it deletes exactly those lines, leaving the rest of the file byte-for-byte.
+"""
+
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+
+def msg(level, text):
+    with open(os.environ["QUTE_FIFO"], "a") as fifo:
+        fifo.write(f"message-{level} {json.dumps('session-take: ' + text)}\n")
+
+
+def fuzzel(prompt, entries, index=False):
+    result = subprocess.run(
+        ["fuzzel", "--dmenu", "--prompt", prompt] + (["--index"] if index else []),
+        input="\n".join(entries),
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def indent(line):
+    return len(line) - len(line.lstrip(" "))
+
+
+def blank(line):
+    return not line.strip()
+
+
+def items(lines, start, end, item_indent):
+    """Split lines[start:end] into (first, last) ranges of `- ` items at item_indent."""
+    ranges = []
+    for i in range(start, end):
+        line = lines[i]
+        if blank(line):
+            continue
+        if indent(line) == item_indent and line.lstrip(" ").startswith("- "):
+            if ranges:
+                ranges[-1][1] = i
+            ranges.append([i, end])
+    return ranges
+
+
+def list_end(lines, start, item_indent):
+    """Index past the last line of the `- ` list starting at lines[start]."""
+    for i in range(start, len(lines)):
+        line = lines[i]
+        if blank(line):
+            continue
+        if indent(line) < item_indent or (
+            indent(line) == item_indent and not line.lstrip(" ").startswith("- ")
+        ):
+            return i
+    return len(lines)
+
+
+def first_item(lines, key_line):
+    """Index and indent of the first `- ` item of the list under lines[key_line]."""
+    for j in range(key_line + 1, len(lines)):
+        if blank(lines[j]):
+            continue
+        if lines[j].lstrip(" ").startswith("- ") and indent(lines[j]) >= indent(
+            lines[key_line]
+        ):
+            return j, indent(lines[j])
+        return None
+    return None
+
+
+def scalar(lines, start, end, key):
+    """Value of `key:` among lines[start:end], joining wrapped continuation lines."""
+    pattern = re.compile(rf"^(\s*(?:- )?){re.escape(key)}:(.*)$")
+    for i in range(start, end):
+        m = pattern.match(lines[i].rstrip("\n"))
+        if not m:
+            continue
+        key_indent = len(m.group(1))
+        raw = m.group(2).strip()
+        for line in lines[i + 1 : end]:
+            if blank(line) or indent(line) <= key_indent:
+                break
+            # A wrapped double-quoted line ending in `\` folds without a space.
+            escaped = raw.startswith('"') and (len(raw) - len(raw.rstrip("\\"))) % 2
+            raw = raw[:-1] + line.strip() if escaped else raw + " " + line.strip()
+        if raw.startswith('"'):
+            return double_quoted(raw[1:-1])
+        if raw.startswith("'"):
+            return raw[1:-1].replace("''", "'")
+        return raw
+    return None
+
+
+YAML_ESCAPES = {
+    "0": "\0", "a": "\a", "b": "\b", "t": "\t", "\t": "\t", "n": "\n",
+    "v": "\v", "f": "\f", "r": "\r", "e": "\x1b", " ": " ", '"': '"',
+    "/": "/", "\\": "\\", "N": "\x85", "_": "\xa0", "L": "\u2028",
+    "P": "\u2029",
+}
+HEX_ESCAPES = {"x": 2, "u": 4, "U": 8}
+
+
+def double_quoted(body):
+    """Decode the inside of a YAML double-quoted scalar."""
+    out, i = [], 0
+    while i < len(body):
+        c = body[i]
+        if c != "\\" or i + 1 == len(body):
+            out.append(c)
+            i += 1
+            continue
+        e = body[i + 1]
+        if e in HEX_ESCAPES:
+            width = HEX_ESCAPES[e]
+            out.append(chr(int(body[i + 2 : i + 2 + width], 16)))
+            i += 2 + width
+        else:
+            out.append(YAML_ESCAPES.get(e, e))
+            i += 2
+    return "".join(out)
+
+
+def find_tabs(lines):
+    """Every tab in the session as (first, last, title, url)."""
+    tabs = []
+    for i, line in enumerate(lines):
+        if not re.match(r"^\s*(?:- )?tabs:\s*$", line):
+            continue
+        found = first_item(lines, i)
+        if not found:
+            continue
+        start, tab_indent = found
+        for first, last in items(lines, start, list_end(lines, start, tab_indent), tab_indent):
+            history_key = next(
+                (j for j in range(first, last) if re.match(r"^\s*(?:- )?history:\s*$", lines[j])),
+                None,
+            )
+            found = history_key is not None and first_item(lines, history_key)
+            if not found:
+                continue
+            h_start, h_indent = found
+            entries = items(lines, h_start, list_end(lines, h_start, h_indent), h_indent)
+            if not entries:
+                continue
+            # The current page is the entry marked active; fall back to the newest.
+            current = next(
+                (
+                    e
+                    for e in entries
+                    if any(
+                        re.match(r"^\s*(?:- )?active: true\s*$", lines[j])
+                        for j in range(*e)
+                    )
+                ),
+                entries[-1],
+            )
+            url = scalar(lines, *current, "url")
+            if url:
+                title = scalar(lines, *current, "title") or url
+                tabs.append((first, last, title, url))
+    return tabs
+
+
+def remove(lines, first, last):
+    """Drop lines[first:last]; an emptied tab list becomes `tabs: []`."""
+    head, tail = lines[:first], lines[last:]
+    prev = next((k for k in range(len(head) - 1, -1, -1) if not blank(head[k])), None)
+    if prev is not None and re.match(r"^\s*(?:- )?tabs:\s*$", head[prev]):
+        nxt = next((line for line in tail if not blank(line)), None)
+        sibling = (
+            nxt is not None
+            and indent(nxt) == indent(lines[first])
+            and nxt.lstrip(" ").startswith("- ")
+        )
+        if not sibling:
+            # qutebrowser iterates win["tabs"] directly, so it can't be null.
+            head[prev] = head[prev].rstrip("\n").rstrip() + " []\n"
+    return head + tail
+
+
+def pick_session(sessions_dir):
+    names = sorted(
+        p.stem
+        for p in sessions_dir.glob("*.yml")
+        if not p.stem.startswith("_") and "sync-conflict" not in p.stem
+    )
+    return fuzzel("take from session: ", names)
+
+
+def main():
+    args = sys.argv[1:]
+    keep = "--keep" in args
+    args = [a for a in args if a != "--keep"]
+
+    sessions_dir = Path(os.environ["QUTE_DATA_DIR"]) / "sessions"
+    name = args[0] if args else pick_session(sessions_dir)
+    if not name:
+        return
+    path = sessions_dir / f"{name}.yml"
+    if not path.exists():
+        msg("error", f"no session named {name}")
+        return
+
+    lines = path.read_text().splitlines(keepends=True)
+    tabs = find_tabs(lines)
+    if not tabs:
+        msg("error", f"no tabs found in {name}")
+        return
+
+    choice = fuzzel(
+        f"{name}: ", [f"{title}  —  {url}" for _, _, title, url in tabs], index=True
+    )
+    if not choice.isdigit() or int(choice) >= len(tabs):
+        return
+    first, last, title, url = tabs[int(choice)]
+
+    with open(os.environ["QUTE_FIFO"], "a") as fifo:
+        fifo.write(f"open -t {url}\n")
+    if keep:
+        return
+    path.write_text("".join(remove(lines, first, last)))
+    msg("info", f"took {title!r} from {name}")
+
+
+main()

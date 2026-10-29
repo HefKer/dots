@@ -118,6 +118,10 @@ config.bind(",sd", 'cmd-set-text :session-delete "" ;; rl-backward-char')
 # Append a tab to a saved session without loading it (fuzzel picks the session)
 config.bind(",sa", "spawn --userscript session-append")
 config.bind(",sA", "hint links userscript session-append")  # a hinted link instead
+# Open a tab from a saved session in a new tab (fuzzel picks session, then tab);
+# like ,sl/,sL, lowercase removes it from the session and uppercase keeps it
+config.bind(",st", "spawn --userscript session-take")
+config.bind(",sT", "spawn --userscript session-take --keep")
 
 # --- [E]xternal Spawn Commands ---
 # [b]rowsers
