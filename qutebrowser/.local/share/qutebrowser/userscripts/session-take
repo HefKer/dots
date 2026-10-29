@@ -7,11 +7,14 @@ Usage:
 With no NAME, pick a session with fuzzel; then pick the tab with fuzzel.
 --keep opens the tab but leaves the session file alone.
 
-Only the tab's current page is opened, not its back/forward history.
+Only the tab's current page is opened, not its back/forward history: qutebrowser
+can't restore history on QtWebEngine, not even for :session-load.
 
 Session files are edited as text (no PyYAML on the system python): a tab is the
 run of lines from its `- ` item under `tabs:` up to the next item, and removing
 it deletes exactly those lines, leaving the rest of the file byte-for-byte.
+Taking a window's last tab removes the window; taking the session's last tab
+deletes the session.
 """
 
 import json
@@ -178,21 +181,30 @@ def find_tabs(lines):
     return tabs
 
 
+def windows(lines):
+    """(first, last) line ranges of the session's windows."""
+    key = next((i for i, line in enumerate(lines) if re.match(r"^windows:\s*$", line)), None)
+    found = key is not None and first_item(lines, key)
+    if not found:
+        return []
+    start, win_indent = found
+    return items(lines, start, list_end(lines, start, win_indent), win_indent)
+
+
 def remove(lines, first, last):
-    """Drop lines[first:last]; an emptied tab list becomes `tabs: []`."""
-    head, tail = lines[:first], lines[last:]
-    prev = next((k for k in range(len(head) - 1, -1, -1) if not blank(head[k])), None)
-    if prev is not None and re.match(r"^\s*(?:- )?tabs:\s*$", head[prev]):
-        nxt = next((line for line in tail if not blank(line)), None)
-        sibling = (
-            nxt is not None
-            and indent(nxt) == indent(lines[first])
-            and nxt.lstrip(" ").startswith("- ")
-        )
-        if not sibling:
-            # qutebrowser iterates win["tabs"] directly, so it can't be null.
-            head[prev] = head[prev].rstrip("\n").rstrip() + " []\n"
-    return head + tail
+    """Drop lines[first:last], and the tab's window if that empties it.
+
+    A window with no tabs crashes :session-load, so it goes too. Returns None
+    when no windows are left, meaning the session itself should go.
+    """
+    tabs = [t for t in find_tabs(lines) if t[0] != first]
+    wins = windows(lines)
+    window = next((w for w in wins if w[0] <= first < w[1]), None)
+    if window and not any(window[0] <= t[0] < window[1] for t in tabs):
+        if len(wins) == 1:
+            return None
+        first, last = window
+    return lines[:first] + lines[last:]
 
 
 def pick_session(sessions_dir):
@@ -235,7 +247,12 @@ def main():
         fifo.write(f"open -t {url}\n")
     if keep:
         return
-    path.write_text("".join(remove(lines, first, last)))
+    rest = remove(lines, first, last)
+    if rest is None:
+        path.unlink()
+        msg("info", f"took {title!r}, the last tab of {name}, and deleted the session")
+        return
+    path.write_text("".join(rest))
     msg("info", f"took {title!r} from {name}")
 
 
