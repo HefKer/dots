@@ -50,6 +50,8 @@ c.url.searchengines = {
     "ou": "https://osu.ppy.sh/users/{}",
     # media
     "manga": "https://mangafire.to/browse?keyword={}&sort=relevance:desc",
+    "anilist": "https://anilist.co/search/anime?search={}",
+    "al": "https://anilist.co/search/anime?search={}",
 }
 
 # Mute linter warnings
