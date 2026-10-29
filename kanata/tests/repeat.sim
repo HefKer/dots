@@ -1,0 +1,6 @@
+# tap-repress-timeout: tap then hold within 200 ms holds the letter itself,
+# so the OS repeats it (j/k in vim) instead of holding Shift.
+
+# j tapped, then held 100 ms later: j twice.
+in: d:j t:60 u:j t:100 d:j t:600 u:j
+out: jj

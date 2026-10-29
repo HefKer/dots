@@ -1,0 +1,27 @@
+# Home-row-mod keys inside words must stay letters, slow, at an even pace and
+# rolled: a hold= longer than the gap between presses (60000 / 5wpm ms)
+# overlaps keys.
+
+# Opposite-hand rolls, the "for" misfire's shape.
+type: for wpm=40 hold=180
+out: for
+type: for
+out: for
+type: for wpm=150 hold=150
+out: for
+type: fold jade dash kids lass salad
+out: fold jade dash kids lass salad
+type: fold jade dash kids lass salad wpm=150 hold=160
+out: fold jade dash kids lass salad
+
+# Opposite-hand words, slow with long holds.
+type: fold jade dash kids lass salad wpm=40 hold=180
+out: fold jade dash kids lass salad
+
+# Same-hand rolls.
+type: as sad fast wear jump look wpm=40 hold=180
+out: as sad fast wear jump look
+type: as sad fast wear jump look
+out: as sad fast wear jump look
+type: as sad fast wear jump look wpm=150 hold=160
+out: as sad fast wear jump look

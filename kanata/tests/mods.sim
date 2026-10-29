@@ -1,0 +1,23 @@
+# Deliberate holds become modifiers.
+
+# f held, then j: left Shift.
+in: d:f t:250 d:j t:30 u:j t:30 u:f
+out: J
+# j held, then a: right Shift.
+in: d:j t:250 d:a t:30 u:a t:30 u:j
+out: A
+# d held, then l: Ctrl.
+in: d:d t:250 d:l t:30 u:l t:30 u:d
+out: <C-l>
+# k held, then c: Ctrl+C, opposite hand.
+in: d:k t:250 d:c t:30 u:c t:30 u:k
+out: <C-c>
+# a and f held together (neutral-keys), then k: Super+Shift.
+in: d:a t:20 d:f t:250 d:k t:30 u:k t:30 u:f u:a
+out: <M-S-k>
+# d, then c within the 200 ms timeout: same hand, so a tap.
+in: d:d t:100 d:c t:30 u:c t:30 u:d
+out: dc
+# d held past the timeout, then c: Ctrl even on the same hand.
+in: d:d t:250 d:c t:30 u:c t:30 u:d
+out: <C-c>

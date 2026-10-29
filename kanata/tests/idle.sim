@@ -1,0 +1,9 @@
+# require-prior-idle: a hold that starts within 150 ms of a keypress, as one
+# mid-word does, stays a letter; after a pause it is a modifier.
+
+# f held 80 ms after a was pressed: a letter.
+in: d:a t:50 u:a t:30 d:f t:300 d:j t:30 u:j t:30 u:f
+out: afj
+# f held 200 ms after a was pressed: Shift.
+in: d:a t:50 u:a t:150 d:f t:300 d:j t:30 u:j t:30 u:f
+out: aJ

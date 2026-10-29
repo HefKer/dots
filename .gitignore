@@ -13,6 +13,9 @@ __pycache__/
 # niri — DMS regenerates this from the live compositor, so it is per-host
 niri/.config/niri/dms/outputs.kdl
 
+# kanata — misfire notes may quote private text; kanata-flag writes them
+kanata/misfires.md
+
 # fish — universal variables, rewritten at runtime
 fish/.config/fish/fish_variables
 

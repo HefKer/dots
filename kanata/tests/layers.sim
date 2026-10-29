@@ -1,0 +1,19 @@
+# Caps, the Fn layers, Fn Lock and the passthrough toggle.
+
+# Caps tap: Esc. Caps hold: Fn1.
+in: d:caps t:50 u:caps
+out: <escape>
+in: d:caps t:250 d:h t:30 u:h t:30 u:caps
+out: <home>
+in: d:caps t:250 d:1 t:30 u:1 t:30 u:caps
+out: <f1>
+
+# Fn Lock (Caps, Tab, right Shift) keeps Fn1 on until pressed again.
+in: d:caps t:250 d:tab t:30 d:rsft t:30 u:rsft t:30 u:tab t:30 u:caps t:300 d:h t:30 u:h t:300 d:caps t:250 d:tab t:30 d:rsft t:30 u:rsft t:30 u:tab t:30 u:caps t:300 d:h t:30 u:h
+out: <home>h
+
+# Both Shifts + Esc: passthrough, where a held f is just f; again to return.
+in: d:lsft t:30 d:rsft t:30 d:esc t:30 u:esc t:30 u:rsft u:lsft t:300 d:f t:300 d:j t:30 u:j t:30 u:f
+out: <S>fj
+in: d:lsft t:30 d:rsft t:30 d:esc t:30 u:esc t:30 u:rsft u:lsft t:300 d:lsft t:30 d:rsft t:30 d:esc t:30 u:esc t:30 u:rsft u:lsft t:300 d:f t:300 d:j t:30 u:j t:30 u:f
+out: <S><S>J
