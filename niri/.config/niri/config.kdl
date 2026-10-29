@@ -600,9 +600,12 @@ binds {
     // Mod+Space       { switch-layout "next"; }
     // Mod+Shift+Space { switch-layout "prev"; }
 
-    Print { screenshot; }
-    Ctrl+Print { screenshot-screen; }
-    Alt+Print { screenshot-window; }
+    // Screenshots open in DMS Quick Capture's annotator: Enter copies, Ctrl+S saves.
+    Print hotkey-overlay-title="Screenshot a Region" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
+    Ctrl+Print hotkey-overlay-title="Screenshot the Screen" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "output" "edit"; }
+    Alt+Print hotkey-overlay-title="Screenshot a Window" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "window" "edit"; }
+    // Press once to pick a region and start recording, again to stop; saved to ~/Videos/Recordings.
+    Shift+Print hotkey-overlay-title="Record a Region (GIF)" { spawn "dms" "ipc" "call" "quickCapture" "recordToggle" "region"; }
 
     // Applications such as remote-desktop clients and software KVM switches may
     // request that niri stops processing the keyboard shortcuts defined here
