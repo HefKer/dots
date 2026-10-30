@@ -6,15 +6,29 @@
 # A userscript only to run the commands in a row: jseval takes the rest of its
 # line as code, ;; included, so a bind can't chain anything after it.
 #
-# Usage: :spawn --userscript js-hint <group> [<hint target> [<args>...]]
+# Usage: :spawn --userscript js-hint [--follow-lone] <group> [<hint target> [<args>...]]
 # The target defaults to handing the picked element to the group's qbHint.onPick.
+# --follow-lone picks a lone hint without a keypress: hints.auto_follow goes to
+# always for this hint only. hint starts asynchronously, hence the wait before
+# restoring config.py's value; if it's too short, the lone hint just waits for
+# its key.
+follow_lone=false
+if [[ $1 == --follow-lone ]]; then
+  follow_lone=true
+  shift
+fi
 group=$1
 shift
 target="run jseval -q qbHint.pick('{hint-url}')"
 (($#)) && target=$*
 js=$QUTE_CONFIG_DIR/js
+$follow_lone && echo 'set -t hints.auto_follow always' >"$QUTE_FIFO"
 printf '%s\n' \
   "jseval -q -f $js/hint-marks.js" \
   "jseval -q -f $js/hint-$group.js" \
   "hint $group $target" \
   >"$QUTE_FIFO"
+if $follow_lone; then
+  sleep 0.2
+  echo 'set -t hints.auto_follow unique-match' >"$QUTE_FIFO"
+fi

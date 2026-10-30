@@ -67,8 +67,9 @@ config.bind("<Alt-Esc>", "fake-key <Escape>")
 JS = config.configdir / "js"
 # Drop focus back to the page, e.g. off YouTube's volume slider
 config.bind(";q", f"jseval -q -f {JS / 'blur.js'}")
-# Hint a scrollable element or iframe to focus, so j/k etc. scroll it
-config.bind(";s", "spawn --userscript js-hint scrollable")
+# Hint a scrollable element or iframe to focus, so j/k etc. scroll it; with only
+# two on screen, switch straight to the other one
+config.bind(";s", "spawn --userscript js-hint --follow-lone scrollable")
 c.hints.selectors["scrollable"] = ["[data-qb-hint=scrollable]"]
 # Hint a file input, hidden ones too (drag-and-drop sites), to open the picker
 config.bind(";u", "spawn --userscript js-hint upload normal")
