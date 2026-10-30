@@ -12,11 +12,20 @@ config.set("content.cookies.store", True)
 
 # Brave Search's bot check keeps re-flagging the stock QtWebEngine UA, which
 # reports an old Chromium major; present as current desktop Chrome instead.
-config.set(
-    "content.headers.user_agent",
-    "Mozilla/5.0 ({os_info}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
-    "https://search.brave.com/*",
-)
+chrome_ua = "Mozilla/5.0 ({os_info}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
+config.set("content.headers.user_agent", chrome_ua, "https://search.brave.com/*")
+
+# ntv's stream player embeds a data: PDF to detect sandboxed iframes, and with
+# plugins off the PDF fails, so it refuses to play: "Remove sandbox attributes
+# on the iframe tag". The pattern matches the tab's page, not the player's
+# rotating embed host.
+for ntv in ("ntv.st", "ntv.cx"):
+    config.set("content.plugins", True, f"*://*.{ntv}/*")
+
+# Its stream host answers the stock UA with a 403, which the player reports as
+# hls:networkError_manifestLoadError. Unlike content.plugins, the UA pattern is
+# matched per request, so it has to name the stream host and not ntv.
+config.set("content.headers.user_agent", chrome_ua, "*://*.indianservers.st/*")
 
 # Adblocking
 c.content.blocking.enabled = True
