@@ -49,41 +49,28 @@ user's windows are left alone and the copy can be broken freely. The step is
 done when a single selector, hook or response edit flips the probe between
 `OK` and `ERROR`.
 
-1. **Copy the profile.** Link the config, copy the data minus the big caches:
+1. **Start.** Use `scripts/qute-sandbox`, which copies the profile:
 
    ```sh
-   B=/tmp/claude-1000/qtest; mkdir -p $B/config $B/data $B/cache $B/runtime
-   for f in ~/.config/qutebrowser/*; do ln -s "$f" $B/config/; done
-   rsync -a --exclude 'webengine/Service Worker-bak' --exclude 'webengine/WebStorage' \
-     --exclude 'webengine/File System' --exclude 'webengine/Shared Dictionary' \
-     --exclude sessions ~/.local/share/qutebrowser/ $B/data/
-   qutebrowser --basedir $B 'https://www.youtube.com/watch?v=<id>' &
+   scripts/qute-sandbox start --profile 'https://www.youtube.com/watch?v=<id>'
    ```
 
-   Commands then go to that instance with `qutebrowser --basedir $B ':cmd'`.
-   Swap `$B/config/greasemonkey` for a folder of chosen scripts or links to
-   them; the real folder stays untouched. `$B/data/greasemonkey` holds the
-   generated `ubo-scriptlets.js`.
+   Replace the `config/greasemonkey` link in its basedir with a folder of
+   chosen scripts or links to them; the real folder stays untouched.
+   `data/greasemonkey` holds the generated `ubo-scriptlets.js`.
 
-2. **Probe.** `:jseval` output never reaches the shell. Have the page write
-   its state into `document.title`, read it with a userscript through
-   `$QUTE_TITLE`, then restore the title:
+2. **Probe.**
 
    ```sh
-   # $d/dump is a userscript: printf '%s\n' "$QUTE_TITLE" > $d/out
-   js='(()=>{const p=document.getElementById("movie_player");const r=p.getPlayerResponse();
-   window.__t=document.title;document.title="DUMP"+JSON.stringify({status:r.playabilityStatus.status,
-   err:r.playabilityStatus.errorScreen&&Object.keys(r.playabilityStatus.errorScreen)});})()'
-   qutebrowser --basedir $B ":jseval -q -w main $js"; sleep 1
-   qutebrowser --basedir $B ":spawn --userscript $d/dump"; sleep 1
-   qutebrowser --basedir $B ':jseval -q -w main document.title=window.__t'
+   scripts/qute-sandbox eval '(()=>{const r=document.getElementById("movie_player").getPlayerResponse();
+   return {status:r.playabilityStatus.status,err:r.playabilityStatus.errorScreen&&Object.keys(r.playabilityStatus.errorScreen)};})()'
    ```
 
-   After each change run `:greasemonkey-reload` and `:reload -f`, then wait
-   about 18 s before probing. Probe too early and the dump is the bare page
-   title. The same trick works on the main instance, but only on its
-   *active* tab: check `$QUTE_URL` first, since the user may switch tabs
-   mid-test.
+   After each change run `:greasemonkey-reload` and `:reload -f` through
+   `qute-sandbox cmd`, then wait about 18 s before probing. Probe too early and
+   `getPlayerResponse` isn't there yet. The title trick behind `eval` also works
+   on the main instance, but only on its *active* tab: check `$QUTE_URL` first,
+   since the user may switch tabs mid-test.
 
 3. **Bisect.** Start with no scripts (expect `OK`), then add one script at a
    time. Inside a script, cut sections (fetch hook, XHR hooks, initial-response

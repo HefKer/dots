@@ -1,0 +1,240 @@
+#!/usr/bin/env bash
+# Throwaway qutebrowser instance for testing config in a live page, driven from
+# the shell. Separate basedir, so the user's running browser and profile stay
+# out of it.
+
+set -euo pipefail
+
+usage() {
+	cat <<EOF
+usage: qute-sandbox <command>
+
+  start [--profile] [url]  start the instance and wait for the page to load
+                           --profile: use a copy of the real data dir (cookies,
+                           logins, generated scripts), never the original
+  eval <js>                print the value of a JS expression in the active tab;
+                           a Promise is awaited, a string prints raw, anything
+                           else as JSON, a throw exits 1. Wrap statements in an
+                           IIFE. No eval(), so it works under a strict CSP
+  cmd <:command>           send a qutebrowser command, e.g. ':reload -f'
+  stop                     stop this instance and remove its basedir
+
+Basedir: $B, with the instance's log in log. config/ has
+links to the repo's files, so edits apply on ':config-source' or the next start;
+replace a link to swap something (e.g. config/greasemonkey) without touching
+the repo. autoconfig.yml and other files qutebrowser writes are copies.
+
+One instance at a time. Opens a real window; QT_QPA_PLATFORM=offscreen at start
+keeps it off the screen.
+EOF
+}
+
+die() {
+	printf 'qute-sandbox: %s\n' "$*" >&2
+	exit 1
+}
+
+B=${TMPDIR:-/tmp}/qute-sandbox-$UID
+repo=$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")
+
+# The PID recorded at start, checked against its command line so a recycled PID
+# never counts as ours. Never look the instance up by pattern: a pkill -f or
+# pgrep -f on the basedir also matches any shell whose command line mentions it.
+running() {
+	local cmdline
+	[[ -r $B/pid ]] || return 1
+	cmdline=$({ tr '\0' ' ' <"/proc/$(<"$B/pid")/cmdline"; } 2>/dev/null) || return 1
+	[[ $cmdline == *"--basedir $B "* ]]
+}
+
+# Without a live instance, qutebrowser --basedir would start a new one.
+send() {
+	running || die "not running, use: qute-sandbox start"
+	qutebrowser --basedir "$B" "$@" >>"$B/log" 2>&1
+}
+
+# The tab's title as the browser sees it. Print it once it starts with $1, polling
+# $2 times, about a second each.
+read_title() {
+	local i title
+	for ((i = 0; i < $2; i++)); do
+		rm -f "$B/title"
+		send ":spawn --userscript $B/dump"
+		for _ in {1..20}; do
+			[[ -e $B/title ]] && break
+			sleep 0.05
+		done
+		title=$(cat "$B/title" 2>/dev/null) || title=
+		if [[ $title == "$1"* ]]; then
+			printf '%s\n' "$title"
+			return 0
+		fi
+		sleep 0.2
+	done
+	return 1
+}
+
+# :jseval output never reaches the shell, so the page publishes the value through
+# document.title and a userscript reads it from $QUTE_TITLE. Titles have their
+# whitespace collapsed and are capped near 4096 characters, so the value travels
+# as base64 in chunks: mark:index:count:status:chunk. $2 is how long to poll.
+eval_js() {
+	local mark=qute-sandbox-$RANDOM$RANDOM i=1 count status title out
+	{
+		cat <<EOF
+(() => {
+	const mark = "$mark";
+	const save = document.title;
+	const publish = (status, text) => {
+		const bytes = new TextEncoder().encode(text);
+		const b64 = btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join(""));
+		const size = 3000;
+		const count = Math.max(1, Math.ceil(b64.length / size));
+		const chunk = (i) => mark + ":" + i + ":" + count + ":" + status + ":" +
+			b64.slice(i * size, (i + 1) * size);
+		window.__quteSandbox = { save, chunk };
+		document.title = chunk(0);
+	};
+	Promise.resolve()
+		.then(() => (
+EOF
+		printf '%s\n' "$1"
+		cat <<'EOF'
+		))
+		.then((v) => (typeof v === "string" ? v : (JSON.stringify(v) ?? String(v))))
+		.then((v) => publish("ok", v), (e) => publish("error", String(e)));
+})();
+EOF
+	} >"$B/eval.js"
+	send ":jseval --quiet --world=main --file $B/eval.js"
+
+	title=$(read_title "$mark:0:" "${2:-15}") ||
+		die "no result (syntax error in the JS, or a page that keeps rewriting its title?)"
+	IFS=: read -r _ _ count status out <<<"$title"
+	while ((i < count)); do
+		send ":jseval --quiet --world=main document.title=window.__quteSandbox.chunk($i)"
+		title=$(read_title "$mark:$i:" 15) || die "lost the result at chunk $i of $count"
+		out+=${title##*:}
+		i=$((i + 1))
+	done
+	send ":jseval --quiet --world=main document.title=window.__quteSandbox.save"
+
+	if [[ $status == ok ]]; then
+		base64 -d <<<"$out"
+		echo
+	else
+		{
+			base64 -d <<<"$out"
+			echo
+		} >&2
+		return 1
+	fi
+}
+
+populate() {
+	local f real_data=${XDG_DATA_HOME:-$HOME/.local/share}/qutebrowser
+	mkdir -m 700 "$B"
+	mkdir -p "$B"/{config,data,cache,runtime}
+
+	for f in "$repo"/qutebrowser/.config/qutebrowser/*; do
+		case ${f##*/} in
+		autoconfig.yml | quickmarks | bookmarks | qsettings) cp -r "$f" "$B/config/" ;;
+		*.sync-conflict-* | __pycache__) ;;
+		*) ln -s "$f" "$B/config/" ;;
+		esac
+	done
+
+	if [[ $1 == profile ]]; then
+		[[ -d $real_data ]] || die "no profile at $real_data"
+		# Exit 24: files vanished mid-copy, expected if the real browser is running.
+		rsync -a --exclude 'webengine/Service Worker-bak' --exclude 'webengine/WebStorage' \
+			--exclude 'webengine/File System' --exclude 'webengine/Shared Dictionary' \
+			--exclude sessions --exclude userscripts "$real_data/" "$B/data/" || (($? == 24))
+	fi
+	ln -s "$repo/qutebrowser/.local/share/qutebrowser/userscripts" "$B/data/userscripts"
+
+	cat >"$B/dump" <<EOF
+#!/bin/sh
+printf '%s\n' "\$QUTE_TITLE" >"$B/title.tmp" && mv "$B/title.tmp" "$B/title"
+EOF
+	chmod +x "$B/dump"
+}
+
+cmd_start() {
+	local mode=fresh url=about:blank ready='document.readyState === "complete"' i
+	while (($#)); do
+		case $1 in
+		--profile) mode=profile ;;
+		-*) die "unknown option: $1" ;;
+		*) url=$1 ;;
+		esac
+		shift
+	done
+	[[ $url == about:blank ]] || ready+=' && location.href !== "about:blank"'
+
+	running && die "already running (pid $(<"$B/pid")), use: qute-sandbox stop"
+	rm -rf "$B"
+	populate "$mode"
+
+	# setsid: survive the caller's shell, and give stop a process group to clean up.
+	setsid qutebrowser --basedir "$B" "$url" </dev/null >>"$B/log" 2>&1 &
+	echo $! >"$B/pid"
+
+	for i in {1..300}; do
+		compgen -G "$B/runtime/ipc-*" >/dev/null && break
+		running || {
+			tail -n 20 "$B/log" >&2
+			rm -rf "$B"
+			die "qutebrowser exited during startup"
+		}
+		sleep 0.1
+	done
+	compgen -G "$B/runtime/ipc-*" >/dev/null || die "no IPC socket after 30s, see $B/log"
+
+	# A title set before the page commits is lost with the old document, so give
+	# up on a probe early and send a new one.
+	for i in {1..30}; do
+		[[ $(eval_js "$ready" 2 2>/dev/null) == true ]] && break
+		sleep 0.2
+	done
+	((i < 30)) || echo "qute-sandbox: page still not loaded after 60s" >&2
+	echo "$B"
+}
+
+cmd_stop() {
+	local pid i
+	[[ -e $B ]] || return 0
+	if running; then
+		pid=$(<"$B/pid")
+		kill "$pid"
+		for i in {1..100}; do
+			running || break
+			sleep 0.1
+		done
+		kill -KILL -- "-$pid" 2>/dev/null || true
+	fi
+	rm -rf "$B"
+}
+
+case ${1-} in
+start)
+	shift
+	cmd_start "$@"
+	;;
+eval)
+	(($# == 2)) || die "usage: qute-sandbox eval <js>"
+	running || die "not running, use: qute-sandbox start"
+	eval_js "$2"
+	;;
+cmd)
+	shift
+	[[ ${1-} == :* ]] || die "usage: qute-sandbox cmd <:command>"
+	send "$*"
+	;;
+stop) cmd_stop ;;
+-h | --help | help) usage ;;
+*)
+	usage >&2
+	exit 2
+	;;
+esac

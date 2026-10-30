@@ -33,6 +33,10 @@ Because `cc` clears first, it rebuilds bindings from qutebrowser's defaults plus
 
 The defaults are listed under `bindings.default` in `qute://help/settings.html`.
 
+## Testing in a live page
+
+To try a userscript, keybind or config change in a real page, use `scripts/qute-sandbox` (`--help` has the commands). It runs the repo's config in a throwaway instance and leaves the user's browser alone.
+
 ## Editor integration
 
 `<Ctrl-e>` opens the external editor: wezterm running nvim.
