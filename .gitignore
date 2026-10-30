@@ -39,7 +39,10 @@ quickmarks
 /.stglobalignore
 
 # claude — the global ignore drops /.claude entirely; keep the repo-specific
-# skills, which are authored here
+# skills, which are authored here. Git never looks inside an ignored directory,
+# so /.claude itself has to be re-included before skills/ can be.
+!/.claude/
+/.claude/*
 !/.claude/skills/
 /qutebrowser/.local/share/qutebrowser/userscripts/qutewarden
 /qutebrowser/.local/share/qutebrowser/userscripts/aniqute
