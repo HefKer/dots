@@ -52,6 +52,8 @@ c.url.searchengines = {
     "manga": "https://mangafire.to/browse?keyword={}&sort=relevance:desc",
     "anilist": "https://anilist.co/search/anime?search={}",
     "al": "https://anilist.co/search/anime?search={}",
+    "miruro": "https://www.miruro.tv/search?query={}",
+    "mi": "https://www.miruro.tv/search?query={}",
 }
 
 # Mute linter warnings
