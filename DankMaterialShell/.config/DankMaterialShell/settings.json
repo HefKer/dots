@@ -182,7 +182,11 @@
         "focusedWindow"
       ],
       "centerWidgets": [
-        "music",
+        {
+          "id": "music",
+          "enabled": true,
+          "mediaSize": 3
+        },
         "clock",
         "weather"
       ],
