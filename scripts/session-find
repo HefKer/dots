@@ -1,0 +1,482 @@
+#!/usr/bin/env python3
+"""Search Claude Code session transcripts, subagents included.
+
+Read-only over the transcript store. Sessions live at
+<config>/projects/<encoded-cwd>/<session-id>.jsonl and subagents at
+<config>/projects/<encoded-cwd>/<session-id>/subagents/agent-*.jsonl.
+"""
+
+import argparse
+import concurrent.futures
+import functools
+import json
+import multiprocessing
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+from datetime import date, datetime, timedelta
+
+SNIPPET_WIDTH = 120
+NEAR_WINDOW = 80  # chars either side of the first word in which the other words must fall
+TEXT, TOOL_INPUT, TOOL_RESULT = 2, 1, 0  # snippet preference: higher wins
+METADATA_PREFIXES = (
+    b'{"type":"ai-title"',
+    b'{"type":"custom-title"',
+    b'{"type":"relocated"',
+)
+SYNC_CONFLICT = re.compile(r"\.sync-conflict-[^./]*")
+# Earlier transcript searches quote the query; they found it, they aren't about it.
+TRANSCRIPT_SEARCH = re.compile(r"session-find|\.claude[^\s\"']*/projects")
+
+
+def projects_root():
+    config = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+    return os.path.join(config, "projects")
+
+
+def encode_cwd(path):
+    return re.sub(r"[^A-Za-z0-9]", "-", path)
+
+
+def collapse(text):
+    return " ".join(text.split())
+
+
+def strings_in(value):
+    """Every string in a tool payload, without its type tags or binary attachments."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, list):
+        for item in value:
+            yield from strings_in(item)
+    elif isinstance(value, dict) and value.get("type") not in ("image", "document"):
+        for key, item in value.items():
+            if key != "type":
+                yield from strings_in(item)
+
+
+def searchable(entry, include_all):
+    """Yield (rank, text) for the parts of one transcript line a search may match."""
+    if entry.get("type") == "attachment":
+        attachment = entry.get("attachment")
+        # A prompt typed while the agent was busy is stored here, not as a user message.
+        if isinstance(attachment, dict) and attachment.get("type") == "queued_command":
+            if isinstance(attachment.get("prompt"), str):
+                yield TEXT, attachment["prompt"]
+        return
+    if entry.get("type") not in ("user", "assistant"):
+        return
+    if entry.get("isMeta") and not include_all:  # skill bodies, local-command caveats
+        return
+    message = entry.get("message")
+    content = message.get("content") if isinstance(message, dict) else None
+    if isinstance(content, str):
+        yield TEXT, content
+    if not isinstance(content, list):
+        return
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        kind = block.get("type")
+        if kind == "text" and isinstance(block.get("text"), str):
+            yield TEXT, block["text"]
+        elif kind == "tool_use":
+            parts = list(strings_in(block.get("input")))
+            if include_all or not any(TRANSCRIPT_SEARCH.search(p) for p in parts):
+                for part in parts:
+                    yield TOOL_INPUT, part
+        elif kind == "tool_result" and include_all:
+            for part in strings_in(block.get("content")):
+                yield TOOL_RESULT, part
+
+
+def snippet_at(text, offset, length):
+    room = max(SNIPPET_WIDTH - length, 0) // 2
+    start, end = max(offset - room, 0), offset + length + room
+    return (
+        ("..." if start else "")
+        + text[start:end]
+        + ("..." if end < len(text) else "")
+    )
+
+
+def near_offsets(text, words):
+    """Offsets of the first word wherever all the words sit close together, in any order."""
+    offset = text.find(words[0])
+    while offset >= 0:
+        window = text[max(offset - NEAR_WINDOW, 0) : offset + NEAR_WINDOW]
+        if all(word in window for word in words[1:]):
+            yield offset
+        offset = text.find(words[0], offset + 1)
+
+
+def scan(path, query=None, token=None, include_all=False):
+    """Read one transcript's metadata and, given a query, count its matches.
+
+    Only lines that can match are JSON-decoded, since that is the bulk of the cost.
+    Returns None for an unreadable file.
+    """
+    found = {
+        "path": path, "last": None, "cwds": {}, "ai_title": None, "custom_title": None,
+        "relocated": None, "matches": 0, "exact": 0, "snippet": None,
+    }
+    best = (-1, -1)
+    words = query.split() if query else []
+    try:
+        handle = open(path, "rb")
+    except OSError:
+        return None
+    with handle:
+        for line in handle:
+            at = line.rfind(b'"timestamp":"')
+            if at >= 0 and line[at + 37 : at + 38] == b'"':  # else cut off mid-write
+                stamp = line[at + 13 : at + 37]
+                if found["last"] is None or stamp > found["last"]:
+                    found["last"] = stamp
+            at = line.rfind(b'"cwd":"')
+            if at >= 0:
+                found["cwds"][line[at + 7 : line.find(b'"', at + 7)]] = True
+
+            if line.startswith(METADATA_PREFIXES):
+                try:
+                    entry = json.loads(line)
+                except ValueError:
+                    continue
+                if "aiTitle" in entry:
+                    found["ai_title"] = entry["aiTitle"]
+                elif "customTitle" in entry:
+                    found["custom_title"] = entry["customTitle"]
+                elif "relocatedCwd" in entry:
+                    found["relocated"] = entry["relocatedCwd"]
+                continue
+
+            if query is None or (token and token not in line.lower()):
+                continue
+            try:
+                entry = json.loads(line)
+            except (ValueError, RecursionError):
+                continue
+            if not isinstance(entry, dict):
+                continue
+            for rank, text in searchable(entry, include_all):
+                text = collapse(text)
+                folded = text.lower()
+                offset, exact = folded.find(query), folded.count(query)
+                if offset >= 0:
+                    found["matches"] += exact
+                    found["exact"] += exact
+                elif len(words) > 1:
+                    near = list(near_offsets(folded, words))
+                    if not near:
+                        continue
+                    found["matches"] += len(near)
+                    offset = near[0]
+                else:
+                    continue
+                if (bool(exact), rank) > best:
+                    best = (bool(exact), rank)
+                    found["snippet"] = snippet_at(text, offset, len(query))
+
+    found["last"] = found["last"].decode("ascii", "replace") if found["last"] else None
+    found["cwds"] = [decode_cwd(raw) for raw in found["cwds"]]
+    return found
+
+
+def decode_cwd(raw):
+    try:
+        return json.loads(b'"' + raw + b'"')
+    except ValueError:
+        return raw.decode("utf-8", "replace")
+
+
+def search_one(job):
+    found = scan(*job)
+    return found if found and found["matches"] else None
+
+
+def local_time(stamp):
+    try:
+        return datetime.fromisoformat(stamp.replace("Z", "+00:00")).astimezone()
+    except (AttributeError, ValueError):
+        return None
+
+
+def transcripts(root, project, since, subagents_only, exclude):
+    """Paths of the transcripts in scope, without opening any of them."""
+    wanted = project.lower() if project else None
+    encoded = encode_cwd(wanted) if wanted else None
+    earliest = (
+        datetime.combine(since - timedelta(days=1), datetime.min.time()).timestamp()
+        if since else None
+    )
+
+    def recent(path):
+        try:
+            return earliest is None or os.path.getmtime(path) >= earliest
+        except OSError:
+            return False
+
+    try:
+        project_dirs = list(os.scandir(root))
+    except OSError:
+        return []
+    paths = []
+    for directory in project_dirs:
+        if not directory.is_dir():
+            continue
+        if wanted and wanted not in directory.name.lower() and encoded not in directory.name.lower():
+            continue
+        for entry in os.scandir(directory.path):
+            session_id = entry.name.split(".")[0]
+            if session_id == exclude:
+                continue
+            if entry.is_file():
+                if entry.name.endswith(".jsonl") and not subagents_only and recent(entry.path):
+                    paths.append(entry.path)
+            elif entry.is_dir():
+                for parent, children, files in os.walk(entry.path):
+                    children[:] = [c for c in children if c != "tool-results"]
+                    for name in files:
+                        path = os.path.join(parent, name)
+                        if name.endswith(".jsonl") and recent(path):
+                            paths.append(path)
+    return paths
+
+
+def is_subagent(root, path):
+    return os.path.relpath(path, root).count(os.sep) > 1
+
+
+def prefilter_token(query):
+    """The longest piece of the query that every matching line holds verbatim.
+
+    Words can match apart, whitespace may be a JSON \\n in the file, and quotes,
+    backslashes and non-ASCII may be escaped, so only one unbroken run qualifies.
+    """
+    return max(re.findall(r"[!#-\[\]-~]+", query), key=len, default="")
+
+
+def narrow_with_rg(paths, token, root):
+    """Keep the paths rg finds the token in. All of them if rg can't answer."""
+    if not token or not paths or not shutil.which("rg"):
+        return paths
+    project_dirs = sorted({os.path.join(root, os.path.relpath(p, root).split(os.sep)[0]) for p in paths})
+    try:
+        done = subprocess.run(
+            ["rg", "--no-config", "--files-with-matches", "--text", "--ignore-case",
+             "--fixed-strings", "--no-ignore", "--hidden", "--no-messages",
+             "--glob", "*.jsonl", "-e", token, *project_dirs],
+            capture_output=True, check=False,
+        )
+    except OSError:
+        return paths
+    if done.returncode > 1:
+        return paths
+    hits = set(os.fsdecode(done.stdout).splitlines())
+    return [p for p in paths if p in hits]
+
+
+def search_all(paths, query, token, include_all):
+    jobs = [(p, query, token, include_all) for p in paths]
+    if len(jobs) > 16:
+        try:
+            workers = min(os.cpu_count() or 1, 8)
+            with concurrent.futures.ProcessPoolExecutor(
+                workers, mp_context=multiprocessing.get_context("fork")
+            ) as pool:
+                return [r for r in pool.map(search_one, jobs, chunksize=8) if r]
+        except OSError:
+            pass  # no process pool here (restricted sandbox); scan in-process
+    return [r for r in map(search_one, jobs) if r]
+
+
+def drop_conflict_copies(rows):
+    """A Syncthing conflict copy only counts when its real transcript didn't match."""
+    by_real_path = {}
+    for row in rows:
+        real = SYNC_CONFLICT.sub("", row["path"])
+        if real not in by_real_path or real == row["path"]:
+            by_real_path[real] = row
+    return list(by_real_path.values())
+
+
+@functools.lru_cache(maxsize=None)
+def directory_for(project_dir):
+    """Walk the filesystem for the directory an encoded project name stands for."""
+
+    def walk(prefix, rest):
+        if not rest:
+            return prefix
+        try:
+            names = [e.name for e in os.scandir(prefix or "/") if e.is_dir()]
+        except OSError:
+            return None
+        for name in names:
+            encoded = "-" + encode_cwd(name)
+            if rest == encoded or rest.startswith(encoded + "-"):
+                hit = walk(f"{prefix}/{name}", rest[len(encoded):])
+                if hit:
+                    return hit
+        return None
+
+    return walk("", project_dir)
+
+
+def resume_cwd(project_dir, cwds):
+    """The directory `claude --resume` must run from.
+
+    The transcript's project dir decides, not the last cwd: a session that cd'd into a
+    subdirectory or entered a worktree still lives under the directory it started in.
+    """
+    for cwd in reversed(cwds):
+        if encode_cwd(cwd) == project_dir:
+            return cwd
+    return directory_for(project_dir) or (cwds[0] if cwds else None)
+
+
+@functools.lru_cache(maxsize=None)
+def parent_of(transcript):
+    return scan(transcript)
+
+
+def describe(root, found):
+    """Turn a scan result into the row printed for one transcript."""
+    path = found["path"]
+    parts = os.path.relpath(path, root).split(os.sep)
+    project_dir = parts[0]
+    stem = SYNC_CONFLICT.sub("", parts[-1])[: -len(".jsonl")]
+    title = found["custom_title"] or found["ai_title"]
+    row = {
+        "kind": "session", "session_id": stem, "parent_session_id": None, "agent_id": None,
+        "last_activity": found["last"], "cwd": None, "worktree": None, "title": title,
+        "matches": found["matches"], "near": not found["exact"], "snippet": found["snippet"], "resume": None,
+        "transcript": path,
+    }
+    moment = local_time(found["last"]) or datetime.fromtimestamp(os.path.getmtime(path)).astimezone()
+    row["last_activity"] = moment.isoformat(timespec="seconds")
+
+    if is_subagent(root, path):
+        parent_id = parts[1]
+        row.update(kind="subagent", parent_session_id=parent_id, agent_id=stem.removeprefix("agent-"))
+        row["session_id"] = stem
+        row["cwd"] = found["cwds"][-1] if found["cwds"] else None
+        try:
+            with open(path[: -len(".jsonl")] + ".meta.json", encoding="utf-8") as meta:
+                row["title"] = row["title"] or json.load(meta).get("description")
+        except (OSError, ValueError, AttributeError):
+            pass
+        parent = parent_of(os.path.join(root, project_dir, parent_id + ".jsonl"))
+        cwd = resume_cwd(project_dir, parent["cwds"] if parent else [])
+        if parent and cwd:
+            row["resume"] = f"cd {shlex.quote(cwd)} && claude --resume {parent_id}"
+    else:
+        row["session_id"] = stem
+        row["cwd"] = resume_cwd(project_dir, found["cwds"])
+        if found["relocated"] and found["relocated"] != row["cwd"]:
+            row["worktree"] = found["relocated"]
+        if row["cwd"]:
+            row["resume"] = f"cd {shlex.quote(row['cwd'])} && claude --resume {stem}"
+    return row
+
+
+def print_row(row):
+    when = row["last_activity"][:16].replace("T", " ")
+    plural = "" if row["matches"] == 1 else "es"
+    head = [when, row["session_id"]]
+    if row["kind"] == "subagent":
+        head.append(f"[subagent of {row['parent_session_id']}]")
+    head.append(row["cwd"] or "?")
+    if row["worktree"]:
+        head.append(f"(worktree {row['worktree']})")
+    head.append(f"{row['matches']} {'near ' if row['near'] else ''}match{plural}")
+    if row["title"]:
+        head.append(json.dumps(row["title"], ensure_ascii=False))
+    print("  ".join(head))
+    print(f"  {row['snippet']}")
+    if row["kind"] == "subagent":
+        print(f"  {row['resume'] or '# parent transcript missing; cannot resume'}  # parent session")
+        print(f"  {row['transcript']}")
+    else:
+        print(f"  {row['resume'] or '# working directory unknown; cannot resume'}")
+
+
+def since_date(text):
+    try:
+        return date.fromisoformat(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"not a YYYY-MM-DD date: {text}") from None
+
+
+def positive(text):
+    value = int(text)
+    if value < 1:
+        raise argparse.ArgumentTypeError("must be at least 1")
+    return value
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        prog="session-find",
+        description="Search Claude Code session transcripts, subagents included. "
+        "Case-insensitive; matches user and assistant text and tool inputs. "
+        "Several words also match close together in any order, shown as near matches. "
+        "Exit status is 1 when nothing matches.",
+    )
+    parser.add_argument("text", help="text to find; runs of whitespace match any whitespace")
+    parser.add_argument("--project", metavar="SUBSTR", help="only projects whose path contains SUBSTR")
+    parser.add_argument("--since", metavar="YYYY-MM-DD", type=since_date, help="only activity on or after this date")
+    parser.add_argument("--limit", metavar="N", type=positive, default=20, help="rows to print (default 20)")
+    parser.add_argument("--subagents-only", action="store_true", help="only subagent transcripts")
+    parser.add_argument("--json", action="store_true", help="print a JSON array")
+    parser.add_argument("--all", action="store_true", help="also search tool results, skill bodies and past transcript searches")
+    args = parser.parse_args()
+    if not args.text.strip():
+        parser.error("text must not be empty")
+    return args
+
+
+def main():
+    args = parse_args()
+    root = projects_root()
+    query = collapse(args.text).lower()
+    token = prefilter_token(query)
+    # Inside a session this is the running search's own session, whose prompt and
+    # command hold the query; its subagents are excluded with it.
+    exclude = os.environ.get("CLAUDE_CODE_SESSION_ID")
+
+    paths = transcripts(root, args.project, args.since, args.subagents_only, exclude)
+    candidates = narrow_with_rg(paths, token, root)
+    hits = drop_conflict_copies(search_all(candidates, query, token.encode(), args.all))
+
+    if args.since:
+        hits = [
+            h for h in hits
+            if (moment := local_time(h["last"])) is None or moment.date() >= args.since
+        ]
+    hits.sort(key=lambda h: h["last"] or "", reverse=True)
+    rows = [describe(root, h) for h in hits[: args.limit]]
+
+    if args.json:
+        print(json.dumps(rows, indent=2, ensure_ascii=False))
+    else:
+        for row in rows:
+            print_row(row)
+    print(
+        f"{len(rows)} of {len(hits)} matching transcripts shown; "
+        f"{len(candidates)} of {len(paths)} files read",
+        file=sys.stderr,
+    )
+    return 0 if hits else 1
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except BrokenPipeError:  # piped into head
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        sys.exit(0)
+    except KeyboardInterrupt:
+        sys.exit(130)
