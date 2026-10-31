@@ -26,3 +26,12 @@ next_workspace = "prefix+shift+j"
 previous_agent = "prefix+alt+k"
 next_agent = "prefix+alt+j"
 focus_agent = "prefix+alt+1..9"
+
+[[keys.command]]
+key = "prefix+a"
+type = "shell"
+# Not type = "pane": that one opens zoomed. exec so :q closes the pane too.
+command = '''
+herdr pane run "$(herdr pane split "$HERDR_ACTIVE_PANE_ID" --direction right --focus | jq -r .result.pane.pane_id)" \
+  "exec nvim -c 'lua require(\"config.prompt\").open()'"
+'''
