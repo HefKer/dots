@@ -18,6 +18,7 @@ config.bind("u", "fake-key <PgUp>")
 config.bind("U", "undo")
 config.bind("gD", "tab-clone")
 config.bind("gp", "open -p {url}")  # reopen the current page in a private window
+config.bind("gP", "cmd-set-text -s :open -p")  # prompt, then open in a private window
 config.bind(";r", "hint all right-click")
 # --- testing ---
 # Hint outermost/overlay elements to escape stubborn dialogs
