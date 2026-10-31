@@ -1,0 +1,7 @@
+[filechooser]
+cmd=yazi-wrapper.sh
+default_dir=$HOME
+; wezterm hands off to its running GUI and exits unless forced to stay, which the portal reads as a cancel
+env=TERMCMD=wezterm start --always-new-process --class yazi --
+open_mode=suggested
+save_mode=suggested

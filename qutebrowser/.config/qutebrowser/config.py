@@ -5,6 +5,7 @@ config.source("privacy.py")
 config.source("filepicker.py")
 config.source("binds.py")
 config.source("search_engines.py")
+config.source("spotify.py")
 
 c.auto_save.session = False
 
