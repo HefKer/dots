@@ -54,6 +54,7 @@ c.url.searchengines = {
     "al": "https://anilist.co/search/anime?search={}",
     "miruro": "https://www.miruro.tv/search?query={}",
     "mi": "https://www.miruro.tv/search?query={}",
+    "67": "https://67movies.st/?q={}",
 }
 
 # Mute linter warnings
