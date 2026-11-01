@@ -10,5 +10,8 @@ function claude --description 'claude-code, behind the ~/.claude.json launch gua
     # It always exits 0; a failing guard can log but must never block a launch.
     bash "$HOME/.claude/bin/claude-config-guard.sh"
 
+    # Lets herdr's prefix+a pull the unsent prompt out; plain Ctrl+G still opens $EDITOR.
+    set -lx VISUAL $HOME/dots/scripts/claude-prompt-editor
+
     command claude $argv
 end

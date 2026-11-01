@@ -1,0 +1,15 @@
+#!/bin/sh
+# $VISUAL for Claude, set in fish's claude function. While scripts/claude-prompt
+# has a capture pending, moves the prompt out instead of editing it: Ctrl+G is the
+# only way to read Claude's input exactly, collapsed pastes included, and emptying
+# the file is what clears the input. Otherwise it's a normal editor launch.
+marker="${XDG_RUNTIME_DIR:-/tmp}/claude-prompt-capture"
+
+if [ -e "$marker" ]; then
+  cp "$1" "$(cat "$marker")"
+  : >"$1"
+  rm "$marker"
+  exit 0
+fi
+
+exec "${EDITOR:-nvim}" "$@"

@@ -1,6 +1,6 @@
 -- Prompt pane: a scratch buffer for writing to the Claude agent in the same herdr tab,
 -- so the agent stays readable and scrollable while composing. Opened by the
--- `prefix+a` command in herdr/.config/herdr/config.toml.
+-- `prefix+a` command in herdr/.config/herdr/config.toml, through scripts/claude-prompt.
 local M = {}
 
 -- herdr prints errors as JSON on stderr; fall back to the raw text for anything else.
@@ -45,14 +45,15 @@ local function send()
   vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
 end
 
+-- Runs in the .md file scripts/claude-prompt opens, not an empty buffer: a file argument
+-- is what skips the dashboard and makes LazyVim load its markdown autocmds in time.
 function M.open()
-  -- A named buffer is what stops the snacks dashboard replacing this one on UIEnter.
-  vim.api.nvim_buf_set_name(0, "claude-prompt")
+  vim.fn.delete(vim.api.nvim_buf_get_name(0))
   vim.bo.buftype = "nofile"
   vim.bo.swapfile = false
-  vim.bo.filetype = "markdown"
   vim.keymap.set("n", "<leader>as", send, { buffer = true, desc = "Send Prompt to Claude" })
-  vim.cmd.startinsert()
+  vim.cmd.normal({ "G", bang = true })
+  vim.cmd.startinsert({ bang = true })
 end
 
 return M
