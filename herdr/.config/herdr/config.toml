@@ -32,3 +32,11 @@ key = "prefix+a"
 type = "shell"
 # Not type = "pane": that one opens zoomed.
 command = "$HOME/dots/scripts/claude-prompt"
+
+[[keys.command]]
+key = "prefix+d"
+type = "shell"
+command = '''
+herdr pane run "$(herdr pane split "$HERDR_ACTIVE_PANE_ID" --direction right --cwd "$HERDR_ACTIVE_PANE_CWD" --focus | jq -r .result.pane.pane_id)" \
+  "exec hunk diff --watch"
+'''
