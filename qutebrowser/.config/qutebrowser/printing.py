@@ -1,7 +1,15 @@
 import functools
 import os.path
 
+from qutebrowser.qt.printsupport import QPrinterInfo
 from qutebrowser.utils import message, objreg, usertypes, utils
+
+
+def pdf_path(tab):
+    from qutebrowser.browser import downloads  # see the note on register below
+
+    name = utils.sanitize_filename(tab.title() or "print", shorten=True) + ".pdf"
+    return os.path.join(downloads.download_dir(), name)
 
 
 def write_pdf(data, path):
@@ -16,17 +24,14 @@ def write_pdf(data, path):
 
 
 def ask_pdf_path(tab, data):
-    from qutebrowser.browser import downloads  # see the note on register below
-
     if not data:
         message.error("Printing failed!")
         return
-    name = utils.sanitize_filename(tab.title() or "print", shorten=True) + ".pdf"
     message.ask_async(
-        "Print frame to PDF:",
+        "Print to PDF:",
         usertypes.PromptMode.text,
         functools.partial(write_pdf, data),
-        default=os.path.join(downloads.download_dir(), name),
+        default=pdf_path(tab),
     )
 
 
@@ -39,8 +44,18 @@ def on_print_requested_by_frame(tab, frame):
     frame.printToPdf(functools.partial(ask_pdf_path, tab))
 
 
+# The dialog's route, QWebEnginePage.print(), renders the page to a 96 dpi JPEG, and with
+# no printer installed all it offers is that as a PDF, with no filename on Wayland.
+def print_page(tab, show_dialog):
+    if QPrinterInfo.availablePrinterNames():
+        show_dialog()
+    else:
+        tab._widget.page().printToPdf(functools.partial(ask_pdf_path, tab))
+
+
 def connect_frame_print(tab, connect_signals):
     connect_signals()
+    tab.printing.show_dialog = functools.partial(print_page, tab, tab.printing.show_dialog)
     tab._widget.page().printRequestedByFrame.connect(
         functools.partial(on_print_requested_by_frame, tab)
     )
