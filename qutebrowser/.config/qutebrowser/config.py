@@ -6,6 +6,7 @@ config.source("filepicker.py")
 config.source("binds.py")
 config.source("search_engines.py")
 config.source("spotify.py")
+config.source("printing.py")
 config.source("injectfix.py")
 
 c.auto_save.session = False
@@ -22,6 +23,7 @@ c.session.lazy_restore = True
 c.confirm_quit = ["downloads"]
 c.spellcheck.languages = ["en-US"]
 c.downloads.location.directory = "~/Downloads"
+c.downloads.location.suggestion = "both"
 c.hints.scatter = False
 c.content.autoplay = False
 c.editor.command = [
