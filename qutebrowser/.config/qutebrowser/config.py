@@ -6,6 +6,7 @@ config.source("filepicker.py")
 config.source("binds.py")
 config.source("search_engines.py")
 config.source("spotify.py")
+config.source("injectfix.py")
 
 c.auto_save.session = False
 
