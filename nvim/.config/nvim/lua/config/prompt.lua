@@ -23,7 +23,29 @@ local function find_agent()
   if #agents ~= 1 then
     return nil, ("Expected one Claude pane in this tab, found %d"):format(#agents)
   end
-  return agents[1].pane_id
+  return agents[1]
+end
+
+-- From the transcript, not the screen: that's the exact markdown, unwrapped and complete.
+local function last_reply(session)
+  local path = vim.fn.glob("~/.claude/projects/*/" .. session .. ".jsonl", false, true)[1]
+  local lines = path and vim.fn.readfile(path) or {}
+  for i = #lines, 1, -1 do
+    local ok, entry = pcall(vim.json.decode, lines[i])
+    if ok and entry.type == "assistant" and entry.isSidechain ~= true then
+      local text = vim.tbl_filter(function(block)
+        return block.type == "text"
+      end, entry.message.content)
+      if #text > 0 then
+        return table.concat(
+          vim.tbl_map(function(block)
+            return block.text
+          end, text),
+          "\n"
+        )
+      end
+    end
+  end
 end
 
 local function send()
@@ -31,11 +53,11 @@ local function send()
   if text == "" then
     return
   end
-  local pane, err = find_agent()
-  if pane then
+  local agent, err = find_agent()
+  if agent then
     -- `agent prompt` rather than `pane send-text`: it pastes, so newlines don't submit
     -- early and Claude's vim mode can't run the text, and it refuses a blocked agent.
-    local sent = vim.system({ "herdr", "agent", "prompt", pane, text }, { text = true }):wait()
+    local sent = vim.system({ "herdr", "agent", "prompt", agent.pane_id, text }, { text = true }):wait()
     err = sent.code ~= 0 and herdr_error(sent) or nil
   end
   if err then
@@ -45,6 +67,22 @@ local function send()
   vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
 end
 
+-- Blockquoted, for replying between its lines and deleting what doesn't need an answer.
+local function quote()
+  local agent, err = find_agent()
+  local session = agent and vim.tbl_get(agent, "agent_session", "value")
+  local reply = session and last_reply(session)
+  if not reply then
+    vim.notify(err or "No reply to quote yet", vim.log.levels.ERROR, { title = "Claude prompt" })
+    return
+  end
+  local lines = vim.tbl_map(function(line)
+    return vim.trim("> " .. line)
+  end, vim.split(reply, "\n"))
+  table.insert(lines, "")
+  vim.api.nvim_put(lines, "l", false, false)
+end
+
 -- Runs in the .md file scripts/claude-prompt opens, not an empty buffer: a file argument
 -- is what skips the dashboard and makes LazyVim load its markdown autocmds in time.
 function M.open()
@@ -52,6 +90,7 @@ function M.open()
   vim.bo.buftype = "nofile"
   vim.bo.swapfile = false
   vim.keymap.set("n", "<leader>as", send, { buffer = true, desc = "Send Prompt to Claude" })
+  vim.keymap.set("n", "<leader>aq", quote, { buffer = true, desc = "Quote Claude's Last Reply" })
   vim.cmd.normal({ "G", bang = true })
   vim.cmd.startinsert({ bang = true })
 end
