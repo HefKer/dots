@@ -2,8 +2,8 @@
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
 -- Add any additional keymaps here
 
--- smart-splits: move/resize across nvim splits and wezterm panes alike.
--- Mods match wezterm/.config/wezterm/keys.lua (split_nav): CTRL to move, CTRL+ALT to resize.
+-- smart-splits: move/resize across nvim splits and herdr panes alike.
+-- CTRL to move, CTRL+ALT to resize.
 local splits = function(fn)
   return function()
     require("smart-splits")[fn]()

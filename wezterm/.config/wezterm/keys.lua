@@ -1,25 +1,6 @@
 local wezterm = require("wezterm")
 local act = wezterm.action
 
-local direction_keys = {
-	h = "Left",
-	j = "Down",
-	k = "Up",
-	l = "Right",
-}
-
-local function is_vim(pane)
-	if pane:get_user_vars().IS_NVIM == "true" then
-		return true
-	end
-
-	-- Inside herdr the foreground process of this pane is herdr, not nvim, so
-	-- nvim's IS_NVIM user var never reaches wezterm and the keys would be eaten
-	-- here. Hand them to herdr and let it (and nvim inside it) decide.
-	local proc = pane:get_foreground_process_name()
-	return proc ~= nil and proc:gsub("\\", "/"):match("([^/]+)$") == "herdr"
-end
-
 -- Alt+j/k/u/d scrolling.
 local function alt_scroll(key, scroll_action)
 	return {
@@ -35,30 +16,6 @@ local function alt_scroll(key, scroll_action)
 	}
 end
 
-local function split_nav(resize_or_move, key)
-	local moveMod = "CTRL"
-	local resizeMod = "CTRL|ALT"
-	return {
-		key = key,
-		mods = resize_or_move == "resize" and resizeMod or moveMod,
-		action = wezterm.action_callback(function(win, pane)
-			if is_vim(pane) then
-				-- pass the keys through to vim/nvim
-				win:perform_action(
-					act.SendKey({ key = key, mods = resize_or_move == "resize" and resizeMod or moveMod }),
-					pane
-				)
-			else
-				if resize_or_move == "resize" then
-					win:perform_action(act.AdjustPaneSize({ direction_keys[key], 3 }), pane)
-				else
-					win:perform_action(act.ActivatePaneDirection(direction_keys[key]), pane)
-				end
-			end
-		end),
-	}
-end
-
 local keys = {
 	{
 		key = "t",
@@ -68,7 +25,7 @@ local keys = {
 	{
 		key = "q",
 		mods = "ALT",
-		action = wezterm.action.CloseCurrentTab({ confirm = true }),
+		action = act.CloseCurrentTab({ confirm = true }),
 	},
 	{
 		key = "Space",
@@ -84,16 +41,6 @@ local keys = {
 		key = "/",
 		mods = "ALT",
 		action = act.Search({ CaseInSensitiveString = "" }),
-	},
-	{
-		key = "\\",
-		mods = "ALT",
-		action = act.SplitHorizontal({ domain = "CurrentPaneDomain" }),
-	},
-	{
-		key = "-",
-		mods = "ALT",
-		action = act.SplitVertical({ domain = "CurrentPaneDomain" }),
 	},
 	{
 		key = "h",
@@ -139,26 +86,22 @@ local keys = {
 		mods = "ALT|SHIFT",
 		action = act.MoveTabRelative(1),
 	},
+	-- leave these to the program in the pane
+	{
+		key = "Enter",
+		mods = "ALT",
+		action = act.DisableDefaultAssignment,
+	},
 	{
 		key = "l",
 		mods = "CTRL|SHIFT",
-		action = wezterm.action.DisableDefaultAssignment,
+		action = act.DisableDefaultAssignment,
 	},
 	{
 		key = "k",
 		mods = "CTRL|SHIFT",
-		action = wezterm.action.DisableDefaultAssignment,
+		action = act.DisableDefaultAssignment,
 	},
-	-- move between split panes
-	split_nav("move", "h"),
-	split_nav("move", "j"),
-	split_nav("move", "k"),
-	split_nav("move", "l"),
-	-- resize panes
-	split_nav("resize", "h"),
-	split_nav("resize", "j"),
-	split_nav("resize", "k"),
-	split_nav("resize", "l"),
 }
 
 return keys
