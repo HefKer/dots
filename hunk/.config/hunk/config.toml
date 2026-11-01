@@ -1,0 +1,17 @@
+# terminal|auto|everforest-dark|... - terminal's accent is ANSI blue, which dank-theme maps to a green
+theme = "everforest-dark"
+transparent_background = true
+file_gap = 2
+animations = false
+color_moved = true
+mode = "auto"
+line_numbers = false
+wrap_lines = false
+hunk_headers = false
+menu_bar = true
+agent_notes = true
+copy_decorations = false
+cursor_line = "row"
+
+[vcs]
+watch = true
