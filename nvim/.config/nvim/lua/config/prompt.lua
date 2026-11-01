@@ -10,7 +10,7 @@ local function herdr_error(result)
 end
 
 -- Looked up on every send, not at open, so restarting Claude doesn't strand the pane.
-local function find_agent()
+function M.find_agent()
   local listed = vim
     .system({ "herdr", "pane", "list", "--workspace", vim.env.HERDR_WORKSPACE_ID }, { text = true })
     :wait()
@@ -53,8 +53,17 @@ local function send()
   if text == "" then
     return
   end
-  local agent, err = find_agent()
+  local agent, err = M.find_agent()
   if agent then
+    -- Claude only runs a leading /skill outside a long paste, which it reads as plain
+    -- text, so that word goes in as its own paste. Bracketed by hand, since `agent prompt`
+    -- is the only paste herdr offers and it submits. A blocked agent would be left with
+    -- the word in its input, so that case falls through for `agent prompt` to refuse.
+    local skill, rest = text:match("^(/[%w:_-]+)%s+(.+)$")
+    if skill and agent.agent_status ~= "blocked" then
+      vim.system({ "herdr", "pane", "send-text", agent.pane_id, "\27[200~" .. skill .. " \27[201~" }):wait()
+      text = rest
+    end
     -- `agent prompt` rather than `pane send-text`: it pastes, so newlines don't submit
     -- early and Claude's vim mode can't run the text, and it refuses a blocked agent.
     local sent = vim.system({ "herdr", "agent", "prompt", agent.pane_id, text }, { text = true }):wait()
@@ -69,7 +78,7 @@ end
 
 -- Blockquoted, for replying between its lines and deleting what doesn't need an answer.
 local function quote()
-  local agent, err = find_agent()
+  local agent, err = M.find_agent()
   local session = agent and vim.tbl_get(agent, "agent_session", "value")
   local reply = session and last_reply(session)
   if not reply then
@@ -89,6 +98,7 @@ function M.open()
   vim.fn.delete(vim.api.nvim_buf_get_name(0))
   vim.bo.buftype = "nofile"
   vim.bo.swapfile = false
+  vim.b.claude_prompt = true -- turns on config.prompt_source
   vim.keymap.set("n", "<leader>as", send, { buffer = true, desc = "Send Prompt to Claude" })
   vim.keymap.set("n", "<leader>aq", quote, { buffer = true, desc = "Quote Claude's Last Reply" })
   vim.cmd.normal({ "G", bang = true })
