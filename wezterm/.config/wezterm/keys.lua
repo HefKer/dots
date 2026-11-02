@@ -48,6 +48,79 @@ local function join_hard_wrapped(pane, text)
 	return text
 end
 
+local copy_joined = wezterm.action_callback(function(win, pane)
+	win:copy_to_clipboard(join_hard_wrapped(pane, win:get_selection_text_for_pane(pane)))
+end)
+
+-- wezterm's built-in quick select patterns, which passing patterns replaces.
+local builtin_patterns = {
+	[==[\[[^]]*\]\(([^)]+)\)]==],
+	[==[(?:https?://|git@|git://|ssh://|ftp://|file://)\S+]==],
+	[==[--- a/(\S+)]==],
+	[==[\+\+\+ b/(\S+)]==],
+	[==[sha256:([0-9a-f]{64})]==],
+	[==[(?:[.\w\-@~]+)?(?:/+[.\w\-@]+)+]==],
+	[==[#[0-9a-fA-F]{6}]==],
+	[==[[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}]==],
+	[==[Qm[0-9a-zA-Z]{44}]==],
+	[==[[0-9a-f]{7,40}]==],
+	[==[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}]==],
+	[==[[A-f0-9:]+:+[A-f0-9:]+[%\w\d]+]==],
+	[==[0x[0-9a-fA-F]+]==],
+	[==[[0-9]{4,}]==],
+}
+
+-- Claude Code drops the backticks around inline code and colours it bright blue
+-- instead, and the Lua API can't read colours, so ask the cli for the escapes.
+-- Short spans are skipped since they'd be hinted at every occurrence on screen.
+local function inline_code(pane)
+	local ok, text = wezterm.run_child_process({
+		"env",
+		"WEZTERM_UNIX_SOCKET=" .. os.getenv("XDG_RUNTIME_DIR") .. "/wezterm/gui-sock-" .. wezterm.procinfo.pid(),
+		wezterm.executable_dir .. "/wezterm",
+		"cli",
+		"get-text",
+		"--escapes",
+		"--pane-id",
+		tostring(pane:pane_id()),
+	})
+	local spans, seen = {}, {}
+	if ok then
+		for row in text:gmatch("[^\r\n]+") do
+			for span in (row .. "\27["):gmatch("\27%[94m(.-)\27%[") do
+				span = span:match("^%s*(.-)%s*$")
+				if #span >= 3 and not seen[span] then
+					seen[span] = true
+					spans[#spans + 1] = span
+				end
+			end
+		end
+	end
+	return spans
+end
+
+-- An empty list leaves quick select on its configured patterns. Otherwise the
+-- spans come first, longest first, so one never loses to its own prefix.
+local function hint_patterns(win, pane)
+	local spans = inline_code(pane)
+	if #spans == 0 then
+		return {}
+	end
+	table.sort(spans, function(a, b)
+		return #a > #b
+	end)
+	local patterns = {}
+	for _, span in ipairs(spans) do
+		patterns[#patterns + 1] = span:gsub("[%^%$%(%)%.%[%]%*%+%?{}|\\]", "\\%0")
+	end
+	for _, list in ipairs({ win:effective_config().quick_select_patterns, builtin_patterns }) do
+		for _, pattern in ipairs(list) do
+			patterns[#patterns + 1] = pattern
+		end
+	end
+	return patterns
+end
+
 local keys = {
 	{
 		key = "t",
@@ -62,11 +135,15 @@ local keys = {
 	{
 		key = "Space",
 		mods = "ALT",
-		action = act.QuickSelectArgs({
-			action = wezterm.action_callback(function(win, pane)
-				win:copy_to_clipboard(join_hard_wrapped(pane, win:get_selection_text_for_pane(pane)))
-			end),
-		}),
+		action = wezterm.action_callback(function(win, pane)
+			-- Never let a failed lookup cost us quick select itself
+			local ok, patterns = pcall(hint_patterns, win, pane)
+			if not ok then
+				wezterm.log_error("quick select inline code: " .. tostring(patterns))
+				patterns = {}
+			end
+			win:perform_action(act.QuickSelectArgs({ patterns = patterns, action = copy_joined }), pane)
+		end),
 	},
 	{
 		key = "c",
