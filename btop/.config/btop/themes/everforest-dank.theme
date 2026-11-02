@@ -1,0 +1,60 @@
+# Everforest dark soft, matched to DMS's everforest "soft" variant and the wezterm
+# dank-theme it generates: background #333c43, text #d3c6aa, accent #a7c080.
+# Keys btop leaves unset here fall back to its built-in defaults.
+
+# Background, text, box titles
+theme[main_bg]="#333c43"
+theme[main_fg]="#d3c6aa"
+theme[title]="#d3c6aa"
+
+# Hotkey letters in box titles, and the selected process row
+theme[hi_fg]="#a7c080"
+theme[selected_bg]="#434f55"
+theme[selected_fg]="#a7c080"
+
+# Disabled text, text over graphs, empty meter track, misc process-box text
+theme[inactive_fg]="#859289"
+theme[graph_text]="#d3c6aa"
+theme[meter_bg]="#434f55"
+theme[proc_misc]="#a7c080"
+
+# Box outlines in the accent's darker shade (DMS primaryContainer), dividers in a surface tone
+theme[cpu_box]="#6c8446"
+theme[mem_box]="#6c8446"
+theme[net_box]="#6c8446"
+theme[proc_box]="#6c8446"
+theme[div_line]="#4d5960"
+
+# Load gradients run green, yellow, red
+theme[temp_start]="#a7c080"
+theme[temp_mid]="#dbbc7f"
+theme[temp_end]="#e67e80"
+theme[cpu_start]="#a7c080"
+theme[cpu_mid]="#dbbc7f"
+theme[cpu_end]="#e67e80"
+theme[used_start]="#a7c080"
+theme[used_mid]="#dbbc7f"
+theme[used_end]="#e67e80"
+theme[process_start]="#a7c080"
+theme[process_mid]="#dbbc7f"
+theme[process_end]="#e67e80"
+
+# Headroom gradients run the other way: little free is red
+theme[free_start]="#e67e80"
+theme[free_mid]="#dbbc7f"
+theme[free_end]="#a7c080"
+theme[available_start]="#e67e80"
+theme[available_mid]="#dbbc7f"
+theme[available_end]="#a7c080"
+
+theme[cached_start]="#7fbbb3"
+theme[cached_mid]="#83c092"
+theme[cached_end]="#a7c080"
+
+# Download in the cool colours, upload in the warm ones
+theme[download_start]="#83c092"
+theme[download_mid]="#7fbbb3"
+theme[download_end]="#d699b6"
+theme[upload_start]="#dbbc7f"
+theme[upload_mid]="#e69875"
+theme[upload_end]="#e67e80"
