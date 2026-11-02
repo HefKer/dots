@@ -39,6 +39,28 @@ config.hide_tab_bar_if_only_one_tab = true
 config.show_new_tab_button_in_tab_bar = false
 config.switch_to_last_active_tab_when_closing_tab = true
 
+-- The built-in url pattern is scheme + \S+, so a url in prose picks up the
+-- punctuation around it. Stop at delimiters, keep balanced parens as in
+-- Foo_(bar), and don't end on sentence punctuation. These patterns run before
+-- the built-ins. No capture groups: quick select copies the last one that matched.
+local url_char = [==[[^\s()\[\]{}<>"'`│]]==]
+local url_end = [==[[^\s()\[\]{}<>"'`│,.;:!?*]]==]
+local url_parens = [=[\([^\s()]*\)]=]
+config.quick_select_patterns = {
+	"(?:https?://|git@|git://|ssh://|ftp://|file://)(?:"
+		.. url_char
+		.. "|"
+		.. url_parens
+		.. ")*(?:"
+		.. url_end
+		.. "|"
+		.. url_parens
+		.. ")",
+	-- The built-in path pattern allows dots anywhere, so a path ending a
+	-- sentence keeps the period. Only a .. segment may end on a dot.
+	[[(?:[.\w\-@~]+)?(?:/+[.\w\-@]+)*/+(?:[.\w\-@]*[\w\-@]|\.\.)]],
+}
+
 config.scrollback_lines = 20000
 config.notification_handling = "SuppressFromFocusedWindow"
 config.check_for_updates = false
