@@ -24,7 +24,7 @@ Done when you can name the config path, the option source, the reload method, ev
 
 Skip this if the program already has a config in this repo.
 
-Copy the shipped template into a new package here, every option commented at its default, so the program behaves the same until a line is uncommented. With no template, start from an empty file. Validate it, add the link set entry per `AGENTS.md`, mirror it in the dotfiles check's expected link set in `~/nixos/main/checks/default.nix` for each host, and stop for the user to rebuild.
+Copy the shipped template into a new package here, every option commented at its default, so the program behaves the same until a line is uncommented. With no template, start from an empty file. Validate it, add the link set entry per `AGENTS.md`, and mirror it in the dotfiles check's expected link set in `~/nixos/main/checks/default.nix` for each host. Once `nix flake check` passes, commit those two files in `~/nixos/main`, staging only them, then stop for the user to rebuild.
 
 Done when the user has rebuilt and the config path resolves to this repo.
 
@@ -47,4 +47,4 @@ Done when every group has been offered and the user says they're finished. An op
 
 ## 4. Finish
 
-Commit only when the user says to, and stage only this program's files, since the tree often holds unrelated changes. `~/nixos/` is a separate repo, so report its link set and check changes as uncommitted unless the user names it too.
+Commit this repo's changes when the user says to, staging only this program's files, since the tree often holds unrelated changes.
