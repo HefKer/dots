@@ -1,0 +1,132 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
+  "logo": {
+    "color": {
+      "1": "magenta",
+      "2": "cyan"
+    }
+  },
+  "display": {
+    "brightColor": false,
+    "color": {
+      "keys": "cyan",
+      "title": "cyan",
+      "separator": "bright_black"
+    },
+    "key": {
+      "type": "string"
+    },
+    "duration": {
+      "abbreviation": true,
+      "spaceBeforeUnit": "never"
+    },
+    "size": {
+      "ndigits": 1
+    },
+    "freq": {
+      "ndigits": 1
+    }
+  },
+  "modules": [
+    "title",
+    {
+      "type": "custom",
+      "format": "{#90}┌─ {#36}Software {#90}─────────────────────────────────"
+    },
+    {
+      "type": "os",
+      "key": "{#90}│{#36} {icon} OS"
+    },
+    {
+      "type": "kernel",
+      "key": "{#90}│{#36} {icon} Kernel"
+    },
+    {
+      "type": "uptime",
+      "key": "{#90}│{#36} {icon} Uptime"
+    },
+    {
+      "type": "shell",
+      "key": "{#90}│{#36} {icon} Shell"
+    },
+    {
+      "type": "de",
+      "key": "{#90}│{#36} {icon} DE"
+    },
+    {
+      "type": "wm",
+      "key": "{#90}│{#36} {icon} Window Manager"
+    },
+    {
+      "type": "wmtheme",
+      "key": "{#90}│{#36} {icon} WM Theme"
+    },
+    {
+      "type": "theme",
+      "key": "{#90}│{#36} {icon} Theme"
+    },
+    {
+      "type": "terminal",
+      "key": "{#90}│{#36} {icon} Terminal"
+    },
+    {
+      "type": "terminalfont",
+      "key": "{#90}│{#36} {icon} Terminal Font"
+    },
+    {
+      "type": "custom",
+      "format": "{#90}├─ {#36}Hardware {#90}─────────────────────────────────"
+    },
+    {
+      "type": "host",
+      "key": "{#90}│{#36} {icon} Host"
+    },
+    {
+      "type": "board",
+      "key": "{#90}│{#36} {icon} Board"
+    },
+    {
+      "type": "cpu",
+      "key": "{#90}│{#36} {icon} CPU"
+    },
+    {
+      "type": "gpu",
+      "key": "{#90}│{#36} {icon} GPU"
+    },
+    {
+      "type": "memory",
+      "key": "{#90}│{#36} {icon} Memory"
+    },
+    {
+      "type": "swap",
+      "key": "{#90}│{#36} {icon} Swap"
+    },
+    {
+      "type": "disk",
+      "key": "{#90}│{#36} {icon} Disk",
+      "folders": "/"
+    },
+    {
+      "type": "display",
+      "key": "{#90}│{#36} {icon} Display",
+      "compactType": "original-with-refresh-rate"
+    },
+    {
+      "type": "battery",
+      "key": "{#90}│{#36} {icon} Battery ({model-name})"
+    },
+    {
+      "type": "poweradapter",
+      "key": "{#90}│{#36} {icon} Power Adapter"
+    },
+    {
+      "type": "custom",
+      "format": "{#90}└────────────────────────────────────────────"
+    },
+    "break",
+    {
+      "type": "custom",
+      "format": "{#90}󰏘 {#91}󰏘 {#92}󰏘 {#93}󰏘 {#94}󰏘 {#95}󰏘 {#96}󰏘 {#97}󰏘 {#97}󰏘 {#96}󰏘 {#95}󰏘 {#94}󰏘 {#93}󰏘 {#92}󰏘 {#91}󰏘 {#90}󰏘"
+    }
+  ]
+}
