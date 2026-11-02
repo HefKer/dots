@@ -23,9 +23,9 @@ status is-interactive || exit 0
 
 That `exit` ends only the file it sits in — later `conf.d` files still load.
 
-A file whose contents split across audiences uses `if` blocks instead, one per audience, as `00-env.fish` does. Exported `PATH` additions sit outside both, since every shell wants them.
+A file whose contents split across audiences uses `if` blocks instead, one per audience, as `00-env.fish` does. Exports every shell wants (`MANPAGER`, `PATH` additions) sit outside the blocks.
 
-Anything that spawns a subprocess to install itself (`zoxide init fish | source` and friends) is login-only and belongs in `10-tools.fish` under `status is-login`. What those tools define is inherited by child shells, so paying the spawn once per login is enough; guarding them as interactive instead costs ~15ms on every shell.
+A tool that installs itself by sourcing generated code (`atuin init fish | source`) defines functions and bindings, which child shells don't inherit, so it belongs in `10-tools.fish` under the interactive guard. `status is-login` would miss herdr panes, which are non-login. NixOS already loads zoxide, starship and direnv from `/etc/fish/config.fish` in every interactive shell, so don't add those here. A tool NixOS doesn't load goes in `10-tools.fish`; one it can load is better enabled in `~/nixos/`.
 
 ## Autoload vs eager
 

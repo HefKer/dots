@@ -2,7 +2,7 @@
 # order before this file. Each file there carries its own status guard.
 #
 #   00-env     exported vars, PATH, key binding mode
-#   10-tools   zoxide / starship / atuin / direnv / nix-your-shell  (login only)
+#   10-tools   atuin  (zoxide, starship, direnv come from /etc/fish/config.fish)
 #   20-fzf     fzf defaults, key bindings and the $HOME-wide widgets
 #   30-alias   aliases
 #   40-abbr    abbreviations

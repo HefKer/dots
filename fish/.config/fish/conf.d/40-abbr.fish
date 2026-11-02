@@ -3,9 +3,10 @@
 status is-interactive || exit 0
 
 # Navigation
-abbr -a q 'cd ..'
-abbr -a qq 'cd ../..'
-abbr -a qqq 'cd ../../..'
+function __abbr_cd_up --description "One ../ per q typed"
+    echo cd (string repeat -n (string length $argv[1]) ../ | string trim -r -c /)
+end
+abbr -a cd_up --regex '^q+$' --function __abbr_cd_up
 
 # Listing
 abbr -a lsa 'ls -a'
@@ -52,6 +53,7 @@ abbr -a HRS herdr --remote desktop --session
 abbr -a Y yazi
 abbr -a cdi zi
 abbr -a py python
+abbr -a ur uv run
 abbr -a wifi impala
 abbr -a taskman btop
 abbr -a bt bluetui
@@ -61,3 +63,35 @@ abbr -a vol wiremix
 # Search
 abbr -a rg 'rg -i'
 abbr -a ns 'nix search nixpkgs'
+
+# nix
+# nixos-rebuild picks the flake's attribute from the hostname; append #host to target another.
+abbr -a --command sudo nrs 'nixos-rebuild switch --flake /home/hefker/nixos/main'
+abbr -a --command sudo nrb 'nixos-rebuild boot --flake /home/hefker/nixos/main'
+abbr -a nsp nix shell
+abbr -a nfu nix flake update
+abbr -a nu nixup --all
+
+# Anywhere on the line
+abbr -a G --position anywhere '| rg -i'
+abbr -a CP --position anywhere '| wl-copy'
+
+# Last command, ready to edit
+function __abbr_last_command
+    echo $history[1]
+end
+abbr -a last_command --regex '^!!$' --function __abbr_last_command
+
+# A bare filename opens it in the program that owns its type
+function __abbr_edit_file
+    echo nvim $argv[1]
+end
+function __abbr_open_file
+    echo open $argv[1]
+end
+function __abbr_run_python
+    echo python $argv[1]
+end
+abbr -a edit_file --regex '^[^/ ]+\.(nix|md|fish|json|txt)$' --function __abbr_edit_file
+abbr -a open_file --regex '^[^/ ]+\.(pdf|docx|xlsx|html)$' --function __abbr_open_file
+abbr -a run_python --regex '^[^/ ]+\.py$' --function __abbr_run_python
