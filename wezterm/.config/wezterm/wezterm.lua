@@ -11,7 +11,7 @@ config.default_prog = { "fish", "-l" }
 --config.color_scheme = "Catppuccin Frappe"
 config.color_scheme = "dank-theme"
 config.window_background_opacity = 0.95
-config.window_padding = { left = "0.5cell", right = "0.5cell", top = "0.25cell", bottom = "0.25cell" }
+config.window_padding = { left = "2.0cell", right = "1.5cell", top = "0.7cell", bottom = "0.2cell" }
 
 -- DMS regenerates dank-theme.toml and it has no tab bar section, so read the
 -- tab colours from it here instead of hardcoding them
