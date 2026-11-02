@@ -333,7 +333,7 @@ read_only = " 󰌾" # default "🔒"
 
 [direnv]
 format = "[$symbol$loaded$allowed]($style) " # default "[$symbol$loaded/$allowed]($style) "
-symbol = "" # default "direnv "
+symbol = "󰒓" # default "direnv "
 # style = "bold bright-yellow"
 disabled = false # default true
 # detect_extensions = []
@@ -838,7 +838,7 @@ symbol = " " # default "🐹 "
 [lua]
 format = "[$symbol]($style)" # default "via [$symbol($version )]($style)"; no version
 # version_format = "v${raw}"
-symbol = " " # default "🌙 "
+symbol = "󰢱 " # default "🌙 "
 # style = "bold blue"
 # lua_binary = "lua"
 # disabled = false
@@ -928,7 +928,7 @@ symbol = " " # default "🌙 "
 
 [nix_shell]
 format = "[$symbol$state]($style) " # default 'via [$symbol$state( \($name\))]($style) '; shell name dropped
-symbol = "" # default "❄️  "
+symbol = "󱄅" # default "❄️  "
 # style = "bold blue"
 impure_msg = "" # default "impure"; impure is the usual case, so it shows the glyph alone
 pure_msg = " pure" # default "pure"
@@ -939,7 +939,7 @@ pure_msg = " pure" # default "pure"
 [nodejs]
 format = "[$symbol]($style)" # default "via [$symbol($version )]($style)"; no version
 # version_format = "v${raw}"
-symbol = " " # default " "
+symbol = "󰎙 " # default " "
 # style = "bold green"
 # disabled = false
 # not_capable_style = "bold red"
@@ -1184,7 +1184,7 @@ symbol = " " # default " "
 format = '[${symbol}${pyenv_prefix}(\($virtualenv\) )]($style)' # default 'via [${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'; no version
 # version_format = "v${raw}"
 # style = "yellow bold"
-symbol = " " # default "🐍 "
+symbol = "󰌠 " # default "🐍 "
 # disabled = false
 # detect_extensions = [
 #     "py",
@@ -1353,7 +1353,7 @@ symbol = "󱘗 " # default "🦀 "
 
 [status]
 # format = "[$symbol$status]($style) "
-symbol = " " # default "❌"
+symbol = "󰅙 " # default "❌"
 # success_symbol = ""
 # not_executable_symbol = "🚫"
 # not_found_symbol = "🔍"
@@ -1369,7 +1369,7 @@ disabled = false # default true
 
 [sudo]
 # format = "[as $symbol]($style)"
-symbol = " " # default "🧙 "
+symbol = "󰒘 " # default "🧙 "
 # style = "bold blue"
 # allow_windows = false
 # disabled = true
