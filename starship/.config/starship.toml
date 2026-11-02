@@ -15,7 +15,7 @@ $line_break$jobs$battery$status$container$character""" # default "$all"; a modul
 # continuation_prompt = "[∙](bright-black) "
 # scan_timeout = 30
 # command_timeout = 500
-# add_newline = true
+add_newline = false # default true; fish prints the gap after each command instead (fish conf.d/50-hooks.fish), so the first prompt and the one after `clear` sit on the top line
 # follow_symlinks = true
 
 # [palettes]
