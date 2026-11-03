@@ -8,5 +8,6 @@
 #   40-abbr    abbreviations
 #   50-hooks   event handlers, which must be defined eagerly
 #
-# Standalone commands are autoloaded from functions/, one per file.
+# Standalone commands are autoloaded from functions/, one per file, and their
+# completions from completions/.
 # Add to the file that owns the topic rather than appending here.
