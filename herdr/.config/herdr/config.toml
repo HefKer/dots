@@ -10,6 +10,17 @@ new_cwd = "follow"
 [session]
 resume_agents_on_restore = true
 
+[ui]
+# herdr-auto-title names new tabs; a name typed at the prompt would count as manual and pin it.
+prompt_new_tab_name = false
+
+# herdr-auto-title reports what each workspace's active tab is doing as $topic.
+[ui.sidebar.spaces]
+rows = [
+  ["state_icon", "workspace", "branch", "git_status"],
+  [{ token = "$topic", bold = true, dim = false }],
+]
+
 [keys]
 prefix = "ctrl+space"
 goto = "prefix+space"
@@ -26,6 +37,8 @@ next_workspace = "prefix+shift+j"
 previous_agent = "prefix+alt+k"
 next_agent = "prefix+alt+j"
 focus_agent = "prefix+alt+1..9"
+# Unused, and its default prefix+shift+g takes priority over herdr-lazygit's open-tab.
+new_worktree = []
 
 [[keys.command]]
 key = "prefix+a"
@@ -67,3 +80,56 @@ command = "jhochenbaum.hunkdiff.next-comment"
 key = "prefix+p"
 type = "plugin_action"
 command = "jhochenbaum.hunkdiff.prev-comment"
+
+# smart-splits-backend-herdr: ctrl+hjkl goes into nvim when it's the pane's
+# foreground program, otherwise moves herdr focus, and falls back to the pane
+# when there is no neighbour (so ctrl+l still clears a shell at an edge).
+[[keys.command]]
+key = "ctrl+h"
+type = "plugin_action"
+command = "smart-splits-backend-herdr.left"
+
+[[keys.command]]
+key = "ctrl+j"
+type = "plugin_action"
+command = "smart-splits-backend-herdr.down"
+
+[[keys.command]]
+key = "ctrl+k"
+type = "plugin_action"
+command = "smart-splits-backend-herdr.up"
+
+[[keys.command]]
+key = "ctrl+l"
+type = "plugin_action"
+command = "smart-splits-backend-herdr.right"
+
+[[keys.command]]
+key = "prefix+y"
+type = "plugin_action"
+command = "ray.file-explorer.open"
+
+[[keys.command]]
+key = "prefix+shift+y"
+type = "plugin_action"
+command = "ray.file-explorer.open-tab"
+
+[[keys.command]]
+key = "prefix+f"
+type = "plugin_action"
+command = "herdr-floax.toggle"
+
+[[keys.command]]
+key = "prefix+i"
+type = "plugin_action"
+command = "herdr-floax.instances"
+
+[[keys.command]]
+key = "prefix+g"
+type = "plugin_action"
+command = "herdr-lazygit.open"
+
+[[keys.command]]
+key = "prefix+shift+g"
+type = "plugin_action"
+command = "herdr-lazygit.open-tab"
