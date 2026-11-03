@@ -48,8 +48,13 @@ local function join_hard_wrapped(pane, text)
 	return text
 end
 
+-- The code blocks hinted by the last quick select, keyed by the text of the
+-- screen row that holds each block's first line.
+local block_by_row = {}
+
 local copy_joined = wezterm.action_callback(function(win, pane)
-	win:copy_to_clipboard(join_hard_wrapped(pane, win:get_selection_text_for_pane(pane)))
+	local text = win:get_selection_text_for_pane(pane)
+	win:copy_to_clipboard(block_by_row[text] or join_hard_wrapped(pane, text))
 end)
 
 -- wezterm's built-in quick select patterns, which passing patterns replaces.
@@ -99,10 +104,72 @@ local function inline_code(pane)
 	return spans
 end
 
+-- Claude Code drops a code block's fences and wraps its lines at the pane edge,
+-- so the screen can't say where a block starts or ends. Inside herdr the
+-- session transcript is reachable, and it has the block as written: hint the
+-- row holding each block's first line, and copy the whole block when it's picked.
+-- Short rows are skipped since text like `end` would be hinted everywhere.
+local function code_block_rows(pane)
+	block_by_row = {}
+	local proc = pane:get_foreground_process_info()
+	if not proc or not proc.executable:match("/herdr$") then
+		return {}
+	end
+	local args = { "python3", "-I", wezterm.config_dir .. "/claude-code-blocks.py" }
+	for _, arg in ipairs(proc.argv) do
+		args[#args + 1] = arg
+	end
+	local ok, out = wezterm.run_child_process(args)
+	local blocks = ok and wezterm.json_parse(out) or {}
+	if #blocks == 0 then
+		return {}
+	end
+
+	local rows = {}
+	for row in (pane:get_lines_as_text() .. "\n"):gmatch("(.-)\n") do
+		-- herdr draws its panes side by side, split by box-drawing borders.
+		for segment in (row .. "│"):gmatch("(.-)│") do
+			-- A block opening a message sits after Claude Code's bullet.
+			segment = segment:match("^%s*(.-)%s*$")
+			for _, bullet in ipairs({ "●", "⏺" }) do
+				if segment:sub(1, #bullet) == bullet then
+					segment = segment:sub(#bullet + 1):match("^%s*(.-)$")
+				end
+			end
+			if #segment >= 6 then
+				rows[#rows + 1] = segment
+			end
+		end
+	end
+
+	local found = {}
+	-- Newest block first, so a row matching two blocks copies the latest.
+	for _, block in ipairs(blocks) do
+		local first = block:match("^%s*([^\n]-)%s*\n") or block:match("^%s*(.-)%s*$")
+		for _, row in ipairs(rows) do
+			-- The row is the line itself, or the part of it before a word wrap.
+			local rest = first:sub(#row + 1, #row + 1)
+			if not block_by_row[row] and first:sub(1, #row) == row and (rest == "" or rest == " ") then
+				block_by_row[row] = block
+				found[#found + 1] = row
+			end
+		end
+	end
+	return found
+end
+
 -- An empty list leaves quick select on its configured patterns. Otherwise the
 -- spans come first, longest first, so one never loses to its own prefix.
 local function hint_patterns(win, pane)
+	local ok, rows = pcall(code_block_rows, pane)
+	if not ok then
+		wezterm.log_error("quick select code blocks: " .. tostring(rows))
+		rows = {}
+	end
 	local spans = inline_code(pane)
+	for _, row in ipairs(rows) do
+		spans[#spans + 1] = row
+	end
 	if #spans == 0 then
 		return {}
 	end
