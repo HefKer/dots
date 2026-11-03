@@ -1,0 +1,12 @@
+// Base markdownlint config for repos without their own; a repo's
+// .markdownlint.* found from the cwd overrides it. Only rules that catch
+// markdown which renders wrong or links that break: style rules stay off.
+{
+  "default": false,
+  "MD011": true, // reversed link syntax: (text)[url]
+  "MD039": true, // spaces inside link text
+  "MD042": true, // empty link: []()
+  "MD051": true, // #fragment with no matching heading
+  "MD053": true, // reference definition nothing uses
+  "MD056": true // table row with the wrong cell count, e.g. an unescaped | in a cell
+}

@@ -1,0 +1,5 @@
+# Name notes by file name, as Obsidian does. By default a note's first H1 is
+# its title, so an H1 that matches another note's file name makes [[links]] to
+# that name ambiguous.
+[core]
+title_from_heading = false

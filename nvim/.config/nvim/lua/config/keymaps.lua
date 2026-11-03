@@ -19,3 +19,8 @@ vim.keymap.set("n", "<C-A-h>", splits("resize_left"), { desc = "Resize Window Le
 vim.keymap.set("n", "<C-A-j>", splits("resize_down"), { desc = "Resize Window Down" })
 vim.keymap.set("n", "<C-A-k>", splits("resize_up"), { desc = "Resize Window Up" })
 vim.keymap.set("n", "<C-A-l>", splits("resize_right"), { desc = "Resize Window Right" })
+
+-- Rename the current file by its name alone, keeping its directory and extension.
+vim.keymap.set("n", "<leader>cR", function()
+  require("config.rename").rename(vim.api.nvim_buf_get_name(0))
+end, { desc = "Rename File" })
