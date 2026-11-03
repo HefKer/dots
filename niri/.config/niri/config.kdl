@@ -343,6 +343,8 @@ binds {
     Mod+Slash hotkey-overlay-title="Show the Keymap" { spawn "kanata-keymap"; }
     // Records a kanata misfire in ~/dots/kanata/misfires.md (from the nixos flake's kanata-misfires package).
     Mod+Shift+Period hotkey-overlay-title="Flag a Keymap Misfire" { spawn "kanata-flag"; }
+    // (Re)starts both kanata services, e.g. after killing a hung one (from the nixos flake's kanata-restart).
+    Mod+Shift+BackSpace allow-when-locked=true hotkey-overlay-title="Restart Kanata" { spawn "kanata-restart"; }
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     // Mod+T hotkey-overlay-title="Open a Terminal: alacritty" { spawn "alacritty"; }
