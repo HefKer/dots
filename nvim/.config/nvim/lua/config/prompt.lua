@@ -92,6 +92,23 @@ local function quote()
   vim.api.nvim_put(lines, "l", false, false)
 end
 
+-- Undoes quote() once the replies are written: drops every quoted line, keeping only
+-- the text typed between them. The blank lines the quote left between replies are
+-- squeezed to one, so the comments don't arrive spread over gaps.
+local function unquote()
+  local kept = {}
+  for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+    local blank = vim.trim(line) == ""
+    if not line:match("^%s*>") and not (blank and (#kept == 0 or kept[#kept] == "")) then
+      table.insert(kept, blank and "" or line)
+    end
+  end
+  if kept[#kept] == "" then
+    table.remove(kept)
+  end
+  vim.api.nvim_buf_set_lines(0, 0, -1, false, kept)
+end
+
 -- Runs in the .md file scripts/claude-prompt opens, not an empty buffer: a file argument
 -- is what skips the dashboard and makes LazyVim load its markdown autocmds in time.
 function M.open()
@@ -101,6 +118,7 @@ function M.open()
   vim.b.claude_prompt = true -- turns on config.prompt_source
   vim.keymap.set("n", "<leader>as", send, { buffer = true, desc = "Send Prompt to Claude" })
   vim.keymap.set("n", "<leader>aq", quote, { buffer = true, desc = "Quote Claude's Last Reply" })
+  vim.keymap.set("n", "<leader>aQ", unquote, { buffer = true, desc = "Strip Quoted Lines" })
   vim.cmd.normal({ "G", bang = true })
   vim.cmd.startinsert({ bang = true })
 end
