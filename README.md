@@ -147,8 +147,23 @@ live outputs, so syncing it hands the laptop the desktop's monitor layout.
 
 ### Screenshots
 
-A package's screenshots live in `<pkg>/screenshots/`, next to its README.
-Package roots are never linked, so they stay out of `$HOME`. Images are stored
-in Git LFS. Take them from a throwaway profile so no history, bookmarks or
-sessions show up. For qutebrowser, use `--basedir` with a copy of the config, or
-[`scripts/qute-sandbox`](scripts/qute-sandbox).
+A package's screenshots live in `<pkg>/screenshots/`, next to its README, named
+for what they show (`hints.png`). Package roots are never linked, so the images
+stay out of `$HOME`.
+
+Every image is public for good, since LFS objects outlive a deleted file. So
+each one comes from a **throwaway instance** that has the repo's config and none
+of my data:
+
+- **qutebrowser**: [`scripts/qute-sandbox`](scripts/qute-sandbox), or
+  `--basedir` on a short path holding a copy of the config. The IPC socket lives
+  under the basedir, and a long path overflows the socket path limit.
+- **Terminal apps**: a new `wezterm start --always-new-process` window. Close it
+  by killing its pid, since niri's close-window leaves wezterm's confirm prompt
+  up.
+- **Capture one window** with `niri msg action screenshot-window --id <id>
+  --path <abs path>`, so nothing else on screen is in the image.
+
+The DMS bar (notifications, media, window titles), atuin, btop and herdr's
+sidebar show live personal data, so I take those myself. I look at every image
+before it's committed.
