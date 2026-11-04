@@ -8,6 +8,9 @@ local overrides = {
   NonText = { fg = "#859289" },
   -- generated Visual is #3a4248 -- indistinguishable from CursorLine.
   Visual = { bg = "#493b40" },
+  -- generated WinSeparator is #3a4248, so a split's border all but vanishes
+  -- into the background; everforest's grey0 makes it a visible line.
+  WinSeparator = { fg = "#7a8478" },
 }
 
 local function apply_overrides()

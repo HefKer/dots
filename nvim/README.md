@@ -37,6 +37,13 @@ Claude Code from Neovim.
   that catch broken markdown rather than style.
   [`plugins/markdown.lua`](.config/nvim/lua/plugins/markdown.lua) ·
   [d3126c1](https://github.com/HefKer/dots/commit/d3126c1)
+- <a id="paste-image"></a>**Paste images into an Obsidian vault.** In a markdown
+  buffer, `Ctrl+V` saves a clipboard image the way the Obsidian app does: into the
+  vault's attachment folder from `.obsidian/app.json`, named `Pasted image
+  <timestamp>.png`, embedded as `![[name]]`. Any other clipboard content pastes as
+  text. snacks.image also searches that folder, so name-only embeds render inline.
+  [`config/obsidian.lua`](.config/nvim/lua/config/obsidian.lua),
+  [`plugins/img-clip.lua`](.config/nvim/lua/plugins/img-clip.lua)
 - <a id="rename"></a>**Rename a file by its name alone.** `<leader>cR` and the
   explorer's rename prompt hold just the file name, without the directory or
   extension, and keep both. [`config/rename.lua`](.config/nvim/lua/config/rename.lua)

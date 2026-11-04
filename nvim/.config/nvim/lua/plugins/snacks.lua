@@ -19,7 +19,16 @@ return {
   },
   opts = {
     -- Renders markdown images inline and opens image files as images.
-    image = { enabled = true },
+    image = {
+      enabled = true,
+      -- Obsidian embeds an attachment by name alone (![[name.png]]), so also
+      -- look in the vault's attachment folder; nil falls back to snacks' own lookup.
+      resolve = function(file, src)
+        local dir = require("config.obsidian").attachment_dir(file)
+        local path = dir and dir .. "/" .. src
+        return path and vim.uv.fs_stat(path) and path or nil
+      end,
+    },
     picker = {
       hidden = true,
       ignored = true,
