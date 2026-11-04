@@ -48,6 +48,20 @@ return {
     end,
   },
   {
+    -- Render in every mode, and show raw markdown only on the line being typed
+    -- in insert mode, so moving through a table or entering insert doesn't break
+    -- the layout. Anti-conceal is switched off by mode rather than per element:
+    -- ignoring just table_border isn't enough, as the cell padding that aligns
+    -- the columns is always dropped on the cursor line while it is on.
+    "MeanderingProgrammer/render-markdown.nvim",
+    opts = {
+      render_modes = true,
+      anti_conceal = { disabled_modes = { "n", "c" } },
+      -- and keep nvim's own conceal on the cursor line in the same modes
+      win_options = { concealcursor = { rendered = "nc" } },
+    },
+  },
+  {
     "mfussenegger/nvim-lint",
     opts = {
       linters = {
