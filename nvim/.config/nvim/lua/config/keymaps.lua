@@ -24,3 +24,9 @@ vim.keymap.set("n", "<C-A-l>", splits("resize_right"), { desc = "Resize Window R
 vim.keymap.set("n", "<leader>cR", function()
   require("config.rename").rename(vim.api.nvim_buf_get_name(0))
 end, { desc = "Rename File" })
+
+-- Inside an Obsidian vault, a new file is a named note in the folder the app
+-- would put it in (polaris: the + inbox); elsewhere it's LazyVim's empty buffer.
+vim.keymap.set("n", "<leader>fn", function()
+  require("config.obsidian").new_note()
+end, { desc = "New File" })

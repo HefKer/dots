@@ -42,8 +42,12 @@ Claude Code from Neovim.
   vault's attachment folder from `.obsidian/app.json`, named `Pasted image
   <timestamp>.png`, embedded as `![[name]]`. Any other clipboard content pastes as
   text. snacks.image also searches that folder, so name-only embeds render inline.
+  `<leader>fn` likewise asks for a name and opens the note in the folder the app
+  creates new notes in.
   [`config/obsidian.lua`](.config/nvim/lua/config/obsidian.lua),
-  [`plugins/img-clip.lua`](.config/nvim/lua/plugins/img-clip.lua)
+  [`plugins/img-clip.lua`](.config/nvim/lua/plugins/img-clip.lua),
+  [`config/keymaps.lua`](.config/nvim/lua/config/keymaps.lua) ·
+  [e929a19](https://github.com/HefKer/dots/commit/e929a19)
 - <a id="rename"></a>**Rename a file by its name alone.** `<leader>cR` and the
   explorer's rename prompt hold just the file name, without the directory or
   extension, and keep both. [`config/rename.lua`](.config/nvim/lua/config/rename.lua)
