@@ -1,10 +1,77 @@
 # dots
 
-My dotfiles for my NixOS setup: the **dotfiles root**. This repo holds the
-files; it does not place them. Home-manager, in the
-[NixOS config](https://github.com/HefKer/nixos-config), wires them into `$HOME`.
+My Linux desktop: [niri](https://github.com/YaLTeR/niri) +
+[DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) on NixOS,
+themed Everforest, and driven from the keyboard wherever possible:
+[qutebrowser](qutebrowser/), [WezTerm](wezterm/), [Neovim](nvim/),
+[herdr](herdr/) and [kanata](kanata/).
 
-## Layout
+![qutebrowser with icon-only tabs on the left](qutebrowser/screenshots/overview.png)
+
+Feel free to take whatever's useful. Most packages have a README with a
+**Worth stealing** list: each entry is one feature, linked to the file it lives in
+and the commit that added it. The commit message says why it's built that way.
+
+## Highlights
+
+- **qutebrowser:** [sessions you can park tabs in and pull them back out
+  of](qutebrowser/README.md#session-append),
+  [YouTube ad blocking that works](qutebrowser/README.md#youtube-adblock),
+  [hint-driven focus for scrollable areas and hidden file
+  inputs](qutebrowser/README.md#scrollable-hints), and
+  [fixes for printing](qutebrowser/README.md#printing) and
+  [dead hints after cross-site navigation](qutebrowser/README.md#injectfix)
+- **WezTerm:** [quick select that copies URLs without the trailing
+  punctuation](wezterm/README.md#quick-select-prose), and copies
+  [inline code](wezterm/README.md#claude-inline-code) and
+  [whole code blocks](wezterm/README.md#claude-code-blocks) out of Claude Code
+- **Neovim + herdr:** [a prompt pane for writing to Claude Code in
+  Neovim](nvim/README.md#prompt-pane), and
+  [diff review with comments sent back to the agent](herdr/README.md#review)
+- **kanata:** [home-row mods that don't misfire on fast
+  rolls](kanata/README.md#home-row-mods), with
+  [regression tests](kanata/README.md#tests)
+- **fish:** [`nixup`](fish/README.md#nixup) and
+  [`nixlog`](fish/README.md#nixlog) for checking nixpkgs updates before a
+  rebuild, and [`cmv`](fish/README.md#cmv) for moving a project without losing
+  its Claude Code sessions
+
+## Packages
+
+| Package | What it is | |
+|---|---|---|
+| [qutebrowser](qutebrowser/) | Keyboard-driven browser, with userscripts and greasemonkey scripts | [README](qutebrowser/README.md) |
+| [wezterm](wezterm/) | Terminal, built around quick select | [README](wezterm/README.md) |
+| [nvim](nvim/) | LazyVim, plus the Claude Code prompt pane | [README](nvim/README.md) |
+| [herdr](herdr/) | Terminal multiplexer for coding agents | [README](herdr/README.md) |
+| [fish](fish/) | Shell: vi keys, fzf, NixOS and Claude Code helpers | [README](fish/README.md) |
+| [kanata](kanata/) | Keyboard remapper: home-row mods, layers, tests | [README](kanata/README.md) |
+| [niri](niri/) | Scrolling Wayland compositor, split into one file per topic under `dms/` | |
+| [DankMaterialShell](DankMaterialShell/) | Bar, launcher and theming for niri; generates the colour schemes the others read | |
+| [starship](starship/) | Prompt, from the commented defaults | |
+| [fastfetch](fastfetch/) | System info in Everforest, with icon keys in a frame | [screenshot](fastfetch/screenshots/fastfetch.png) |
+| [btop](btop/) | Resource monitor, Everforest soft | |
+| [atuin](atuin/) | Shell history search | |
+| [fuzzel](fuzzel/) | App launcher and picker for the qutebrowser session scripts | |
+| [hunk](hunk/) | Diff viewer used for reviewing agent changes | |
+| [mpv](mpv/) | Video player | |
+| [xdg-desktop-portal-termfilechooser](xdg-desktop-portal-termfilechooser/) | File picker portal: apps that use it get yazi in WezTerm | |
+| [scripts](scripts/) | Helpers the configs call (prompt pane, qutebrowser sandbox) | |
+
+Each package mirrors where its files go under `$HOME`, so
+`qutebrowser/.config/qutebrowser/` is `~/.config/qutebrowser/`. To borrow a
+config, copy that directory or just the file you want. Colours generally come
+from DankMaterialShell, so swap in your own scheme where a README mentions
+`dank-theme`.
+
+## How this repo is wired
+
+The rest is for me and for agents working in this repo: how these files reach
+`$HOME` on my machines. This repo holds the files; it does not place them.
+Home-manager, in the [NixOS config](https://github.com/HefKer/nixos-config), wires
+them in. This directory is the **dotfiles root**.
+
+### Layout
 
 Each top-level dir is one application's package. Its tree mirrors where the
 files appear under `$HOME`:
@@ -26,14 +93,14 @@ for machines I sit at, so don't "fix" it. See the NixOS config's
 [ADR-0001](https://github.com/HefKer/nixos-config/blob/main/docs/adr/0001-dotfiles-wired-by-home-manager-as-out-of-store-symlinks.md) for the reasoning and the
 [glossary](https://github.com/HefKer/nixos-config/blob/main/GLOSSARY.md) for the terms.
 
-### Bootstrapping a new machine
+#### Bootstrapping a new machine
 
 This directory must exist at `~/dots` **before the first rebuild**. Syncthing
 is what puts it there. Nix cannot verify it: if it is missing, the rebuild
 succeeds anyway, every link dangles silently, and the applications fail
 obscurely (defaults, or errors reading their config) rather than loudly.
 
-## Packages
+### What's linked where
 
 | Pkg | App | Linked | Notes |
 |-----|-----|--------|-------|
@@ -54,7 +121,7 @@ destroys a file-level link.
 > [!NOTE]
 > `~/.config/herdr/` is also herdr's runtime state dir (`*.sock`, `session.json`, logs), so only `config.toml` is linked rather than the whole directory.
 
-### Unlinked dirs
+#### Unlinked dirs
 
 - [`syncthing/`](syncthing/) — Shared `.stglobalignore` across all Syncthing folders/hosts. Not in the link set; placed by hand per Syncthing folder — see [`syncthing/README.md`](syncthing/README.md).
 - [`kanata/`](kanata/) — The [kanata](https://github.com/jtroo/kanata) keymap shared by every keyboard. Not in the link set: the NixOS config's kanata services read `keymap.kbd` straight from here through a read-only bind, and each instance's `defcfg` (devices, TCP port) is generated there and `include`s this file. Edit it, then press Fn2+`\` (`lrld`) to live-reload. `keymap-drawer.yaml` gives the keymap viewer (Mod+/) legends for the aliases its parser can't read; the viewer redraws on every save.
@@ -63,9 +130,8 @@ destroys a file-level link.
 - [`docs/`](docs/) — Written for agents working in this repo, not symlinked anywhere. [`agents/`](docs/agents/) says where issues live and how the triage labels and domain docs are read; [`adr/`](docs/adr/) records decisions that are hard to reverse.
 - [`.claude/`](.claude/) — Repo-specific Claude Code skills, one per package. The global ignore drops `/.claude` wholesale, so `.gitignore` re-includes `skills/` on its own.
 - [`.githooks/`](.githooks/) — Pre-commit syntax/format checks for staged configs (stylua, `fish -n`, `niri validate`, …). Enable once per clone with `git config core.hooksPath .githooks`.
-- [`screenshots/`](screenshots/) — Preview images.
 
-## Application-written state
+### Application-written state
 
 Config directories are linked whole, so anything an application writes at
 runtime lands here too. That is contained with ignore rules rather than by
@@ -79,37 +145,10 @@ Both lists must stay in step. The load-bearing case is
 `niri/.config/niri/dms/outputs.kdl`: DMS regenerates it from the compositor's
 live outputs, so syncing it hands the laptop the desktop's monitor layout.
 
-## Screenshots
+### Screenshots
 
-| qutebrowser (everforest) | menu |
-|---|---|
-| ![qutebrowser](screenshots/qutebrowser-everforest.png) | ![menu](screenshots/qutebrowser-everforest-menu.png) |
-
-## qutebrowser deps
-
-Detach videos (download + play locally):
-
-- [mpv](https://mpv.io/)
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-- mpv-sponsorblock
-
-Bitwarden:
-
-- [rofi](https://wiki.archlinux.org/title/Rofi)
-- [tldextract](https://pypi.org/project/tldextract/)
-- [pyperclip](https://pypi.org/project/pyperclip/)
-- bitwarden-cli
-
-> [!NOTE]
-> Bitwarden setup still flaky — slow, doesn't autofill on many sites. Testing rbw workaround
-
-Adblock:
-
-- [adblock](https://pypi.org/project/adblock/)
-- Run `:adblock-update` in qutebrowser to refresh lists.
-
-Spellcheck (en-US):
-
-```sh
-"$(find "$(nix-store --query --outputs "$(which qutebrowser)")" -iname 'dictcli.py' | head -1)" install en-US
-```
+A package's screenshots live in `<pkg>/screenshots/`, next to its README.
+Package roots are never linked, so they stay out of `$HOME`. Images are stored
+in Git LFS. Take them from a throwaway profile so no history, bookmarks or
+sessions show up. For qutebrowser, use `--basedir` with a copy of the config, or
+[`scripts/qute-sandbox`](scripts/qute-sandbox).
