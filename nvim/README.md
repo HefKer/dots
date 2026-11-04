@@ -29,13 +29,16 @@ Claude Code from Neovim.
     lines again, leaving only what you wrote.
   - `/skill` and `@file` complete as they do in Claude's own input.
 
+  ![The prompt pane: Claude's reply above, two quoted list items answered in the prompt below](screenshots/prompt-pane.png)
+
   [`config/prompt.lua`](.config/nvim/lua/config/prompt.lua),
   [`config/prompt_source.lua`](.config/nvim/lua/config/prompt_source.lua),
   [`scripts/claude-prompt`](../scripts/claude-prompt) ·
   [d3a5b24](https://github.com/HefKer/dots/commit/d3a5b24),
   [3a8052e](https://github.com/HefKer/dots/commit/3a8052e),
   [62b92e1](https://github.com/HefKer/dots/commit/62b92e1),
-  [cb67a01](https://github.com/HefKer/dots/commit/cb67a01)
+  [cb67a01](https://github.com/HefKer/dots/commit/cb67a01),
+  [4eec5ac](https://github.com/HefKer/dots/commit/4eec5ac)
 - <a id="markdown"></a>**Obsidian-style markdown.** On top of LazyVim's markdown
   extra, marksman resolves `[[wikilinks]]` by file name as Obsidian does and hides
   unresolved-link errors inside a vault, and markdownlint is cut down to rules
