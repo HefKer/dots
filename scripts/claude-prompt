@@ -20,5 +20,5 @@ if [ -n "$pid" ] && tr '\0' '\n' <"/proc/$pid/environ" 2>/dev/null | grep -qx "V
   rm -f "$marker"
 fi
 
-new=$(herdr pane split "$pane" --direction right --focus | jq -r .result.pane.pane_id)
+new=$(herdr pane split "$pane" --direction right --ratio 0.4 --focus | jq -r .result.pane.pane_id)
 herdr pane run "$new" "exec nvim $draft -c 'lua require(\"config.prompt\").open()'" >/dev/null

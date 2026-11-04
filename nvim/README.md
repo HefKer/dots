@@ -17,11 +17,16 @@ Claude Code from Neovim.
 - <a id="prompt-pane"></a>**Prompt pane for Claude Code.** In
   [herdr](../herdr/), `prefix+a` opens an nvim scratch buffer beside the Claude
   pane and moves Claude's unsent prompt into it. `<leader>as` sends the buffer to
-  Claude. You get a real editor for long prompts while the agent stays visible
-  and scrollable.
-  - `<leader>aq` blockquotes Claude's last reply from the session transcript, so
-    you can answer it inline.
-  - `<leader>aQ` strips the quoted lines again, leaving only what you wrote.
+  Claude. You get a real editor for long prompts while the agent stays visible.
+  - Claude's last reply sits rendered above the prompt, read from the session
+    transcript and refreshed when a turn ends, so narration between tool calls
+    never replaces it. `Alt+j/k/u/d` scroll it from the prompt, even in insert
+    mode, and `[r`/`]r` step through earlier replies.
+  - `<CR>` in the reply quotes the list item, code block, table or paragraph
+    under the cursor into the prompt (a visual selection quotes just that), with
+    an empty line under it to answer on. Quotes in the prompt are dimmed.
+  - `<leader>aq` quotes the whole reply, and `<leader>aQ` strips the quoted
+    lines again, leaving only what you wrote.
   - `/skill` and `@file` complete as they do in Claude's own input.
 
   [`config/prompt.lua`](.config/nvim/lua/config/prompt.lua),
