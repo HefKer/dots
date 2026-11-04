@@ -55,6 +55,7 @@ and the commit that added it. The commit message says why it's built that way.
 | [fuzzel](fuzzel/) | App launcher and picker for the qutebrowser session scripts | |
 | [hunk](hunk/) | Diff viewer used for reviewing agent changes | |
 | [mpv](mpv/) | Video player | |
+| [xdg](xdg/) | Default apps for file types and link schemes | [README](xdg/README.md) |
 | [xdg-desktop-portal-termfilechooser](xdg-desktop-portal-termfilechooser/) | File picker portal: apps that use it get yazi in WezTerm | |
 | [scripts](scripts/) | Helpers the configs call (prompt pane, qutebrowser sandbox) | |
 
