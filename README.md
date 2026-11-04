@@ -1,10 +1,16 @@
 # dots
 
-My Linux desktop: [niri](https://github.com/YaLTeR/niri) +
-[DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) on NixOS,
-themed Everforest, and driven from the keyboard wherever possible:
-[qutebrowser](qutebrowser/), [WezTerm](wezterm/), [Neovim](nvim/),
-[herdr](herdr/) and [kanata](kanata/).
+My Linux desktop: [niri] + [DankMaterialShell] on NixOS, themed Everforest,
+and driven from the keyboard wherever possible: [qutebrowser], [WezTerm],
+[Neovim], [herdr] and [kanata].
+
+[niri]: https://github.com/YaLTeR/niri
+[DankMaterialShell]: https://github.com/AvengeMedia/DankMaterialShell
+[qutebrowser]: qutebrowser/
+[WezTerm]: wezterm/
+[Neovim]: nvim/
+[herdr]: herdr/
+[kanata]: kanata/
 
 ![qutebrowser with icon-only tabs on the left](qutebrowser/screenshots/overview.png)
 
@@ -15,26 +21,38 @@ and the commit that added it. The commit message says why it's built that way.
 ## Highlights
 
 - **qutebrowser:** [sessions you can park tabs in and pull them back out
-  of](qutebrowser/README.md#session-append),
-  [YouTube ad blocking that works](qutebrowser/README.md#youtube-adblock),
+  of][session-append], [YouTube ad blocking that works][youtube-adblock],
   [hint-driven focus for scrollable areas and hidden file
-  inputs](qutebrowser/README.md#scrollable-hints), and
-  [fixes for printing](qutebrowser/README.md#printing) and
-  [dead hints after cross-site navigation](qutebrowser/README.md#injectfix)
+  inputs][scrollable-hints], and [fixes for printing][printing] and [dead hints
+  after cross-site navigation][injectfix]
 - **WezTerm:** [quick select that copies URLs without the trailing
-  punctuation](wezterm/README.md#quick-select-prose), and copies
-  [inline code](wezterm/README.md#claude-inline-code) and
-  [whole code blocks](wezterm/README.md#claude-code-blocks) out of Claude Code
+  punctuation][quick-select-prose], and copies [inline
+  code][claude-inline-code] and [whole code blocks][claude-code-blocks] out of
+  Claude Code
 - **Neovim + herdr:** [a prompt pane for writing to Claude Code in
-  Neovim](nvim/README.md#prompt-pane), and
-  [diff review with comments sent back to the agent](herdr/README.md#review)
-- **kanata:** [home-row mods that don't misfire on fast
-  rolls](kanata/README.md#home-row-mods), with
-  [regression tests](kanata/README.md#tests)
-- **fish:** [`nixup`](fish/README.md#nixup) and
-  [`nixlog`](fish/README.md#nixlog) for checking nixpkgs updates before a
-  rebuild, and [`cmv`](fish/README.md#cmv) for moving a project without losing
-  its Claude Code sessions
+  Neovim][prompt-pane], and [diff review with comments sent back to the
+  agent][review]
+- **kanata:** [home-row mods that don't misfire on fast rolls][home-row-mods],
+  with [regression tests][tests]
+- **fish:** [`nixup`][nixup] and [`nixlog`][nixlog] for checking nixpkgs
+  updates before a rebuild, and [`cmv`][cmv] for moving a project without
+  losing its Claude Code sessions
+
+[session-append]: qutebrowser/README.md#session-append
+[youtube-adblock]: qutebrowser/README.md#youtube-adblock
+[scrollable-hints]: qutebrowser/README.md#scrollable-hints
+[printing]: qutebrowser/README.md#printing
+[injectfix]: qutebrowser/README.md#injectfix
+[quick-select-prose]: wezterm/README.md#quick-select-prose
+[claude-inline-code]: wezterm/README.md#claude-inline-code
+[claude-code-blocks]: wezterm/README.md#claude-code-blocks
+[prompt-pane]: nvim/README.md#prompt-pane
+[review]: herdr/README.md#review
+[home-row-mods]: kanata/README.md#home-row-mods
+[tests]: kanata/README.md#tests
+[nixup]: fish/README.md#nixup
+[nixlog]: fish/README.md#nixlog
+[cmv]: fish/README.md#cmv
 
 ## Packages
 
@@ -69,8 +87,10 @@ from DankMaterialShell, so swap in your own scheme where a README mentions
 
 The rest is for me and for agents working in this repo: how these files reach
 `$HOME` on my machines. This repo holds the files; it does not place them.
-Home-manager, in the [NixOS config](https://github.com/HefKer/nixos-config), wires
-them in. This directory is the **dotfiles root**.
+Home-manager, in the [NixOS config], wires them in. This directory is the
+**dotfiles root**.
+
+[NixOS config]: https://github.com/HefKer/nixos-config
 
 ### Layout
 
@@ -82,17 +102,21 @@ files appear under `$HOME`:
 ```
 
 Which paths are actually linked is the **link set**, declared in
-[`homes/modules/dotfiles.nix`](https://github.com/HefKer/nixos-config/blob/main/homes/modules/dotfiles.nix): a shared layer every host gets, plus a
-per-host layer on top. A file here that no entry names is not linked anywhere;
-adding a package means adding an entry there and rebuilding once.
+[`homes/modules/dotfiles.nix`][dotfiles.nix]: a shared layer every host gets,
+plus a per-host layer on top. A file here that no entry names is not linked
+anywhere; adding a package means adding an entry there and rebuilding once.
+
+[dotfiles.nix]: https://github.com/HefKer/nixos-config/blob/main/homes/modules/dotfiles.nix
 
 The links are **out-of-store symlinks**: `~/.config/<app>` resolves to this
 directory, not to a copy in the Nix store. Editing a file here takes effect
 immediately, with no rebuild, and applications that rewrite their own config
 keep working. That is deliberate — store copies were considered and rejected
-for machines I sit at, so don't "fix" it. See the NixOS config's
-[ADR-0001](https://github.com/HefKer/nixos-config/blob/main/docs/adr/0001-dotfiles-wired-by-home-manager-as-out-of-store-symlinks.md) for the reasoning and the
-[glossary](https://github.com/HefKer/nixos-config/blob/main/GLOSSARY.md) for the terms.
+for machines I sit at, so don't "fix" it. See the NixOS config's [ADR-0001]
+for the reasoning and the [glossary] for the terms.
+
+[ADR-0001]: https://github.com/HefKer/nixos-config/blob/main/docs/adr/0001-dotfiles-wired-by-home-manager-as-out-of-store-symlinks.md
+[glossary]: https://github.com/HefKer/nixos-config/blob/main/GLOSSARY.md
 
 #### Bootstrapping a new machine
 
@@ -139,8 +163,10 @@ runtime lands here too. That is contained with ignore rules rather than by
 linking individual files:
 
 - **git** — `.gitignore`, so `git status` reports only what is authored here.
-- **Syncthing** — [`syncthing/.dotsignore`](syncthing/.dotsignore), so each host
-  keeps its own copy instead of receiving the other's.
+- **Syncthing** — [`syncthing/.dotsignore`][dotsignore], so each host keeps
+  its own copy instead of receiving the other's.
+
+[dotsignore]: syncthing/.dotsignore
 
 Both lists must stay in step. The load-bearing case is
 `niri/.config/niri/dms/outputs.kdl`: DMS regenerates it from the compositor's
@@ -156,14 +182,16 @@ Every image is public for good, since LFS objects outlive a deleted file. So
 each one comes from a **throwaway instance** that has the repo's config and none
 of my data:
 
-- **qutebrowser**: [`scripts/qute-sandbox`](scripts/qute-sandbox), or
-  `--basedir` on a short path holding a copy of the config. The IPC socket lives
-  under the basedir, and a long path overflows the socket path limit.
+- **qutebrowser**: [`scripts/qute-sandbox`][qute-sandbox], or `--basedir` on
+  a short path holding a copy of the config. The IPC socket lives under the
+  basedir, and a long path overflows the socket path limit.
 - **Terminal apps**: a new `wezterm start --always-new-process` window. Close it
   by killing its pid, since niri's close-window leaves wezterm's confirm prompt
   up.
 - **Capture one window** with `niri msg action screenshot-window --id <id>
   --path <abs path>`, so nothing else on screen is in the image.
+
+[qute-sandbox]: scripts/qute-sandbox
 
 The DMS bar (notifications, media, window titles), atuin, btop and herdr's
 sidebar show live personal data, so I take those myself. I look at every image

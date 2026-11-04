@@ -50,10 +50,10 @@ Claude Code from Neovim.
   contrast fixes for `NonText` and `Visual` are reapplied after the colorscheme
   loads. [`plugins/colorscheme.lua`](.config/nvim/lua/plugins/colorscheme.lua) ·
   [1ead013](https://github.com/HefKer/dots/commit/1ead013)
-- <a id="images"></a>**Sharp images in markdown, even inside herdr.** With the
-  cursor on an image link, the image pops up in a float as large as the window.
-  Inline images are off because WezTerm blurs them when it shrinks them to fit.
-  `gf` opens the image in a buffer, and `gx` opens it in your image viewer.
+- <a id="images"></a>**Full-size images on demand.** Markdown images show
+  inline, which is small and soft, since WezTerm blurs a screenshot it shrinks
+  that far. `<leader>ci` on an image link opens the image in a near-fullscreen
+  float. `gf` opens it in a buffer, and `gx` opens it in your image viewer.
   [`plugins/snacks.lua`](.config/nvim/lua/plugins/snacks.lua)
 
 ## Using it yourself

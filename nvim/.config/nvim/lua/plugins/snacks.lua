@@ -1,14 +1,25 @@
 return {
   "folke/snacks.nvim",
-  opts = {
-    -- Opens image files as images, and shows a markdown image link's image in
-    -- a float while the cursor is on it. Not inline: snacks sends PNGs as-is
-    -- and WezTerm downscales them roughly, so the 80-column inline default
-    -- blurs screenshots. The float grows to the window, close to native size.
-    image = {
-      enabled = true,
-      doc = { inline = false, float = true, max_width = 200, max_height = 60 },
+  keys = {
+    -- Inline images are capped at 80 columns, and WezTerm blurs a screenshot
+    -- shrunk that far. This opens the image file in a near-fullscreen float,
+    -- where snacks renders it at the window's size.
+    {
+      "<leader>ci",
+      function()
+        Snacks.image.doc.at_cursor(function(src)
+          if not src then
+            return Snacks.notify.warn("No image under the cursor")
+          end
+          Snacks.win({ file = src, width = 0.9, height = 0.9, border = "rounded", keys = { q = "close" } })
+        end)
+      end,
+      desc = "Image Under Cursor (Float)",
     },
+  },
+  opts = {
+    -- Renders markdown images inline and opens image files as images.
+    image = { enabled = true },
     picker = {
       hidden = true,
       ignored = true,
