@@ -27,6 +27,11 @@ for ntv in ("ntv.st", "ntv.cx"):
 # matched per request, so it has to name the stream host and not ntv.
 config.set("content.headers.user_agent", chrome_ua, "*://*.indianservers.st/*")
 
+# Slack's desktop sign-in page (/ssb/signin_redirect) hands the token to the
+# app by navigating to slack:// from JavaScript, which the default
+# allow-from-user-interaction policy drops silently, leaving it on "Launching".
+config.set("content.unknown_url_scheme_policy", "allow-all", "*://*.slack.com/*")
+
 # Adblocking
 c.content.blocking.enabled = True
 c.content.blocking.method = "both"  # "adblock" / "both"
