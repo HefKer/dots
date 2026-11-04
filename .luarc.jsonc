@@ -1,0 +1,19 @@
+// For lua-language-server started outside nvim, such as Claude Code's lua-lsp plugin,
+// which roots at the repo and so knows nothing of `vim` or the plugins. Inside nvim,
+// lazydev supplies all of this and lua_ls roots at nvim/.config/nvim (its stylua.toml),
+// so this file is not read there. It is .jsonc because lazydev warns about any
+// .luarc.json above the workspace.
+{
+  "runtime.version": "LuaJIT",
+  "workspace.checkThirdParty": false,
+  // reference/ holds other people's dotfiles, kept only to read.
+  "workspace.ignoreDir": ["reference"],
+  "workspace.library": [
+    // Stable across rebuilds, unlike $VIMRUNTIME's store path.
+    "/run/current-system/sw/share/nvim/runtime/lua",
+    "~/.local/share/nvim/lazy/lazy.nvim/lua",
+    "~/.local/share/nvim/lazy/LazyVim/lua",
+    "~/.local/share/nvim/lazy/snacks.nvim/lua",
+    "~/.local/share/nvim/lazy/nvim-lspconfig/lua"
+  ]
+}
