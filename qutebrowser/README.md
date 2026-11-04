@@ -111,6 +111,12 @@ file as it is now and to the commit that added it, which explains why.
   force 1080p ([`youtube-quality.js`](.config/qutebrowser/greasemonkey/youtube-quality.js))
   and skip sponsor segments
   ([`sponsorblock-lite.js`](.config/qutebrowser/greasemonkey/sponsorblock-lite.js)).
+- <a id="twitch-ffz"></a>**FrankerFaceZ on Twitch, with auto-claim on.**
+  [`twitch-ffz.js`](.config/qutebrowser/greasemonkey/twitch-ffz.js) loads FFZ
+  without its injector's settings provider, which needs GM APIs qutebrowser
+  lacks. It then turns on FFZ's auto-claim for channel points and drops, which
+  are off by default and saved per browser profile, so a fresh profile gets them
+  too.
 
 ### Fixes for qutebrowser gaps
 
