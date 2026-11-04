@@ -9,7 +9,9 @@ return {
     {
       "adriankarlen/smart-splits-backend-herdr",
       main = "smart-splits-backend-herdr",
-      opts = {},
+      -- The herdr half ignores zoom and moves focus to the hidden neighbour, which
+      -- herdr then shows zoomed; match it so ctrl+hjkl acts the same from nvim.
+      opts = { disable_nav_when_zoomed = false },
     },
   },
   opts = {
