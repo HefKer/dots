@@ -62,6 +62,15 @@ c.content.blocking.adblock.lists = [
     "https://github.com/uBlockOrigin/uAssets/raw/master/filters/annoyances-others.txt",
 ]
 
+# Bypass Paywalls Clean's filters, whose network rules block paywall scripts. gitflic,
+# its only host, answers qutebrowser's download with a 403, so `cu` mirrors the list to
+# this path with curl (MIRRORS in the ubo-scriptlets userscript) before updating the
+# adblock, and ports the element hiding and unlocking scriptlets the adblock skips.
+# Appended rather than listed so ubo-scriptlets can still read the list above as a literal.
+c.content.blocking.adblock.lists.append(
+    (config.datadir / "adblock-lists" / "bpc-paywall-filter.txt").as_uri()
+)
+
 # Mute linter warnings
 # ruff: noqa: F821
 # pyright: reportUndefinedVariable=false

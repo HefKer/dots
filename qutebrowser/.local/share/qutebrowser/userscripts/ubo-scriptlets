@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Port uBlock Origin's popup defenses from the adblock lists into a greasemonkey script.
+"""Port what qutebrowser's adblock skips in the adblock lists into a greasemonkey script.
 
 Usage:
     :spawn --userscript ubo-scriptlets
@@ -15,6 +15,16 @@ the tab redirects that come with them in two ways this script ports:
   through window.open, a target=_blank link or form, or a frame's own window.open.
   qutebrowser's adblock would only block the new tab's page load, leaving the tab.
 
+Lists in FULL_LISTS, the paywall list, are ported further: their element hiding
+(`host##selector`, with `:style()` and `:remove()`) and the scriptlets they use to
+unlock articles, `ra`, `rc`, `cookie-remover`, `set` and `set-local-storage-item`.
+These stay off the other lists, whose thousands of cosmetic and anti-adblock rules
+would bloat the script and break sites in ways nobody tested in qutebrowser.
+
+Lists in MIRRORS are downloaded with curl into the data dir first, since their host
+answers qutebrowser's and Python's downloads with a 403; privacy.py points the adblock
+at the copy. The script then runs :adblock-update, so `cu` needs nothing before it.
+
 The lists are read from the `c.content.blocking.adblock.lists` assignment in
 privacy.py, following uBO's `!#include` and `!#if` directives the way desktop
 Chromium uBO would. The output goes to qutebrowser's data dir, beside the adblock
@@ -25,6 +35,7 @@ import ast
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -47,6 +58,31 @@ SCRIPTLETS = {
     "set-cookie": "set-cookie",
 }
 
+# Bypass Paywalls Clean's filter list, which unlocks articles with these rules
+BPC_URL = "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=bpc-paywall-filter.txt"
+FULL_LISTS = {BPC_URL}
+# url -> local copy; privacy.py appends the same path to the adblock lists
+MIRRORS = {BPC_URL: DATA_DIR / "adblock-lists" / "bpc-paywall-filter.txt"}
+FULL_SCRIPTLETS = SCRIPTLETS | {
+    "ra": "ra",
+    "remove-attr": "ra",
+    "rc": "rc",
+    "remove-class": "rc",
+    "cookie-remover": "cookie-remover",
+    "set": "set",
+    "set-constant": "set",
+    "set-local-storage-item": "set-local-storage-item",
+}
+COSMETIC_RE = re.compile(r"^([^#]*)(#@?#)([^+^].*)$")
+STYLE_RE = re.compile(r"^(.*?):style\((.*)\)$")
+# uBO's procedural operators, which a stylesheet can't express; :remove() is kept as hiding
+PROCEDURAL = (
+    ":has-text(", ":xpath(", ":upward(", ":matches-css", ":min-text-length(",
+    ":watch-attr(", ":others(", ":matches-path(", ":matches-attr(", ":matches-prop(",
+    ":matches-media(", ":remove-attr(", ":remove-class(", ":shadow(", ":if(", ":if-not(",
+    ":-abp-", ":contains(",
+)
+
 SCRIPTLET_RE = re.compile(r"^(.*?)(#@?#)\+js\((.*)\)$")
 HOST_RE = re.compile(r"^[a-z0-9.*_-]+$")
 PURE_HOST_RE = re.compile(r"^\|\|([a-z0-9.-]+)\^\|?$")
@@ -61,13 +97,35 @@ OTHER_TYPES = {
 REGEX_SPECIAL = set(".+?${}()|[]\\/")
 
 
-def message(level, text):
+def command(cmd):
     fifo = os.environ.get("QUTE_FIFO")
     if fifo:
         with open(fifo, "w") as f:
-            f.write(f"message-{level} {json.dumps('ubo-scriptlets: ' + text)}\n")
-    else:
+            f.write(cmd + "\n")
+    return bool(fifo)
+
+
+def message(level, text):
+    if not command(f"message-{level} {json.dumps('ubo-scriptlets: ' + text)}"):
         print(text, file=sys.stderr if level == "error" else sys.stdout)
+
+
+def mirror(url, path):
+    """Download url to path with curl, keeping the old copy if that fails."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    try:
+        subprocess.run(
+            ["curl", "-fsSL", "--max-time", "30", "-o", str(tmp), url],
+            check=True, capture_output=True, text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as e:
+        tmp.unlink(missing_ok=True)
+        reason = getattr(e, "stderr", "") or str(e)
+        kept = "kept the old copy" if path.exists() else "no copy yet"
+        message("warning", f"mirroring {path.name} failed ({reason.strip()}); {kept}")
+        return
+    tmp.replace(path)
 
 
 def read_list_urls():
@@ -197,14 +255,14 @@ class Table:
         return {"h": self.hosts, "e": self.entities, "r": list(self.regexes.items())}
 
 
-def parse_scriptlet(m, rule_id, include, exclude, exempt, stats):
+def parse_scriptlet(m, names, rule_id, include, exclude, exempt, stats):
     host_part, sep, body = m.groups()
     args = split_args(body)
     exception = sep == "#@#"
     if exception and not args:
         rid = -1  # `#@#+js()` turns off every scriptlet on the host
     else:
-        name = SCRIPTLETS.get(args[0].removesuffix(".js")) if args else None
+        name = names.get(args[0].removesuffix(".js")) if args else None
         if name is None:
             return
         rid = rule_id(name, args[1:])
@@ -214,6 +272,26 @@ def parse_scriptlet(m, rule_id, include, exclude, exempt, stats):
         stats["generic"] += 1
         return
     stats["scriptlets"] += 1
+    add_hosts(hosts, rid, exception, include, exclude, exempt)
+
+
+def parse_cosmetic(m, rule_id, include, exclude, exempt, stats):
+    """Port a `host##selector` rule as a CSS rule; generic ones go under the `*` host."""
+    host_part, sep, selector = m.groups()
+    style = "display:none!important"
+    sm = STYLE_RE.match(selector)
+    if sm:
+        selector, style = sm[1], sm[2]
+    elif selector.endswith(":remove()"):
+        selector = selector.removesuffix(":remove()")
+    if not selector or any(op in selector for op in PROCEDURAL) or "{" in selector:
+        return
+    rid = rule_id("css", [selector, style])
+    stats["cosmetic"] += 1
+    add_hosts(split_hosts(host_part) or ["*"], rid, sep == "#@#", include, exclude, exempt)
+
+
+def add_hosts(hosts, rid, exception, include, exclude, exempt):
     for host in hosts:
         neg = host.startswith("~")
         host = host[1:] if neg else host
@@ -303,7 +381,7 @@ def parse_network(line):
 def build(texts):
     rules, rule_ids = [], {}
     include, exclude, exempt = Table(), Table(), Table()
-    stats = {"scriptlets": 0, "generic": 0, "popup": 0}
+    stats = {"scriptlets": 0, "generic": 0, "popup": 0, "cosmetic": 0}
     network, badfilters = [], set()
 
     def rule_id(name, args):
@@ -313,14 +391,19 @@ def build(texts):
             rules.append([name, args])
         return rule_ids[key]
 
-    for lines in texts.values():
+    for url, lines in texts.items():
+        full = url in FULL_LISTS
+        names = FULL_SCRIPTLETS if full else SCRIPTLETS
         for line in lines:
             if not line or line[0] in "![":
                 continue
             if "+js(" in line:
                 m = SCRIPTLET_RE.match(line)
                 if m:
-                    parse_scriptlet(m, rule_id, include, exclude, exempt, stats)
+                    parse_scriptlet(m, names, rule_id, include, exclude, exempt, stats)
+                continue
+            if full and (m := COSMETIC_RE.match(line)):
+                parse_cosmetic(m, rule_id, include, exclude, exempt, stats)
                 continue
             if "##" in line or "#@#" in line or "#?#" in line or "#$#" in line or "$" not in line:
                 continue
@@ -355,14 +438,14 @@ def build(texts):
     return data, popup, stats
 
 
-# The scriptlet bodies follow uBO's no-window-open-if and set-cookie (uBlock
-# src/js/resources/scriptlets.js), minus the debug logging. nowoif's iframe decoy is
+# The scriptlet bodies follow uBO's (uBlock src/js/resources/scriptlets.js), minus the
+# debug logging and the options the ported lists don't use. nowoif's iframe decoy is
 # replaced by its fallback: a proxy of the current window that reports itself open.
 TEMPLATE = r"""// ==UserScript==
 // @name         ubo-scriptlets
 // @namespace    https://github.com/hefker/dots
-// @version      2.0.0
-// @description  uBlock Origin's popup filtering, nowoif and set-cookie, ported from the lists in privacy.py.
+// @version      2.1.0
+// @description  uBlock Origin's popup filtering and the scriptlets and paywall-list element hiding qutebrowser's adblock skips, ported from the lists in privacy.py.
 // @match        *://*/*
 // @exclude      *://*.youtube.com/*
 // @exclude      *://*.youtube-nocookie.com/*
@@ -434,6 +517,7 @@ TEMPLATE = r"""// ==UserScript==
       const ids = new Set();
       const add = (map, key) => Object.hasOwn(map, key) && map[key].forEach((id) => ids.add(id));
       suffixes.forEach((s) => add(table.h, s));
+      add(table.h, '*');
       entities.forEach((e) => add(table.e, e));
       for (const [re, list] of table.r) {
         try {
@@ -522,13 +606,174 @@ TEMPLATE = r"""// ==UserScript==
     if (options.reload && getCookie(name) === value) window.location.reload();
   }
 
-  const scriptlets = { nowoif: nowoif, 'set-cookie': setCookie };
+  // ---- paywall-list scriptlets ----
+
+  // run fn now and again on DOM changes; `stay` keeps watching after the page loads
+  function onDom(fn, behavior = '') {
+    let queued = false;
+    const run = () => {
+      queued = false;
+      try {
+        fn();
+      } catch {}
+    };
+    const observer = new MutationObserver(() => {
+      if (!queued) {
+        queued = true;
+        queueMicrotask(run);
+      }
+    });
+    const start = () => {
+      run();
+      observer.observe(document, { childList: true, subtree: true, attributes: true });
+      if (!/\bstay\b/.test(behavior)) {
+        window.addEventListener('load', () => setTimeout(() => observer.disconnect(), 1000), { once: true });
+      }
+    };
+    if (document.documentElement) start();
+    else document.addEventListener('readystatechange', start, { once: true });
+  }
+
+  function removeAttr(attrs = '', selector = '', behavior = '') {
+    const names = attrs.split(/\s*\|\s*/).filter(Boolean);
+    if (!names.length) return;
+    selector ||= names.map((a) => `[${CSS.escape(a)}]`).join(',');
+    onDom(() => {
+      for (const el of document.querySelectorAll(selector)) {
+        for (const a of names) if (el.hasAttribute(a)) el.removeAttribute(a);
+      }
+    }, behavior);
+  }
+
+  function removeClass(tokens = '', selector = '', behavior = '') {
+    const names = tokens.split(/\s*\|\s*/).filter(Boolean);
+    if (!names.length) return;
+    selector ||= names.map((t) => '.' + CSS.escape(t)).join(',');
+    onDom(() => {
+      // classList.remove rewrites the attribute even when it removes nothing, which
+      // would wake the observer again forever
+      for (const el of document.querySelectorAll(selector)) {
+        const present = names.filter((n) => el.classList.contains(n));
+        if (present.length) el.classList.remove(...present);
+      }
+    }, behavior);
+  }
+
+  function cookieRemover(needle = '') {
+    const re = toRegex(needle);
+    const remove = () => {
+      for (const part of document.cookie.split(';')) {
+        const name = part.split('=')[0].trim();
+        if (!name || !re.test(name)) continue;
+        // the cookie may be host-only or set on any parent domain, at / or the page's path
+        const domains = suffixesOf(location.hostname).flatMap((d) => ['; domain=' + d, '; domain=.' + d]);
+        for (const d of ['', ...domains]) {
+          document.cookie = `${name}=; max-age=0; path=/${d}`;
+          document.cookie = `${name}=; max-age=0${d}`;
+        }
+      }
+    };
+    remove();
+    window.addEventListener('beforeunload', remove);
+    document.addEventListener('visibilitychange', remove);
+  }
+
+  function parseConstant(raw) {
+    const fixed = {
+      undefined: undefined, false: false, true: true, null: null, "''": '', '': '',
+      noopFunc: function () {}, trueFunc: () => true, falseFunc: () => false,
+      emptyArr: [], '[]': [], emptyObj: {}, '{}': {}, emptyStr: '',
+    };
+    if (Object.hasOwn(fixed, raw)) return { value: fixed[raw] };
+    if (/^-?\d+$/.test(raw)) {
+      const n = parseInt(raw, 10);
+      if (Math.abs(n) <= 0x7fff) return { value: n };
+    }
+    return null;
+  }
+
+  // define the last property of the chain as a constant, trapping each missing
+  // object on the way so the constant lands whenever the page creates it
+  function setConstant(chain = '', raw = '') {
+    const parsed = parseConstant(raw);
+    if (!chain || parsed === null) return;
+    const value = parsed.value;
+    const trap = (owner, path) => {
+      const dot = path.indexOf('.');
+      const prop = dot === -1 ? path : path.slice(0, dot);
+      const desc = Object.getOwnPropertyDescriptor(owner, prop);
+      if (desc && !desc.configurable) return;
+      if (dot === -1) {
+        Object.defineProperty(owner, prop, { configurable: true, get: () => value, set() {} });
+        return;
+      }
+      const rest = path.slice(dot + 1);
+      let inner = owner[prop];
+      if (inner instanceof Object) trap(inner, rest);
+      Object.defineProperty(owner, prop, {
+        configurable: true,
+        get: () => inner,
+        set(v) {
+          inner = v;
+          if (v instanceof Object) {
+            try {
+              trap(v, rest);
+            } catch {}
+          }
+        },
+      });
+    };
+    trap(window, chain.replace(/^window\./, ''));
+  }
+
+  function setLocalStorageItem(key = '', raw = '') {
+    const re = key.startsWith('/') ? toRegex(key) : null;
+    const apply = () => {
+      if (raw !== '$remove$') {
+        const parsed = parseConstant(raw);
+        if (!re && parsed && parsed.value !== undefined) localStorage.setItem(key, String(parsed.value));
+        return;
+      }
+      if (!re) return localStorage.removeItem(key);
+      for (const k of Object.keys(localStorage)) if (re.test(k)) localStorage.removeItem(k);
+    };
+    try {
+      apply();
+      window.addEventListener('beforeunload', apply);
+    } catch {}
+  }
+
+  const css = [];
+  function hide(selector, style) {
+    css.push(`${selector}{${style}}`);
+  }
+
+  const scriptlets = {
+    nowoif: nowoif,
+    'set-cookie': setCookie,
+    ra: removeAttr,
+    rc: removeClass,
+    'cookie-remover': cookieRemover,
+    set: setConstant,
+    'set-local-storage-item': setLocalStorageItem,
+    css: hide,
+  };
   for (const [name, args] of activeScriptlets()) {
     try {
       scriptlets[name](...args);
     } catch (e) {
       console.debug('[ubo-scriptlets]', name, args, e);
     }
+  }
+  if (css.length) {
+    // one rule per element, so an invalid selector drops only its own rule
+    const addSheet = () => {
+      const sheet = document.createElement('style');
+      sheet.textContent = css.join('\n');
+      (document.head || document.documentElement).appendChild(sheet);
+    };
+    if (document.documentElement) addSheet();
+    else document.addEventListener('readystatechange', addSheet, { once: true });
   }
 
   // ---- popup filtering, on every site ----
@@ -687,12 +932,19 @@ def render(scriptlets, popup, urls):
 
 
 def main():
+    for url, path in MIRRORS.items():
+        mirror(url, path)
+    # the network rules update even if the rest of this run fails
+    command("adblock-update")
     urls = read_list_urls()
     try:
         texts = load_all(urls)
     except OSError as e:
         message("error", f"fetching lists failed: {e}")
         return 1
+    for url, path in MIRRORS.items():
+        if path.exists():
+            texts[url] = list(preprocess(path.read_text()))
     scriptlets, popup, stats = build(texts)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     tmp = OUTPUT.with_suffix(".tmp")
@@ -701,15 +953,14 @@ def main():
 
     message(
         "info",
-        f"{stats['scriptlets']} scriptlet and {stats['popup']} popup filters from {len(texts)} lists",
+        f"{stats['scriptlets']} scriptlet, {stats['cosmetic']} cosmetic and {stats['popup']} popup"
+        f" filters from {len(texts)} lists",
     )
     # includes are network rules too, and qutebrowser's adblock doesn't follow them
-    missing = [u for u in texts if u not in urls]
+    missing = [u for u in texts if u not in urls and u not in MIRRORS]
     if missing:
         message("warning", "included lists missing from privacy.py: " + ", ".join(missing))
-    if os.environ.get("QUTE_FIFO"):
-        with open(os.environ["QUTE_FIFO"], "w") as f:
-            f.write("greasemonkey-reload --quiet\n")
+    command("greasemonkey-reload --quiet")
     return 0
 
 

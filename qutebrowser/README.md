@@ -119,6 +119,15 @@ file as it is now and to the commit that added it, which explains why.
   a greasemonkey script from the adblock lists' `nowoif` and `set-cookie` rules,
   which qutebrowser's adblock ignores. `cu` refreshes the lists and regenerates it.
   [8ad2499](https://github.com/HefKer/dots/commit/8ad2499)
+- <a id="paywalls"></a>**Paywall bypass without the extension.** The
+  [Bypass Paywalls Clean](https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters)
+  filter list blocks paywall scripts through the adblock, and
+  [`ubo-scriptlets`](.local/share/qutebrowser/userscripts/ubo-scriptlets) ports
+  the parts the adblock skips: element hiding and the scriptlets that unlock
+  articles by stripping paywall classes, clearing meter cookies and stubbing the
+  page's paywall flags. gitflic refuses qutebrowser's download, so `cu` mirrors
+  the list with curl and points the adblock at the copy
+  ([`privacy.py`](.config/qutebrowser/privacy.py)).
 - <a id="injectfix"></a>**Hints and userscripts dying after a cross-site
   navigation.** QtWebEngine skips a page's scripts after some cross-site
   navigations, which leaves hints and greasemonkey dead in that tab.
@@ -157,7 +166,7 @@ file as it is now and to the commit that added it, which explains why.
 - **Pickers:** [fuzzel](https://codeberg.org/dnkl/fuzzel) for the session
   userscripts, and [yazi](https://yazi-rs.github.io/) +
   [WezTerm](https://wezterm.org/) for the file picker
-- **Adblock:** the [adblock](https://pypi.org/project/adblock/) Python package.
+- **Adblock:** the [adblock](https://pypi.org/project/adblock/) Python package, and curl for the mirrored paywall list.
   Run `:adblock-update` once.
 - **Passwords:** the `,q…` binds call
   [qutewarden](https://github.com/HefKer/qutewarden), a Bitwarden userscript kept
