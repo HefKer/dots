@@ -12,3 +12,7 @@ parse_config:
     "@hr;": {t: ";", h: Gui}
     "@esc": {t: Esc, s: "⇧+⇧: passthru"}
     "@fnl": {t: Fn Lock}
+    f13: {t: Win Vol-}
+    f14: {t: Win Mute}
+    f15: {t: Win Vol+}
+    micmute: {t: Mic Mute}
