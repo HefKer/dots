@@ -1,6 +1,9 @@
 return {
   "saghen/blink.cmp",
   opts = {
+    -- <C-k> moves to the split or herdr pane above, even in insert mode
+    -- (config/keymaps.lua); blink's buffer-local signature toggle would win.
+    keymap = { ["<C-k>"] = false },
     sources = {
       default = { "claude_prompt" },
       providers = {

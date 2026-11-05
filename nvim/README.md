@@ -65,8 +65,10 @@ Claude Code from Neovim.
   extension, and keep both. [`config/rename.lua`](.config/nvim/lua/config/rename.lua)
 - <a id="smart-splits"></a>**`Ctrl+h/j/k/l` across nvim splits and herdr panes.**
   This uses [smart-splits.nvim](https://github.com/mrjones2014/smart-splits.nvim)
-  v3 with a herdr backend.
-  [`plugins/smart-splits.lua`](.config/nvim/lua/plugins/smart-splits.lua) ·
+  v3 with a herdr backend. They work from insert mode too, leaving it first, and
+  take `<C-k>` back from LSP and blink signature help.
+  [`plugins/smart-splits.lua`](.config/nvim/lua/plugins/smart-splits.lua),
+  [`config/keymaps.lua`](.config/nvim/lua/config/keymaps.lua) ·
   [46c0d28](https://github.com/HefKer/dots/commit/46c0d28)
 - <a id="dms-colors"></a>**Fixing a generated colorscheme without editing it.**
   DankMaterialShell rewrites `colors/dms.lua` on every theme change, so the

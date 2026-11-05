@@ -15,6 +15,19 @@ vim.keymap.set("n", "<C-j>", splits("move_cursor_down"), { desc = "Go to Lower W
 vim.keymap.set("n", "<C-k>", splits("move_cursor_up"), { desc = "Go to Upper Window/Pane" })
 vim.keymap.set("n", "<C-l>", splits("move_cursor_right"), { desc = "Go to Right Window/Pane" })
 
+-- The same from insert mode, leaving it first: arriving in insert in a buffer you
+-- can't edit, like the prompt pane's reply viewer, would fail on the first key.
+local from_insert = function(fn)
+  return function()
+    vim.cmd.stopinsert()
+    require("smart-splits")[fn]()
+  end
+end
+vim.keymap.set("i", "<C-h>", from_insert("move_cursor_left"), { desc = "Go to Left Window/Pane" })
+vim.keymap.set("i", "<C-j>", from_insert("move_cursor_down"), { desc = "Go to Lower Window/Pane" })
+vim.keymap.set("i", "<C-k>", from_insert("move_cursor_up"), { desc = "Go to Upper Window/Pane" })
+vim.keymap.set("i", "<C-l>", from_insert("move_cursor_right"), { desc = "Go to Right Window/Pane" })
+
 vim.keymap.set("n", "<C-A-h>", splits("resize_left"), { desc = "Resize Window Left" })
 vim.keymap.set("n", "<C-A-j>", splits("resize_down"), { desc = "Resize Window Down" })
 vim.keymap.set("n", "<C-A-k>", splits("resize_up"), { desc = "Resize Window Up" })
