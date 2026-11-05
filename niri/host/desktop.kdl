@@ -23,3 +23,35 @@ window-rule {
     match app-id="^claude-shot-DP-3$"
     open-on-output "DP-3"
 }
+
+// The left screen keeps chat and the browser; the main one (DP-3) keeps config.kdl's
+// numbered workspaces, 1 being whatever is in progress.
+workspace "chat" {
+    open-on-output "DP-1"
+}
+workspace "web" {
+    open-on-output "DP-1"
+}
+
+spawn-at-startup "spotify"
+spawn-at-startup "vesktop"
+spawn-at-startup "qutebrowser"
+spawn-at-startup "wezterm"
+
+// spotify | vesktop side by side on chat, qutebrowser on web, wherever they're opened.
+window-rule {
+    match app-id="^spotify$"
+    match app-id="^vesktop$"
+    open-on-workspace "chat"
+    default-column-width { proportion 0.5; }
+}
+window-rule {
+    match app-id="^org\\.qutebrowser\\.qutebrowser$"
+    open-on-workspace "web"
+}
+// Only the startup terminal goes to workspace 1; at-startup covers niri's first 60 s,
+// so later terminals open where you are.
+window-rule {
+    match app-id="^org\\.wezfurlong\\.wezterm$" at-startup=true
+    open-on-workspace "1"
+}
