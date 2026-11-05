@@ -357,6 +357,8 @@ binds {
     Mod+Shift+Period hotkey-overlay-title="Flag a Keymap Misfire" { spawn "kanata-flag"; }
     // (Re)starts both kanata services, e.g. after killing a hung one (from the nixos flake's kanata-restart).
     Mod+Shift+BackSpace allow-when-locked=true hotkey-overlay-title="Restart Kanata" { spawn "kanata-restart"; }
+    // Lists every open window in fuzzel and focuses the pick (from the nixos flake's window-pick).
+    Mod+P hotkey-overlay-title="Pick a Window" { spawn "window-pick"; }
 
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,
