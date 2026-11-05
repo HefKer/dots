@@ -79,6 +79,7 @@ stealing list][nixos-worth-stealing].
 | [fuzzel](fuzzel/) | App launcher and picker for the qutebrowser session scripts | |
 | [hunk](hunk/) | Diff viewer used for reviewing agent changes | |
 | [mpv](mpv/) | Video player | |
+| [lazygit](lazygit/) | Git TUI in the DMS accent: detailed graph, flat file list, g/G, edit in a herdr split | [README](lazygit/README.md) |
 | [swayimg](swayimg/) | Image viewer behind the keymap viewer (Mod+/): vim keys, page-like scrolling | |
 | [xdg](xdg/) | Default apps for file types and link schemes | [README](xdg/README.md) |
 | [xdg-desktop-portal-termfilechooser](xdg-desktop-portal-termfilechooser/) | File picker portal: apps that use it get yazi in WezTerm | |

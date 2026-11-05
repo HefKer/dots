@@ -1,0 +1,388 @@
+# lazygit 0.66.2 defaults from `lazygit --config`; every option commented at its default.
+# Reference: https://github.com/jesseduffield/lazygit/blob/master/docs/Config.md
+gui:
+    # customIcons:
+        # filenames: {}
+        # extensions: {}
+    # scrollHeight: 2
+    # scrollPastBottom: true
+    # scrollOffMargin: 2
+    # scrollOffBehavior: margin
+    # tabWidth: 4
+    # mouseEvents: true
+    # skipAmendWarning: false
+    # skipDiscardChangeWarning: false
+    # skipStashWarning: false
+    # skipNoStagedFilesWarning: false
+    # skipRewordInEditorWarning: false
+    # skipSwitchWorktreeOnCheckoutWarning: false
+    # sidePanelWidth: 0.3333
+    expandFocusedSidePanel: true
+    # expandedSidePanelWeight: 2
+    shrinkSidePanelsToContent: true
+    # sidePanels:
+        # - [status]
+        # - [files, worktrees, submodules]
+        # - [branches, remotes, tags]
+        # - [commits, reflog]
+        # - [stash]
+    # mainPanelSplitMode: flexible
+    # enlargedSideViewLocation: left
+    # wrapLinesInDiffView: true
+    # useHunkModeInDiffView: true
+    # language: auto
+    # timeFormat: 02 Jan 06
+    # shortTimeFormat: 3:04PM
+    # colorScheme: auto
+    theme:
+        activeBorderColor:
+            - cyan  # DMS accent (matugen fills ANSI cyan with it); default green
+            - bold
+        # inactiveBorderColor:
+            # - default
+        searchingActiveBorderColor:
+            - yellow  # cyan|yellow; default cyan, now the normal focus colour
+            - bold
+        # optionsTextColor:
+            # - blue
+        # selectedLineFgColor:
+            # - bold
+        selectedLineBgColor:  # default blue, which DMS fills with a light green
+            - black
+        # inactiveViewSelectedLineBgColor: []
+        # cherryPickedCommitFgColor:
+            # - blue
+        # cherryPickedCommitBgColor:
+            # - cyan
+        # markedBaseCommitFgColor:
+            # - blue
+        # markedBaseCommitBgColor:
+            # - yellow
+        # unstagedChangesColor:
+            # - red
+        # defaultFgColor:
+            # - default
+        # authorColors: {}
+        # branchColorPatterns: {}
+    # darkTheme:
+        # activeBorderColor: []
+        # inactiveBorderColor: []
+        # searchingActiveBorderColor: []
+        # optionsTextColor: []
+        # selectedLineFgColor: []
+        # selectedLineBgColor: []
+        # inactiveViewSelectedLineBgColor: []
+        # cherryPickedCommitFgColor: []
+        # cherryPickedCommitBgColor: []
+        # markedBaseCommitFgColor: []
+        # markedBaseCommitBgColor: []
+        # unstagedChangesColor: []
+        # defaultFgColor: []
+        # authorColors: {}
+        # branchColorPatterns: {}
+    # lightTheme:
+        # activeBorderColor: []
+        # inactiveBorderColor: []
+        # searchingActiveBorderColor: []
+        # optionsTextColor: []
+        # selectedLineFgColor: []
+        # selectedLineBgColor: []
+        # inactiveViewSelectedLineBgColor: []
+        # cherryPickedCommitFgColor: []
+        # cherryPickedCommitBgColor: []
+        # markedBaseCommitFgColor: []
+        # markedBaseCommitBgColor: []
+        # unstagedChangesColor: []
+        # defaultFgColor: []
+        # authorColors: {}
+        # branchColorPatterns: {}
+    # commitLength:
+        # show: true
+    # showListFooter: true
+    showFileTree: false  # flat list; ` still toggles the tree
+    # showRootItemInFileTree: true
+    # fileTreeSortOrder: mixed
+    # fileTreeSortCaseSensitive: true
+    showNumstatInFilesView: true
+    # showRandomTip: true
+    # showCommandLog: true
+    # showBottomLine: true
+    # showPanelJumps: true
+    # showIcons: false
+    nerdFontsVersion: "3"  # wezterm bundles Symbols Nerd Font as fallback
+    # showFileIcons: true
+    commitGraphStyle: detailed  # auto|classic|detailed; auto only detects kitty and Ghostty, WezTerm nightly draws the glyphs
+    # commitAuthorShortLength: 2
+    # commitAuthorLongLength: 17
+    # commitHashLength: 8
+    # showBranchCommitHash: false
+    # showDivergenceFromBaseBranch: none
+    # commandLogSize: 8
+    # splitDiff: auto
+    # screenMode: normal
+    border: single  # rounded|single|double|hidden|bold; single matches niri's square corners
+    # animateExplosion: true
+    # portraitMode: auto
+    # portraitModeAutoMaxWidth: 84
+    # portraitModeAutoMinHeight: 46
+    filterMode: fuzzy  # substring|fuzzy
+    # spinner:
+        # frames:
+            # - ●∙∙
+            # - ∙●∙
+            # - ∙∙●
+            # - ∙●∙
+        # rate: 180
+    # statusPanelView: dashboard
+    # switchToFilesAfterStashPop: true
+    # switchToFilesAfterStashApply: true
+    # switchTabsWithPanelJumpKeys: false
+git:
+    # diffRenderers: []
+    # commit:
+        # signOff: false
+        # autoWrapCommitMessage: true
+        # autoWrapWidth: 72
+    # merging:
+        # manualCommit: false
+        # args: ""
+        # squashMergeMessage: Squash merge {{selectedRef}} into {{currentBranch}}
+    # mainBranches:
+        # - master
+        # - main
+    # skipHookPrefix: WIP
+    # autoFetch: true
+    # autoRefresh: true
+    # autoDetectExternalChanges: true
+    # autoForwardBranches: onlyMainBranches
+    # fetchAll: true
+    # autoStageResolvedConflicts: true
+    # branchLogCmd: git log --graph --color=always --abbrev-commit --decorate --date=relative --pretty=medium {{branchName}} --
+    # allBranchesLogCmds:
+        # - git log --graph --all --color=always --abbrev-commit --decorate --date=relative  --pretty=medium
+    # ignoreWhitespaceInDiffView: false
+    # diffContextSize: 3
+    # renameSimilarityThreshold: 50
+    # overrideGpg: false
+    # disableForcePushing: false
+    # commitPrefix: []
+    # commitPrefixes: {}
+    # branchPrefix: ""
+    # parseEmoji: false
+    # log:
+        # order: topo-order
+        # showGraph: always
+        # showWholeGraph: false
+    localBranchSortOrder: recency  # date|recency|alphabetical; s in branches changes it live
+    # remoteBranchSortOrder: date
+    # truncateCopiedCommitHashesTo: 12
+# worktree:
+    # defaultPath: ""
+update:
+    method: never  # prompt|background|never; Nix owns updates
+    # days: 14
+# refresher:
+    # refreshInterval: 10
+    # fetchInterval: 60
+    # externalChangeCheckInterval: 2
+# confirmOnQuit: false
+quitOnTopLevelReturn: true
+# disableStartupPopups: false
+customCommands:
+    # E edits in a herdr split beside lazygit, like yazi's E; e still edits in place.
+    - key: E
+      context: files
+      description: Edit in a herdr split
+      command: ~/.config/yazi/scripts/herdr-edit split "$PWD"/{{.SelectedFile.Name | quote}}
+      output: none
+# services: {}
+notARepository: skip  # prompt|create|skip|quit; skip opens the most recent repo
+# promptToReturnFromSubprocess: true
+keybinding:
+    universal:
+        # quit: q
+        # quit-alt1: <ctrl+c>
+        # suspendApp: <ctrl+z>
+        # return: <esc>
+        # quitWithoutChangingDirectory: Q
+        # togglePanel: <tab>
+        # prevItem: <up>
+        # nextItem: <down>
+        # prevItem-alt: k
+        # nextItem-alt: j
+        # prevPage: ','
+        # nextPage: .
+        # scrollLeft: H
+        # scrollRight: L
+        gotoTop: [g, <]  # vim-style g, with the default < kept
+        gotoBottom: [G, '>']
+        # gotoTop-alt: <home>
+        # gotoBottom-alt: <end>
+        # toggleRangeSelect: v
+        # rangeSelectDown: <shift+down>
+        # rangeSelectUp: <shift+up>
+        # prevBlock: <left>
+        # nextBlock: <right>
+        # prevBlock-alt: h
+        # nextBlock-alt: l
+        # nextBlock-alt2: <tab>
+        # prevBlock-alt2: <backtab>
+        # jumpToBlock:
+            # - "1"
+            # - "2"
+            # - "3"
+            # - "4"
+            # - "5"
+        # focusMainView: "0"
+        # jumpToFile: <ctrl+g>
+        # nextMatch: "n"
+        # prevMatch: "N"
+        # startSearch: /
+        # moveWordLeft: <ctrl+left>
+        # moveWordRight: <ctrl+right>
+        # backspaceWord: <ctrl+backspace>
+        # forwardDeleteWord: <ctrl+delete>
+        # optionMenu: '?'
+        # select: <space>
+        # goInto: <enter>
+        # confirm: <enter>
+        # confirmMenu: <enter>
+        # confirmSuggestion: <enter>
+        # confirmInEditor: <ctrl+enter>
+        # confirmInEditor-alt: <ctrl+s>
+        # remove: d
+        # new: "n"
+        # newWorktree: w
+        # edit: e
+        # openFile: o
+        # scrollUpMain: <pgup>
+        # scrollDownMain: <pgdown>
+        # scrollUpMain-alt1: K
+        # scrollDownMain-alt1: J
+        # scrollUpMain-alt2: <ctrl+u>
+        # scrollDownMain-alt2: <ctrl+d>
+        # executeShellCommand: ':'
+        # createRebaseOptionsMenu: m
+        # pushFiles: P
+        # pullFiles: p
+        # refresh: R
+        # createPatchOptionsMenu: <ctrl+p>
+        # nextTab: ']'
+        # prevTab: '['
+        # nextScreenMode: +
+        # prevScreenMode: _
+        # cycleDiffRenderers: '|'
+        # cycleDiffRenderersReverse: \
+        # undo: z
+        # redo: Z
+        # filteringMenu: <ctrl+s>
+        # diffingMenu: W
+        # diffingMenu-alt: <ctrl+e>
+        # copyToClipboard: <ctrl+o>
+        # openRecentRepos: <ctrl+r>
+        # submitEditorText: <enter>
+        # extrasMenu: '@'
+        # toggleWhitespaceInDiffView: <ctrl+w>
+        # increaseContextInDiffView: '}'
+        # decreaseContextInDiffView: '{'
+        # increaseRenameSimilarityThreshold: )
+        # decreaseRenameSimilarityThreshold: (
+        # openDiffTool: <ctrl+t>
+        # editConfig: <alt+shift+c>
+    # status:
+        # checkForUpdate: u
+        # recentRepos: <enter>
+        # allBranchesLogGraph: a
+        # allBranchesLogGraphReverse: A
+    # files:
+        # commitChanges: c
+        # commitChangesWithoutHook: w
+        # amendLastCommit: A
+        # commitChangesWithEditor: C
+        # findBaseCommitForFixup: <ctrl+f>
+        # confirmDiscard: x
+        # ignoreFile: i
+        # refreshFiles: r
+        # stashAllChanges: s
+        # viewStashOptions: S
+        # toggleStagedAll: a
+        # viewResetOptions: D
+        # fetch: f
+        # toggleTreeView: '`'
+        # openMergeOptions: M
+        # openStatusFilter: <ctrl+b>
+        # copyFileInfoToClipboard: "y"
+        # collapseAll: '-'
+        # expandAll: =
+    branches:
+        # createPullRequest: o
+        # viewPullRequestOptions: O
+        openPullRequestInBrowser: <disabled>  # was G, now gotoBottom; O's pull request menu still opens it
+        # copyPullRequestURL: <ctrl+y>
+        # checkoutBranchByName: c
+        # forceCheckoutBranch: F
+        # checkoutPreviousBranch: '-'
+        # rebaseBranch: r
+        # renameBranch: R
+        # mergeIntoCurrentBranch: M
+        # moveCommitsToNewBranch: "N"
+        # viewGitFlowOptions: i
+        # fastForward: f
+        # createTag: T
+        # pushTag: P
+        # setUpstream: u
+        # fetchRemote: f
+        # addForkRemote: F
+        # sortOrder: s
+    commits:
+        # squashDown: s
+        # renameCommit: r
+        # renameCommitWithEditor: R
+        viewResetOptions: D  # was g, now gotoTop; D matches the files panel's reset
+        # markCommitAsFixup: f
+        # setFixupMessage: c
+        # createFixupCommit: F
+        # squashAboveCommits: S
+        # moveDownCommit: [<ctrl+j>, <alt-down>]
+        # moveUpCommit: [<ctrl+k>, <alt-up>]
+        # amendToCommit: A
+        # resetCommitAuthor: a
+        # pickCommit: p
+        # revertCommit: t
+        # cherryPickCopy: C
+        # pasteCommits: V
+        # markCommitAsBaseForRebase: B
+        # tagCommit: T
+        # checkoutCommit: <space>
+        # resetCherryPick: <ctrl+r>
+        # copyCommitAttributeToClipboard: "y"
+        # openLogMenu: <ctrl+l>
+        # openInBrowser: o
+        openPullRequestInBrowser: <disabled>  # was G, now gotoBottom; O's pull request menu still opens it
+        # viewBisectOptions: b
+        # startInteractiveRebase: i
+        # selectCommitsOfCurrentBranch: '*'
+    # amendAttribute:
+        # resetAuthor: a
+        # setAuthor: A
+        # addCoAuthor: c
+    stash:
+        popStash: p  # was g, now gotoTop; p for pop (pull isn't needed from the stash panel)
+        # renameStash: r
+    # commitFiles:
+        # checkoutCommitFile: c
+    # main:
+        # prevHunk: [<left>, h]
+        # nextHunk: [<right>, l]
+        # prevFile: "N"
+        # nextFile: "n"
+        # toggleSelectHunk: a
+        # pickBothHunks: b
+        # editSelectHunk: E
+    # submodules:
+        # init: i
+        # update: u
+        # bulkMenu: b
+    # commitMessage:
+        # commitMenu: <ctrl+o>
+
