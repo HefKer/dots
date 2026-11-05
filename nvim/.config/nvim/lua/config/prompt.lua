@@ -29,11 +29,8 @@ local function notify_error(msg)
   vim.notify(msg, vim.log.levels.ERROR, { title = "Claude prompt" })
 end
 
--- Looked up on every send, not at open, so restarting Claude doesn't strand the pane.
-function M.find_agent()
-  local listed = vim
-    .system({ "herdr", "pane", "list", "--workspace", vim.env.HERDR_WORKSPACE_ID }, { text = true })
-    :wait()
+---@param listed vim.SystemCompleted output of `herdr pane list`
+local function pick_agent(listed)
   if listed.code ~= 0 then
     return nil, herdr_error(listed)
   end
@@ -46,16 +43,40 @@ function M.find_agent()
   return agents[1]
 end
 
+local function list_panes()
+  return { "herdr", "pane", "list", "--workspace", vim.env.HERDR_WORKSPACE_ID }
+end
+
+-- Looked up on every send, not at open, so restarting Claude doesn't strand the pane.
+function M.find_agent()
+  return pick_agent(vim.system(list_panes(), { text = true }):wait())
+end
+
 ---@return string? path of the agent's session transcript
 ---@return string? err
-function M.transcript()
-  local agent, err = M.find_agent()
+local function session_path(agent, err)
   local session = agent and vim.tbl_get(agent, "agent_session", "value")
   if not session then
     return nil, err or "Claude has no session yet"
   end
   local path = vim.fn.glob("~/.claude/projects/*/" .. session .. ".jsonl", false, true)[1]
   return path, not path and "No transcript for this session yet" or nil
+end
+
+function M.transcript()
+  return session_path(M.find_agent())
+end
+
+-- The same, without blocking: for the background check, so typing never stalls on herdr.
+---@param cb fun(path?: string, err?: string)
+function M.transcript_async(cb)
+  vim.system(
+    list_panes(),
+    { text = true },
+    vim.schedule_wrap(function(listed)
+      cb(session_path(pick_agent(listed)))
+    end)
+  )
 end
 
 ------------------------------------------------------------------------------
@@ -156,8 +177,7 @@ local function refresh()
 end
 
 -- Claude restarted or /clear'd: start over on the new transcript.
-local function attach()
-  local path, err = M.transcript()
+local function attach_to(path, err)
   if path == state.path then
     return refresh()
   end
@@ -188,6 +208,29 @@ local function attach()
     end)
   end
   arm()
+end
+
+local function attach()
+  attach_to(M.transcript())
+end
+
+-- The transcript only exists once a session's first message is written, and
+-- /clear or a restarted Claude moves to a new one, neither of which the file
+-- watcher can see. So check the agent's session every few seconds, and re-read
+-- too, in case libuv dropped an event. A failed lookup keeps the reply shown.
+local function start_polling()
+  state.poll = state.poll or vim.uv.new_timer()
+  state.poll:start(
+    2000,
+    2000,
+    vim.schedule_wrap(function()
+      M.transcript_async(function(path)
+        if path then
+          attach_to(path)
+        end
+      end)
+    end)
+  )
 end
 
 local function step(delta)
@@ -464,6 +507,7 @@ function M.open()
 
   open_viewer(win)
   attach()
+  start_polling()
   dim_quotes(buf)
   vim.cmd.normal({ "G", bang = true })
   vim.cmd.startinsert({ bang = true })
