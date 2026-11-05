@@ -36,7 +36,9 @@ previous_workspace = ["prefix+shift+k", "ctrl+shift+k"]
 next_workspace = ["prefix+shift+j", "ctrl+shift+j"]
 previous_agent = ["prefix+alt+k", "ctrl+alt+k"]
 next_agent = ["prefix+alt+j", "ctrl+alt+j"]
-focus_agent = "prefix+alt+1..9"
+switch_tab = ["prefix+1..9", "ctrl+1..9"]
+switch_workspace = "ctrl+shift+1..9"
+focus_agent = ["prefix+alt+1..9", "ctrl+alt+1..9"]
 # Unused, and its default prefix+shift+g takes priority over herdr-lazygit's open-tab.
 new_worktree = []
 

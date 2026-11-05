@@ -284,4 +284,12 @@ local keys = {
 	},
 }
 
+-- herdr's switch_workspace takes ctrl+shift+1..9. WezTerm's ActivateTab
+-- defaults also spell it as the shifted symbol, with and without SHIFT.
+for i, shifted in ipairs({ "!", "@", "#", "$", "%", "^", "&", "*", "(" }) do
+	for _, bind in ipairs({ { tostring(i), "CTRL|SHIFT" }, { shifted, "CTRL|SHIFT" }, { shifted, "CTRL" } }) do
+		keys[#keys + 1] = { key = bind[1], mods = bind[2], action = act.DisableDefaultAssignment }
+	end
+end
+
 return keys

@@ -3,6 +3,8 @@ local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
 config.keys = require("keys")
+-- Lets ctrl/ctrl+shift/ctrl+alt with a digit reach herdr, which legacy encoding cannot send.
+config.enable_kitty_keyboard = true
 
 -- config.color_scheme = 'AdventureTime'
 
