@@ -38,19 +38,19 @@ spawn-at-startup "vesktop"
 spawn-at-startup "qutebrowser"
 spawn-at-startup "wezterm"
 
-// spotify | vesktop side by side on chat, qutebrowser on web, wherever they're opened.
+// spotify | vesktop side by side on chat, wherever they're opened.
 window-rule {
     match app-id="^spotify$"
     match app-id="^vesktop$"
     open-on-workspace "chat"
     default-column-width { proportion 0.5; }
 }
+// Only the startup browser and terminal are placed; at-startup covers niri's first 60 s,
+// so later windows open where you are.
 window-rule {
-    match app-id="^org\\.qutebrowser\\.qutebrowser$"
+    match app-id="^org\\.qutebrowser\\.qutebrowser$" at-startup=true
     open-on-workspace "web"
 }
-// Only the startup terminal goes to workspace 1; at-startup covers niri's first 60 s,
-// so later terminals open where you are.
 window-rule {
     match app-id="^org\\.wezfurlong\\.wezterm$" at-startup=true
     open-on-workspace "1"
