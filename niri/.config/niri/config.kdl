@@ -361,13 +361,11 @@ binds {
     Mod+P hotkey-overlay-title="Pick a Window" { spawn "window-pick"; }
 
     // Kanata's Fn2 a/s/d send F13-F15, which xkb names XF86Tools/Launch5/Launch6. Plain: the focused
-    // window's app (from the nixos flake's window-volume package); Shift: the master volume, via DMS for its OSD.
+    // window's app (from the nixos flake's window-volume package). Shift + them = master volume, a shell bind,
+    // so it lives in dms/binds.kdl (ADR-0008).
     XF86Tools   hotkey-overlay-title="Focused App: Volume Down" { spawn "window-volume" "down"; }
     XF86Launch5 hotkey-overlay-title="Focused App: Mute" { spawn "window-volume" "mute"; }
     XF86Launch6 hotkey-overlay-title="Focused App: Volume Up" { spawn "window-volume" "up"; }
-    Shift+XF86Tools   allow-when-locked=true hotkey-overlay-title="Master Volume Down" { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
-    Shift+XF86Launch5 allow-when-locked=true hotkey-overlay-title="Mute Master Volume" { spawn "dms" "ipc" "call" "audio" "mute"; }
-    Shift+XF86Launch6 allow-when-locked=true hotkey-overlay-title="Master Volume Up" { spawn "dms" "ipc" "call" "audio" "increment" "5"; }
 
     // Summon: focus the app's last window, cycle on repeats, launch if absent (from the nixos flake's summon package).
     Mod+Alt+B hotkey-overlay-title="Summon qutebrowser" { spawn "summon" "org.qutebrowser.qutebrowser" "qutebrowser"; }
