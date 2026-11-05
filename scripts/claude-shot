@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Screenshot a terminal program without touching the user's focus:
+#   claude-shot [--cwd DIR] [--keys KEYS] [--wait SECS] OUT.png -- CMD [ARGS...]
+# Opens CMD in a throwaway WezTerm window whose app-id matches niri's claude-shot rules
+# (floating, unfocused, on the screen you aren't focused on), captures only that window,
+# then kills it. KEYS is typed through WezTerm's socket, so the window never needs focus;
+# split it into groups with $'\x1f' to pause 0.8s between them, e.g. for a popup to open.
+set -euo pipefail
+cwd=$PWD keys="" wait=2.5
+while [[ $# -gt 0 ]]; do
+	case $1 in
+	--cwd) cwd=$2; shift 2 ;;
+	--keys) keys=$2; shift 2 ;;
+	--wait) wait=$2; shift 2 ;;
+	--) shift; break ;;
+	*) out=$1; shift ;;
+	esac
+done
+[[ -n ${out:-} && $# -gt 0 ]] || { sed -n '2,3p' "$0" >&2; exit 2; }
+[[ $out = /* ]] || out=$PWD/$out
+
+focused=$(niri msg -j focused-output | jq -r .name)
+other=$(niri msg -j outputs | jq -r --arg f "$focused" 'keys[] | select(. != $f)' | head -1)
+app=claude-shot${other:+-$other}
+
+wezterm start --always-new-process --class "$app" --cwd "$cwd" -- "$@" >/dev/null 2>&1 &
+pid=$!
+trap 'kill "$pid" 2>/dev/null || true' EXIT
+for _ in $(seq 50); do
+	id=$(niri msg -j windows | jq -r --arg a "$app" '.[] | select(.app_id == $a) | .id' | head -1)
+	[[ -n $id ]] && break
+	sleep 0.1
+done
+[[ -n ${id:-} ]] || { echo "claude-shot: window never appeared" >&2; exit 1; }
+sleep "$wait"
+
+if [[ -n $keys ]]; then
+	export WEZTERM_UNIX_SOCKET=$XDG_RUNTIME_DIR/wezterm/gui-sock-$pid
+	pane=$(wezterm cli list --format json | jq '.[0].pane_id')
+	IFS=$'\x1f' read -ra groups <<<"$keys"
+	for g in "${groups[@]}"; do
+		wezterm cli send-text --pane-id "$pane" --no-paste "$g"
+		sleep 0.8
+	done
+fi
+
+niri msg action screenshot-window --id "$id" --path "$out" >/dev/null
+sleep 0.5 # screenshot-window returns before the file is written
+echo "$out"

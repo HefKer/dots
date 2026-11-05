@@ -34,7 +34,7 @@ Group the options by what the user would notice, biggest change first: colours a
 
 1. Show a table of the round's options: name, current value, what it changes.
 2. Give your recommendation with its reason, and flag the options that affect another consumer or that are worth trying alone.
-3. Apply what the user picked, validate, and tell them what to open to see it.
+3. Apply what the user picked and validate. For each option with a visible effect, shoot `<option>-1-before.png` just before its edit and `<option>-2-after.png` just after into `.scratch/<program>/`, with `scripts/claude-shot`. Shoot on demo content that exercises the option, such as a throwaway repo in the scratchpad, since the user's own data may not show it. Look at each image before naming it, since a blank window or wrong directory only shows there. Options with no visible effect get no screenshot. Then name the pairs to compare and what to open to try it.
 4. Take their reaction and iterate until they move on.
 
 The first round can be applied as a proposal, since a look is judged by seeing it. Later rounds wait for the user's picks.

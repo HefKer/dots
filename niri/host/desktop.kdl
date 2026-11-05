@@ -12,3 +12,14 @@ layout {
 
     default-column-width { proportion 0.5; }
 }
+
+// Screenshot windows (the claude-shot rule in config.kdl) open on the screen named in their
+// app-id, which the opener sets to the screen you aren't focused on.
+window-rule {
+    match app-id="^claude-shot-DP-1$"
+    open-on-output "DP-1"
+}
+window-rule {
+    match app-id="^claude-shot-DP-3$"
+    open-on-output "DP-3"
+}

@@ -83,7 +83,7 @@ stealing list][nixos-worth-stealing].
 | [swayimg](swayimg/) | Image viewer behind the keymap viewer (Mod+/): vim keys, page-like scrolling | |
 | [xdg](xdg/) | Default apps for file types and link schemes | [README](xdg/README.md) |
 | [xdg-desktop-portal-termfilechooser](xdg-desktop-portal-termfilechooser/) | File picker portal: apps that use it get yazi in WezTerm | |
-| [scripts](scripts/) | Helpers the configs call (prompt pane, qutebrowser sandbox) | |
+| [scripts](scripts/) | Helpers the configs call (prompt pane, qutebrowser sandbox, unfocused screenshots) | |
 
 Each package mirrors where its files go under `$HOME`, so
 `qutebrowser/.config/qutebrowser/` is `~/.config/qutebrowser/`. To borrow a
@@ -193,13 +193,12 @@ of my data:
 - **qutebrowser**: [`scripts/qute-sandbox`][qute-sandbox], or `--basedir` on
   a short path holding a copy of the config. The IPC socket lives under the
   basedir, and a long path overflows the socket path limit.
-- **Terminal apps**: a new `wezterm start --always-new-process` window. Close it
-  by killing its pid, since niri's close-window leaves wezterm's confirm prompt
-  up.
-- **Capture one window** with `niri msg action screenshot-window --id <id>
-  --path <abs path>`, so nothing else on screen is in the image.
+- **Terminal apps**: [`scripts/claude-shot`][claude-shot] opens the program in
+  a new WezTerm window on the screen I'm not using, without taking focus, and
+  captures only that window, so nothing else on screen is in the image.
 
 [qute-sandbox]: scripts/qute-sandbox
+[claude-shot]: scripts/claude-shot
 
 The DMS bar (notifications, media, window titles), atuin, btop and herdr's
 sidebar show live personal data, so I take those myself. I look at every image

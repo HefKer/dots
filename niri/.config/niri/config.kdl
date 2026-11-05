@@ -302,6 +302,16 @@ window-rule {
     default-window-height { proportion 0.9; }
 }
 
+// Throwaway windows an agent opens to screenshot a config, floating so the columns don't
+// shift and unfocused so typing carries on in the window you were in.
+window-rule {
+    match app-id="^claude-shot(-.+)?$"
+    open-floating true
+    open-focused false
+    default-column-width { fixed 1890; }
+    default-window-height { fixed 1000; }
+}
+
 // Example: block out two password managers from screen capture.
 // (This example rule is commented out with a "/-" in front.)
 /-window-rule {

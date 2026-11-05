@@ -5,6 +5,7 @@
 - A new package needs an entry in the link set (`~/nixos/main/homes/modules/dotfiles.nix`), the same link in the dotfiles check's expected set for each host (`~/nixos/main/checks/default.nix`), one rebuild, and a row in `README.md`'s Packages table; a file here that no entry names is linked nowhere. Don't use `stow`: home-manager places every link, and a stowed one collides with it.
 - The repo is public, and features are shared by linking their **Worth stealing** entry in the package's `README.md`. A commit that adds something reusable adds its entry in the same commit, in the existing entries' format with the anchor, linking only the file, since the commit has no hash yet.
 - Before taking a screenshot, read `README.md`'s Screenshots section: it keeps browsing history, bookmarks and sessions out of the image.
+- Windows you open to test or screenshot something go to the screen the user isn't on, unfocused, so their typing stays in their own window: run them through `scripts/claude-shot`, or give the window the app-id `claude-shot-<that output>`, which niri's rules open floating there.
 - Commit directly to `main`; create a branch only when asked.
 - `reference/` holds clones of other people's dotfiles, kept to read for ideas. Gitignored, never linked — don't edit anything under it.
 
