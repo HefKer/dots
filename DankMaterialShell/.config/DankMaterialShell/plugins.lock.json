@@ -4,7 +4,7 @@
     "activateLinux": {
       "repo": "https://github.com/hthienloc/dms-plugins",
       "path": "activateLinux",
-      "commit": "3404210e38583d25d2dadfd17ef29331bdb26706"
+      "commit": "6c3c2207d2d0e0b97d630f79aaba4514c6ffcb46"
     },
     "alarmClock": {
       "repo": "https://github.com/lucyfire/dms-plugins",

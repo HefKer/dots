@@ -59,6 +59,11 @@ return {
       anti_conceal = { disabled_modes = { "n", "c" } },
       -- and keep nvim's own conceal on the cursor line in the same modes
       win_options = { concealcursor = { rendered = "nc" } },
+      -- No cell wrapping: it swaps any row whose raw text is wider than the window
+      -- for virtual lines over a concealed line, so the cursor row shows raw
+      -- markdown even in normal mode, and scrolling past them leaves stale rows
+      -- and diff-filler hatching. Wide rows wrap like any other line instead.
+      pipe_table = { wrap = false },
     },
   },
   {
