@@ -17,3 +17,11 @@ in: d:lsft t:30 d:rsft t:30 d:esc t:30 u:esc t:30 u:rsft u:lsft t:300 d:f t:300 
 out: <S>fj
 in: d:lsft t:30 d:rsft t:30 d:esc t:30 u:esc t:30 u:rsft u:lsft t:300 d:lsft t:30 d:rsft t:30 d:esc t:30 u:esc t:30 u:rsft u:lsft t:300 d:f t:300 d:j t:30 u:j t:30 u:f
 out: <S><S>J
+
+# Caps+Tab a/s/d: the focused window's volume, as F-keys niri binds.
+in: d:caps t:250 d:tab t:30 d:a t:30 u:a t:30 d:s t:30 u:s t:30 d:d t:30 u:d t:30 u:tab t:30 u:caps
+out: <f13><f14><f15>
+
+# Caps+c: mic mute, evdev 248, which the simulator names after keyberon's code for it.
+in: d:caps t:250 d:c t:30 u:c t:30 u:caps
+out: <mediamute>

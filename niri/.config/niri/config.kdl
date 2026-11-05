@@ -360,6 +360,15 @@ binds {
     // Lists every open window in fuzzel and focuses the pick (from the nixos flake's window-pick).
     Mod+P hotkey-overlay-title="Pick a Window" { spawn "window-pick"; }
 
+    // Kanata's Fn2 a/s/d send F13-F15, which xkb names XF86Tools/Launch5/Launch6. Plain: the focused
+    // window's app (from the nixos flake's window-volume package); Shift: the master volume, via DMS for its OSD.
+    XF86Tools   hotkey-overlay-title="Focused App: Volume Down" { spawn "window-volume" "down"; }
+    XF86Launch5 hotkey-overlay-title="Focused App: Mute" { spawn "window-volume" "mute"; }
+    XF86Launch6 hotkey-overlay-title="Focused App: Volume Up" { spawn "window-volume" "up"; }
+    Shift+XF86Tools   allow-when-locked=true hotkey-overlay-title="Master Volume Down" { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
+    Shift+XF86Launch5 allow-when-locked=true hotkey-overlay-title="Mute Master Volume" { spawn "dms" "ipc" "call" "audio" "mute"; }
+    Shift+XF86Launch6 allow-when-locked=true hotkey-overlay-title="Master Volume Up" { spawn "dms" "ipc" "call" "audio" "increment" "5"; }
+
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,
     // or do a four-finger swipe up on a touchpad.
