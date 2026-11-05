@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Delete local branches already merged into the base branch, removing each one's worktree first:
+#   git-prune-merged [BASE]   (BASE defaults to main, else master)
+# Safe by git's own checks: `git worktree remove` refuses a worktree with changes and
+# `git branch -d` refuses an unmerged branch; either refusal skips that branch and the rest go on.
+# Squash- and rebase-merged branches don't count as merged to git, so they stay.
+set -uo pipefail
+base=${1:-}
+if [[ -z $base ]]; then
+	for b in main master; do
+		git show-ref --verify --quiet "refs/heads/$b" && { base=$b; break; }
+	done
+fi
+[[ -n $base ]] || { echo "git-prune-merged: no main or master branch; pass the base branch" >&2; exit 2; }
+
+here=$(git rev-parse --show-toplevel)
+current=$(git branch --show-current)
+# branch -> worktree path, from the porcelain list's worktree/branch line pairs
+declare -A tree
+while read -r key val; do
+	case $key in
+	worktree) path=$val ;;
+	branch) tree[${val#refs/heads/}]=$path ;;
+	esac
+done < <(git worktree list --porcelain)
+
+deleted=0 kept=0
+while read -r branch; do
+	[[ $branch == "$base" || $branch == "$current" ]] && continue
+	wt=${tree[$branch]:-}
+	if [[ -n $wt && $wt != "$here" ]]; then
+		if git worktree remove "$wt" 2>/dev/null; then
+			echo "removed worktree $wt"
+		else
+			echo "kept $branch: its worktree $wt has changes"; ((kept++)); continue
+		fi
+	fi
+	if git branch -d "$branch" >/dev/null; then
+		echo "deleted $branch"; ((deleted++))
+	else
+		((kept++))
+	fi
+done < <(git for-each-ref --merged "$base" --format='%(refname:short)' refs/heads)
+
+echo "$deleted deleted, $kept kept (merged into $base)"

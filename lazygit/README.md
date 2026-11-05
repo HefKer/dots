@@ -12,3 +12,8 @@ sidebar pane loads this file first, then lays its own layout and keys over it.
   beside lazygit.** `e` still edits in lazygit's own pane. It calls the same
   script as yazi's herdr opener.
   [`config.yml`](.config/lazygit/config.yml)
+- <a id="prune-merged"></a>**`X` deletes every branch merged into main, and
+  its worktree.** It asks first, then reports each deletion in a popup. A
+  worktree with changes or a branch with unmerged commits is kept, by git's own
+  checks.
+  [`git-prune-merged`](../scripts/git-prune-merged)

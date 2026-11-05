@@ -195,6 +195,17 @@ customCommands:
       description: Edit in a herdr split
       command: ~/.config/yazi/scripts/herdr-edit split "$PWD"/{{.SelectedFile.Name | quote}}
       output: none
+    # X in branches deletes the branches merged into main, removing their worktrees first.
+    - key: X
+      context: localBranches
+      description: Delete branches merged into main, and their worktrees
+      prompts:
+          - type: confirm
+            title: Delete merged branches
+            body: Delete every local branch already merged into main (or master), removing its worktree first? Git keeps any branch with unmerged commits and any worktree with changes.
+      command: ~/dots/scripts/git-prune-merged
+      output: popup
+      outputTitle: Deleted merged branches
 # services: {}
 notARepository: skip  # prompt|create|skip|quit; skip opens the most recent repo
 # promptToReturnFromSubprocess: true
