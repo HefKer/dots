@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Open files in $EDITOR in a new herdr split or tab, beside the yazi pane: herdr-edit split|tab FILE...
+set -euo pipefail
+mode=$1; shift
+if [[ -z ${HERDR_PANE_ID:-} ]]; then
+	notify-send "yazi" "herdr-edit: not inside herdr" 2>/dev/null || true
+	exit 1
+fi
+cwd=$(dirname -- "$1")
+case $mode in
+split) pane=$(herdr pane split --pane "$HERDR_PANE_ID" --direction right --cwd "$cwd" --focus | jq -r .result.pane.pane_id) ;;
+tab) pane=$(herdr tab create --cwd "$cwd" --focus | jq -r .result.root_pane.pane_id) ;;
+*) echo "usage: herdr-edit split|tab FILE..." >&2; exit 2 ;;
+esac
+# pane run types into the pane's shell (fish), so quote each path; printf %q output reads the same in fish for ordinary names.
+herdr pane run "$pane" "${EDITOR:-nvim} $(printf '%q ' "$@")" >/dev/null

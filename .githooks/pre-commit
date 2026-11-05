@@ -18,6 +18,7 @@ while IFS= read -r f; do
 	case "$f" in
 	reference/*) ;;
 	*/colors/dms.lua) ;; # matugen output, not ours to format
+	yazi/.config/yazi/plugins/*) ;; # ya pkg output, hash-checked against package.toml
 	*.lua) run stylua --check "$f" ;;
 	*.fish) run fish -n "$f" ;;
 	qutebrowser/*.py) run python3 -m py_compile "$f" ;;

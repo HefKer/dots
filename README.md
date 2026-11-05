@@ -62,6 +62,7 @@ and the commit that added it. The commit message says why it's built that way.
 | [wezterm](wezterm/) | Terminal, built around quick select | [README](wezterm/README.md) |
 | [nvim](nvim/) | LazyVim, plus the Claude Code prompt pane | [README](nvim/README.md) |
 | [herdr](herdr/) | Terminal multiplexer for coding agents | [README](herdr/README.md) |
+| [yazi](yazi/) | Terminal file manager: herdr and WezTerm openers, git status, vim counts | [README](yazi/README.md) |
 | [fish](fish/) | Shell: vi keys, fzf, NixOS and Claude Code helpers | [README](fish/README.md) |
 | [kanata](kanata/) | Keyboard remapper: home-row mods, layers, tests | [README](kanata/README.md) |
 | [niri](niri/) | Scrolling Wayland compositor, split into one file per topic under `dms/` | |

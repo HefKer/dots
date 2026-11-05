@@ -50,7 +50,7 @@ abbr -a H herdr
 abbr -a HH herdr --session
 abbr -a HSL herdr session list
 abbr -a HRS herdr --remote desktop --session
-abbr -a Y yazi
+abbr -a Y y
 abbr -a cdi zi
 abbr -a py python
 abbr -a ur uv run
