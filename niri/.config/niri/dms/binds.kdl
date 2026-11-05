@@ -1,5 +1,7 @@
 binds {
+    Alt+Print hotkey-overlay-title="Screenshot a Window" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "window" "edit"; }
     Ctrl+Alt+Delete hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "focusOrToggle"; }
+    Ctrl+Print hotkey-overlay-title="Screenshot the Screen" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "output" "edit"; }
     Ctrl+Shift+R hotkey-overlay-title="Rename Workspace" { spawn "dms" "ipc" "call" "workspace-rename" "open"; }
     Ctrl+XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "decrement" "3"; }
     Ctrl+XF86AudioRaiseVolume allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "increment" "3"; }
@@ -13,6 +15,8 @@ binds {
     Mod+Space hotkey-overlay-title="Application Launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
     Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
     Mod+Y hotkey-overlay-title="Browse Wallpapers" { spawn "dms" "ipc" "call" "dankdash" "wallpaper"; }
+    Print hotkey-overlay-title="Screenshot a Region" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
+    Shift+Print hotkey-overlay-title="Record a Region (GIF)" { spawn "dms" "ipc" "call" "quickCapture" "recordToggle" "region"; }
     Super+X hotkey-overlay-title="Power Menu: Toggle" { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
     XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "decrement" "3"; }
     XF86AudioMicMute allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "micmute"; }
@@ -58,7 +62,6 @@ binds {
     Mod+Shift+U { move-workspace-down; }
     Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
     Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
-    Alt+Print { screenshot-window; }
     Alt+XF86Launch1 { screenshot-window; }
     Mod+BracketLeft { consume-or-expel-window-left; }
     Mod+BracketRight { consume-or-expel-window-right; }
@@ -120,9 +123,7 @@ binds {
     Mod+WheelScrollLeft { focus-column-left; }
     Mod+WheelScrollRight { focus-column-right; }
     Mod+Shift+P { power-off-monitors; }
-    Ctrl+Print { screenshot-screen; }
     Ctrl+XF86Launch1 { screenshot-screen; }
-    Print { screenshot; }
     XF86Launch1 { screenshot; }
     Mod+Shift+E { quit; }
     Mod+Return { spawn "wezterm"; }
