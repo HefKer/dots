@@ -17,6 +17,11 @@ and driven from the keyboard wherever possible: [qutebrowser], [WezTerm],
 Feel free to take whatever's useful. Most packages have a README with a
 **Worth stealing** list: each entry is one feature, linked to the file it lives in
 and the commit that added it. The commit message says why it's built that way.
+System-level pieces, like the kanata services and misfire tests, dotfile
+link checks and herdr plugin packaging, are in the [NixOS config's Worth
+stealing list][nixos-worth-stealing].
+
+[nixos-worth-stealing]: https://github.com/HefKer/nixos-config#worth-stealing
 
 ## Highlights
 
