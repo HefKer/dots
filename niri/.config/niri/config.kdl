@@ -369,6 +369,12 @@ binds {
     Shift+XF86Launch5 allow-when-locked=true hotkey-overlay-title="Mute Master Volume" { spawn "dms" "ipc" "call" "audio" "mute"; }
     Shift+XF86Launch6 allow-when-locked=true hotkey-overlay-title="Master Volume Up" { spawn "dms" "ipc" "call" "audio" "increment" "5"; }
 
+    // Summon: focus the app's last window, cycle on repeats, launch if absent (from the nixos flake's summon package).
+    Mod+Alt+B hotkey-overlay-title="Summon qutebrowser" { spawn "summon" "org.qutebrowser.qutebrowser" "qutebrowser"; }
+    Mod+Alt+T hotkey-overlay-title="Summon WezTerm" { spawn "summon" "org.wezfurlong.wezterm" "wezterm"; }
+    Mod+Alt+D hotkey-overlay-title="Summon Vesktop" { spawn "summon" "vesktop" "vesktop"; }
+    Mod+Alt+S hotkey-overlay-title="Summon Spotify" { spawn "summon" "spotify" "spotify"; }
+
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
     // You can also move the mouse into the top-left hot corner,
     // or do a four-finger swipe up on a touchpad.
