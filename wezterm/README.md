@@ -2,7 +2,7 @@
 
 My [WezTerm](https://wezterm.org/) config. It's mostly about **quick select**
 (`Alt+Space`): hinting URLs, paths and code on screen so one keypress copies them,
-including from Claude Code, whose output breaks wezterm's built-in patterns.
+including from Claude Code and Neovim's rendered markdown, whose output breaks wezterm's built-in patterns.
 Panes and splits are left to [herdr](../herdr/), so wezterm has no split binds.
 
 ![WezTerm running Neovim, Everforest via dank-theme](../nvim/screenshots/editing.png)
@@ -35,6 +35,12 @@ Panes and splits are left to [herdr](../herdr/), so wezterm has no split binds.
   sequences and hints those spans.
   [`keys.lua`](.config/wezterm/keys.lua) ·
   [eb33db7](https://github.com/HefKer/dots/commit/eb33db7)
+- <a id="nvim-inline-code"></a>**Hint inline code in Neovim's rendered
+  markdown.** render-markdown.nvim hides the backticks and gives inline code a
+  background of its own. `keys.lua` hints spans whose background differs from
+  the text on both sides, then learns their colour to also catch code on the
+  cursor line and in headings, where the background doesn't stand out.
+  [`keys.lua`](.config/wezterm/keys.lua) (`inline_code`)
 - <a id="claude-code-blocks"></a>**Copy whole code blocks from Claude Code.** On
   screen, a code block has no fences and is wrapped at the pane edge. Inside herdr,
   the session transcript is reachable, so the row holding each block's first line

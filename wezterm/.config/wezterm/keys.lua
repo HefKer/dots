@@ -75,8 +75,82 @@ local builtin_patterns = {
 	[==[[0-9]{4,}]==],
 }
 
--- Claude Code drops the backticks around inline code and colours it bright blue
--- instead, and the Lua API can't read colours, so ask the cli for the escapes.
+-- Applies an SGR escape's parameters to a style, whose fg and bg are nil for
+-- the default colour and a string for any other.
+local function apply_sgr(style, params)
+	local list = {}
+	for param in (params == "" and "0" or params):gmatch("[^;]+") do
+		list[#list + 1] = param
+	end
+	local i = 1
+	while i <= #list do
+		local head = tonumber(list[i]:match("^(%d+)")) or 0
+		local key = (head == 38 or head == 39 or (head >= 30 and head <= 37) or (head >= 90 and head <= 97)) and "fg"
+			or (head == 48 or head == 49 or (head >= 40 and head <= 47) or (head >= 100 and head <= 107)) and "bg"
+		if head == 0 then
+			style.fg, style.bg = nil, nil
+		elseif head == 39 or head == 49 then
+			style[key] = nil
+		elseif (head == 38 or head == 48) and not list[i]:find(":") then
+			-- 38;5;n or 38;2;r;g;b
+			local n = list[i + 1] == "5" and 2 or 4
+			style[key] = table.concat(list, ";", i, math.min(i + n, #list))
+			i = i + n
+		elseif key then
+			style[key] = list[i]
+		end
+		i = i + 1
+	end
+end
+
+-- A row's text split into runs of one style, as { text, fg, bg } tables.
+local function style_runs(row)
+	local runs, style, pos = {}, {}, 1
+	row = row:gsub("\27[()][%w]", "")
+	while pos <= #row do
+		local s, e, params = row:find("\27%[([%d;:]*)m", pos)
+		local text = row:sub(pos, (s or #row + 1) - 1):gsub("\27%[[%d;:?]*%a", "")
+		if text ~= "" then
+			local last = runs[#runs]
+			if last and last.fg == style.fg and last.bg == style.bg then
+				last.text = last.text .. text
+			else
+				runs[#runs + 1] = { text = text, fg = style.fg, bg = style.bg }
+			end
+		end
+		if not s then
+			break
+		end
+		apply_sgr(style, params)
+		pos = e + 1
+	end
+	return runs
+end
+
+-- Merges a row's style runs into runs of one background.
+local function background_runs(runs)
+	local merged = {}
+	for _, run in ipairs(runs) do
+		local last = merged[#merged]
+		if last and last.bg == run.bg then
+			last.text = last.text .. run.text
+			last.fg = last.fg == run.fg and last.fg or false
+		else
+			merged[#merged + 1] = { text = run.text, fg = run.fg, bg = run.bg }
+		end
+	end
+	return merged
+end
+
+-- Inline code that has lost its backticks: Claude Code colours it bright blue,
+-- and nvim's render-markdown gives it a background and colour of its own. The
+-- Lua API can't read colours, so ask the cli for the escapes. A background run
+-- counts when the text on both sides of it shares one background, and it holds
+-- no run of spaces, which keeps out headings, the cursor line and statusline
+-- sections, all padded out with spaces. That also hints code block lines, but
+-- not the label with the language's icon. On the cursor line, whose background
+-- is the code's, and in headings, code keeps only its colour: a run in a
+-- colour learned from the background runs counts as well.
 -- Short spans are skipped since they'd be hinted at every occurrence on screen.
 local function inline_code(pane)
 	local ok, text = wezterm.run_child_process({
@@ -90,14 +164,48 @@ local function inline_code(pane)
 		tostring(pane:pane_id()),
 	})
 	local spans, seen = {}, {}
-	if ok then
-		for row in text:gmatch("[^\r\n]+") do
-			for span in (row .. "\27["):gmatch("\27%[94m(.-)\27%[") do
-				span = span:match("^%s*(.-)%s*$")
-				if #span >= 3 and not seen[span] then
-					seen[span] = true
-					spans[#spans + 1] = span
+	local function add(span)
+		span = span:match("^%s*(.-)%s*$")
+		-- Nerd Font icons sit in the private use areas.
+		if #span < 3 or span:find("^[\238\239\243]") then
+			return false
+		end
+		if not seen[span] then
+			seen[span] = true
+			spans[#spans + 1] = span
+		end
+		return true
+	end
+	if not ok then
+		return spans
+	end
+	local rows, code_fg = {}, {}
+	for row in text:gmatch("[^\r\n]+") do
+		for span in (row .. "\27["):gmatch("\27%[94m(.-)\27%[") do
+			add(span)
+		end
+		local runs = style_runs(row)
+		rows[#rows + 1] = runs
+		local bg_runs = background_runs(runs)
+		for i = 2, #bg_runs - 1 do
+			local run = bg_runs[i]
+			if run.bg and bg_runs[i - 1].bg == bg_runs[i + 1].bg and not run.text:find("%s%s") then
+				if add(run.text) and run.fg then
+					code_fg[run.fg] = true
 				end
+			end
+		end
+	end
+	for _, runs in ipairs(rows) do
+		for i = 2, #runs - 1 do
+			local run = runs[i]
+			if
+				code_fg[run.fg]
+				and runs[i - 1].fg ~= run.fg
+				and runs[i + 1].fg ~= run.fg
+				and not run.text:find("%s%s")
+			then
+				add(run.text)
 			end
 		end
 	end
