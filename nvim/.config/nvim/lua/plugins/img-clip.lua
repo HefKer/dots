@@ -35,6 +35,17 @@ return {
         prompt_for_file_name = false,
         template = "![[$FILE_NAME]]",
       },
+      {
+        -- The Claude prompt pane: off the repo, with an absolute path Claude can
+        -- Read from its own cwd. The embed makes snacks.image preview it inline.
+        trigger = function()
+          return vim.b.claude_prompt == true
+        end,
+        dir_path = (vim.env.XDG_RUNTIME_DIR or "/tmp") .. "/claude-prompt-images",
+        use_absolute_path = true,
+        prompt_for_file_name = false,
+        template = "![]($FILE_PATH)",
+      },
     },
   },
 }

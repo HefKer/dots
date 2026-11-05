@@ -28,11 +28,15 @@ Claude Code from Neovim.
   - `<leader>aq` quotes the whole reply, and `<leader>aQ` strips the quoted
     lines again, leaving only what you wrote.
   - `/skill` and `@file` complete as they do in Claude's own input.
+  - `Ctrl+V` with an image on the clipboard saves it to
+    `$XDG_RUNTIME_DIR/claude-prompt-images/` and inserts its absolute path as an
+    embed, previewed inline, for Claude to Read from any cwd.
 
   ![The prompt pane: Claude's reply above, two quoted list items answered in the prompt below](screenshots/prompt-pane.png)
 
   [`config/prompt.lua`](.config/nvim/lua/config/prompt.lua),
   [`config/prompt_source.lua`](.config/nvim/lua/config/prompt_source.lua),
+  [`plugins/img-clip.lua`](.config/nvim/lua/plugins/img-clip.lua),
   [`scripts/claude-prompt`](../scripts/claude-prompt) ·
   [d3a5b24](https://github.com/HefKer/dots/commit/d3a5b24),
   [3a8052e](https://github.com/HefKer/dots/commit/3a8052e),
