@@ -28,6 +28,11 @@ it.
   automatically, and both shifts + Esc toggle it by hand.
   [d608f70](https://github.com/HefKer/dots/commit/d608f70),
   [e3891cf](https://github.com/HefKer/dots/commit/e3891cf)
+- <a id="game-layer"></a>**A game layer with arrows on the right modifiers.**
+  Stock keys with no tap-hold, plus arrows on `/`, right Alt, Super, Menu and
+  Ctrl, for games that want both WASD and arrows. The same watcher switches to
+  it while a Steam game has focus, and passthrough stays for osu.
+  [`keymap.kbd`](keymap.kbd)
 - <a id="viewer"></a>**An on-screen keymap viewer.** `Mod+/` in niri toggles a
   [keymap-drawer](https://github.com/caksoylar/keymap-drawer) render of the layers.
   [`keymap-drawer.yaml`](keymap-drawer.yaml) supplies legends for the aliases its
