@@ -1,6 +1,6 @@
 binds {
     Alt+Print hotkey-overlay-title="Screenshot a Window" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "window" "edit"; }
-    Ctrl+Alt+Delete hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "focusOrToggle"; }
+    Ctrl+Alt+BackSpace hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "focusOrToggle"; }
     Ctrl+Print hotkey-overlay-title="Screenshot the Screen" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "output" "edit"; }
     Ctrl+Shift+R hotkey-overlay-title="Rename Workspace" { spawn "dms" "ipc" "call" "workspace-rename" "open"; }
     Ctrl+XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "decrement" "3"; }
@@ -17,9 +17,9 @@ binds {
     Mod+Y hotkey-overlay-title="Browse Wallpapers" { spawn "dms" "ipc" "call" "dankdash" "wallpaper"; }
     Print hotkey-overlay-title="Screenshot a Region" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
     Shift+Print hotkey-overlay-title="Record a Region (GIF)" { spawn "dms" "ipc" "call" "quickCapture" "recordToggle" "region"; }
-    Shift+XF86Launch5 allow-when-locked=true hotkey-overlay-title="Mute Master Volume" { spawn "dms" "ipc" "call" "audio" "mute"; }
+    Shift+XF86Launch5 hotkey-overlay-title="Mute Master Volume" allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "mute"; }
     Shift+XF86Launch6 allow-when-locked=true hotkey-overlay-title="Master Volume Up" { spawn "dms" "ipc" "call" "audio" "increment" "5"; }
-    Shift+XF86Tools allow-when-locked=true hotkey-overlay-title="Master Volume Down" { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
+    Shift+XF86Tools hotkey-overlay-title="Master Volume Down" allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
     Super+X hotkey-overlay-title="Power Menu: Toggle" { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
     XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "decrement" "3"; }
     XF86AudioMicMute allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "micmute"; }
