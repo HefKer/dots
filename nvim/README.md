@@ -29,6 +29,9 @@ Claude Code from Neovim.
     an empty line under it to answer on. Quotes in the prompt are dimmed.
   - `<leader>aq` quotes the whole reply, and `<leader>aQ` strips the quoted
     lines again, leaving only what you wrote.
+  - The reply's bar shows whether Claude is working, idle or blocked, with its
+    context and 5-hour usage, which the Claude statusline the pane covers
+    shares in `$XDG_RUNTIME_DIR/claude-statusline/`.
   - `/skill` and `@file` complete as they do in Claude's own input.
   - `<leader>ah` picks from every prompt sent before, newest first with its
     directory, and `<leader>at` from the templates in

@@ -25,8 +25,12 @@ It's where my Claude Code sessions, shells and editors live. Only
   [094dc2b](https://github.com/HefKer/dots/commit/094dc2b)
 - <a id="tools"></a>**One-key tools.** `prefix+g` opens lazygit, `prefix+y`
   yazi, and `prefix+f` a floating shell, each through a herdr plugin.
-- <a id="nav"></a>**Agent navigation.** `prefix+alt+j/k` cycles through agents,
-  and `prefix+alt+1..9` jumps to the agent at that position in the sidebar.
+- <a id="nav"></a>**Agent navigation.** `prefix+alt+j/k` (or `ctrl+alt+j/k`)
+  cycles through agents, landing on the tab's [prompt pane](#prompt-pane)
+  instead of Claude when it has one, and `prefix+alt+1..9` jumps to the agent at
+  that position in the sidebar. Each agent's sidebar entry shows its context use
+  as `$ctx`, reported by the Claude statusline.
+  [`scripts/herdr-agent-cycle`](../scripts/herdr-agent-cycle),
   [4a2ee88](https://github.com/HefKer/dots/commit/4a2ee88),
   [e9f7f12](https://github.com/HefKer/dots/commit/e9f7f12)
 

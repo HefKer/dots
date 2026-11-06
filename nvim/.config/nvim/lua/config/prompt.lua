@@ -72,13 +72,15 @@ function M.transcript()
 end
 
 -- The same, without blocking: for the background check, so typing never stalls on herdr.
----@param cb fun(path?: string, err?: string)
+---@param cb fun(path?: string, err?: string, agent?: table)
 function M.transcript_async(cb)
   vim.system(
     list_panes(),
     { text = true },
     vim.schedule_wrap(function(listed)
-      cb(session_path(pick_agent(listed)))
+      local agent, err = pick_agent(listed)
+      local path, path_err = session_path(agent, err)
+      cb(path, path_err, agent)
     end)
   )
 end
@@ -141,11 +143,52 @@ local function viewer_valid()
   return state.viewer.win and vim.api.nvim_win_is_valid(state.viewer.win)
 end
 
+-- What Claude's own statusline would show, hidden under the zoomed pane: its state
+-- from herdr, and context and 5h usage from the render ~/.claude/statusline.sh shares.
+local status_hl =
+  { working = "DiagnosticWarn", blocked = "DiagnosticError", idle = "DiagnosticOk", done = "DiagnosticOk" }
+
+local function pct_hl(pct)
+  return pct >= 80 and "DiagnosticError" or pct >= 50 and "DiagnosticWarn" or "Comment"
+end
+
+local function status_line()
+  local parts = {}
+  if state.status then
+    table.insert(parts, ("%%#%s#%s"):format(status_hl[state.status] or "Comment", state.status))
+  end
+  local info = state.statusline or {}
+  local ctx = vim.tbl_get(info, "context_window", "used_percentage")
+  if ctx then
+    table.insert(parts, ("%%#%s#ctx %d%%%%"):format(pct_hl(ctx), ctx))
+  end
+  local five = vim.tbl_get(info, "rate_limits", "five_hour", "used_percentage")
+  if five then
+    table.insert(parts, ("%%#%s#5h %d%%%%"):format(pct_hl(five), five))
+  end
+  return #parts > 0 and ("%#Comment# · " .. table.concat(parts, "%#Comment# · ")) or ""
+end
+
+-- Re-read on every poll; a missing file (a Claude without the shared statusline)
+-- just leaves those parts out.
+local function read_statusline(agent)
+  local session = agent and vim.tbl_get(agent, "agent_session", "value")
+  local path = session and ("%s/claude-statusline/%s.json"):format(vim.env.XDG_RUNTIME_DIR or "/tmp", session)
+  local ok, info = pcall(function()
+    return vim.json.decode(table.concat(vim.fn.readfile(path), "\n"))
+  end)
+  state.status = agent and agent.agent_status
+  state.statusline = ok and info or nil
+end
+
 local function set_winbars()
   if viewer_valid() then
     local title = state.index > 0 and ("Claude · reply %d/%d"):format(state.index, #state.replies)
       or "Claude · no reply yet"
-    vim.wo[state.viewer.win].winbar = "%#WinBar# 󰚩 " .. title .. "%=%#Comment#[r ]r older/newer · <CR> quote "
+    vim.wo[state.viewer.win].winbar = "%#WinBar# 󰚩 "
+      .. title
+      .. status_line()
+      .. "%=%#Comment#[r ]r older/newer · <CR> quote "
   end
   if state.prompt.win and vim.api.nvim_win_is_valid(state.prompt.win) then
     vim.wo[state.prompt.win].winbar =
@@ -259,9 +302,12 @@ local function start_polling()
     2000,
     2000,
     vim.schedule_wrap(function()
-      M.transcript_async(function(path)
+      M.transcript_async(function(path, _, agent)
+        read_statusline(agent)
         if path then
           attach_to(path)
+        else
+          set_winbars()
         end
       end)
     end)

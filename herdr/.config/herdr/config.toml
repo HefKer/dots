@@ -21,6 +21,13 @@ rows = [
   [{ token = "$topic", bold = true, dim = false }],
 ]
 
+# The default agent rows, plus Claude's context use, reported by ~/.claude/statusline.sh.
+[ui.sidebar.agents]
+rows = [
+  ["state_icon", "machine", "workspace", "tab"],
+  ["agent", { token = "$ctx", dim = true }],
+]
+
 [keys]
 prefix = "ctrl+space"
 goto = "prefix+space"
@@ -34,8 +41,9 @@ previous_tab = ["prefix+shift+h", "ctrl+shift+h"]
 next_tab = ["prefix+shift+l", "ctrl+shift+l"]
 previous_workspace = ["prefix+shift+k", "ctrl+shift+k"]
 next_workspace = ["prefix+shift+j", "ctrl+shift+j"]
-previous_agent = ["prefix+alt+k", "ctrl+alt+k"]
-next_agent = ["prefix+alt+j", "ctrl+alt+j"]
+# Taken by scripts/herdr-agent-cycle below, which lands on a tab's prompt pane.
+previous_agent = []
+next_agent = []
 switch_tab = ["prefix+1..9", "ctrl+1..9"]
 switch_workspace = "ctrl+shift+1..9"
 focus_agent = ["prefix+alt+1..9", "ctrl+alt+1..9"]
@@ -46,6 +54,27 @@ new_worktree = []
 key = "prefix+a"
 type = "shell"
 command = "$HOME/dots/scripts/claude-prompt"
+
+# next_agent/previous_agent, but focusing the agent's prompt pane when its tab has one.
+[[keys.command]]
+key = "prefix+alt+j"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle next"
+
+[[keys.command]]
+key = "ctrl+alt+j"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle next"
+
+[[keys.command]]
+key = "prefix+alt+k"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle prev"
+
+[[keys.command]]
+key = "ctrl+alt+k"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle prev"
 
 [[keys.command]]
 key = "prefix+d"

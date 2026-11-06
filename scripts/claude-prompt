@@ -22,4 +22,6 @@ fi
 
 new=$(herdr pane split "$pane" --direction right --ratio 0.4 --focus | jq -r .result.pane.pane_id)
 herdr pane zoom "$new" --on >/dev/null
+# herdr-agent-cycle finds the pane by this label.
+herdr pane rename "$new" prompt >/dev/null
 herdr pane run "$new" "exec nvim $draft -c 'lua require(\"config.prompt\").open()'" >/dev/null
