@@ -32,6 +32,16 @@ workspace "chat" {
 workspace "web" {
     open-on-output "DP-1"
 }
+// Kept even when empty, like DP-3's, so Mod+3-0 on this screen reach workspace 3-10 without
+// filling the ones before. Names are global, hence the prefix; Mod+N goes by position.
+workspace "left-3" { open-on-output "DP-1"; }
+workspace "left-4" { open-on-output "DP-1"; }
+workspace "left-5" { open-on-output "DP-1"; }
+workspace "left-6" { open-on-output "DP-1"; }
+workspace "left-7" { open-on-output "DP-1"; }
+workspace "left-8" { open-on-output "DP-1"; }
+workspace "left-9" { open-on-output "DP-1"; }
+workspace "left-10" { open-on-output "DP-1"; }
 
 spawn-at-startup "spotify"
 spawn-at-startup "vesktop"

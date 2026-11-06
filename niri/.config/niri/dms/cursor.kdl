@@ -7,4 +7,5 @@ cursor {
     xcursor-theme "everforest-cursors"
     xcursor-size 49
     hide-when-typing
+    hide-after-inactive-ms 3000
 }

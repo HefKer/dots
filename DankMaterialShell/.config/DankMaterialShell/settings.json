@@ -122,7 +122,7 @@
     "size": 49,
     "niri": {
       "hideWhenTyping": true,
-      "hideAfterInactiveMs": 0
+      "hideAfterInactiveMs": 3000
     },
     "hyprland": {
       "hideOnKeyPress": false,

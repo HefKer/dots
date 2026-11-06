@@ -122,7 +122,10 @@ layout {
     // - "always", the focused column will always be centered.
     // - "on-overflow", focusing a column will center it if it doesn't fit
     //   together with the previously focused column.
-    center-focused-column "never"
+    center-focused-column "on-overflow"
+
+    // Centre a column that is alone on its workspace, instead of leaving it at the left.
+    always-center-single-column
 
     // You can also customize the heights that "switch-preset-window-height" (Mod+Shift+R) toggles between.
     // preset-window-heights { }
@@ -152,10 +155,8 @@ layout {
         // - CSS-like notation: "rgb(255, 127, 0)", rgba(), hsl() and a few others.
 
         // Color of the ring on the active monitor.
-        // default: active-color "#7fc8ff"
-        // Everforest:
-        active-color "#a7c080"
-        // active-color "#83c092"
+        // Colours come from dms/colors.kdl, included below.
+        active-color "#7fc8ff"
 
         // Color of the ring on inactive monitors.
         //
@@ -203,7 +204,7 @@ layout {
     // You can enable drop shadows for windows.
     shadow {
         // Uncomment the next line to enable shadows.
-        // on
+        on
 
         // By default, the shadow draws only around its window, and not behind it.
         // Uncomment this setting to make the shadow draw behind its window.
@@ -244,8 +245,9 @@ layout {
 // See the binds section below for more spawn examples.
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
-spawn-at-startup "waybar"
-spawn-at-startup "xwayland-satellite"
+// spawn-at-startup "waybar"
+// niri starts xwayland-satellite itself (25.08+), and DMS is the bar.
+// spawn-at-startup "xwayland-satellite"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
@@ -312,6 +314,14 @@ window-rule {
     default-window-height { fixed 1000; }
 }
 
+// Fade every window but the focused one, on both screens, so focus shows at a glance.
+// Screenshot windows open unfocused, so they're left out to keep their shots true.
+window-rule {
+    match is-focused=false
+    exclude app-id="^claude-shot(-.+)?$"
+    opacity 0.8
+}
+
 // Example: block out two password managers from screen capture.
 // (This example rule is commented out with a "/-" in front.)
 /-window-rule {
@@ -330,6 +340,14 @@ window-rule {
     geometry-corner-radius 12
     clip-to-geometry true
 }
+
+// DMS-generated look, after config.kdl's own layout block so DMS's settings win:
+// colours from the theme, border/ring width and corner radius from DMS's settings,
+// the alt-tab highlight's radius, and the overview's blurred wallpaper layer.
+include "dms/colors.kdl"
+include "dms/layout.kdl"
+include "dms/alttab.kdl"
+include "dms/wpblur.kdl"
 
 // After the shared input and layout blocks, so each host's values win. Optional so a host
 // that hasn't rebuilt yet still loads; the link comes from the nixos flake's dotfiles module.
