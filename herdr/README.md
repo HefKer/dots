@@ -41,8 +41,8 @@ It's where my Claude Code sessions, shells and editors live. Only
   The [agent-focus plugin](plugins/agent-focus/herdr-plugin.toml) narrows the
   agent sidebar, and with it `ctrl+alt+j/k` and `1..9`, to the current space's
   agents, plus any agent elsewhere that is blocked or finished unseen. The choice
-  survives a server restart. It isn't Nix-packaged: link it once with
-  `herdr plugin link ~/dots/herdr/plugins/agent-focus`.
+  survives a server restart. The NixOS config registers it in place from this
+  repo, so edits need no rebuild.
   [`agent-focus.py`](plugins/agent-focus/agent-focus.py)
 - <a id="limits"></a>**Claude's usage limits in the tab bar.** The right of the
   tab row shows `5h 29% 3h17m · wk 52% 3d15h`: usage and time to reset of the

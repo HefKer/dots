@@ -29,10 +29,13 @@ Claude Code from Neovim.
     an empty line under it to answer on. Quotes in the prompt are dimmed.
   - `<leader>aq` quotes the whole reply, and `<leader>aQ` strips the quoted
     lines again, leaving only what you wrote.
-  - The reply's bar shows whether Claude is working, idle or blocked, its
-    context in tokens, and 5-hour and weekly usage with the time to each reset,
+  - The reply's bar shows whether Claude is working, idle or blocked, with the
+    tool call it's on while working (`working Edit prompt.lua`), its context in
+    tokens, and 5-hour and weekly usage with the time to each reset,
     which the Claude statusline the pane covers shares in
     `$XDG_RUNTIME_DIR/claude-statusline/`.
+  - `<leader>ak` swaps the reply for Claude's task list, rebuilt from its task
+    tools in the transcript and updated as it works; the bar counts done tasks.
   - `<leader>ap` in any other nvim in the tab adds `@file`, or `@file#L10-20`
     for a selection, to the draft, relative to Claude's directory. It opens the
     prompt pane first if there isn't one, and focuses it to keep writing.

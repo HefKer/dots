@@ -19,6 +19,9 @@ local state = {
   partial = "", -- a line still being written when last read
   replies = {}, -- finished replies, oldest first
   index = 0, -- the one shown; 0 when there are none
+  view = "reply", -- or "tasks", the task list shown in its place
+  tasks = {}, -- Claude's task list: { id?, subject, status }
+  activity = nil, -- the tool call Claude made last, while a turn runs
   watcher = nil,
   timer = nil,
 }
@@ -93,6 +96,64 @@ end
 
 -- Parses whatever was appended since the last read, so a long session isn't
 -- re-read on every write. Returns whether a new reply arrived.
+-- What a tool call is doing, for the bar while Claude works: "Edit prompt.lua",
+-- "Bash Run the tests", an MCP tool by its own name.
+local function describe(block)
+  local input = block.input or {}
+  local name = block.name:gsub("^mcp__.-__", "")
+  local detail = input.file_path and vim.fs.basename(input.file_path)
+    or input.description
+    or input.command
+    or input.pattern
+    or input.query
+    or input.url
+    or input.skill
+  if type(detail) ~= "string" then
+    return name
+  end
+  detail = vim.trim(detail:match("^[^\n]*"))
+  if vim.fn.strchars(detail) > 40 then
+    detail = vim.fn.strcharpart(detail, 0, 39) .. "…"
+  end
+  return name .. " " .. detail
+end
+
+-- Claude's task list, rebuilt from its task tools: TaskCreate's result carries the new
+-- task's id, TaskUpdate's the status change; an older Claude's TodoWrite sends it whole.
+local function track(entry)
+  if entry.type == "assistant" then
+    for _, block in ipairs(entry.message.content or {}) do
+      if block.type == "tool_use" then
+        state.activity = describe(block)
+        if block.name == "TodoWrite" and block.input and block.input.todos then
+          state.tasks = vim.tbl_map(function(todo)
+            return { subject = todo.content, status = todo.status }
+          end, block.input.todos)
+          state.tasks_changed = true
+        end
+      end
+    end
+  elseif type(entry.toolUseResult) == "table" then
+    local result = entry.toolUseResult
+    if type(result.task) == "table" and result.task.id then
+      table.insert(state.tasks, { id = result.task.id, subject = result.task.subject, status = "pending" })
+      state.tasks_changed = true
+    elseif result.taskId and type(result.statusChange) == "table" then
+      for i, task in ipairs(state.tasks) do
+        if task.id == result.taskId then
+          if result.statusChange.to == "deleted" then
+            table.remove(state.tasks, i)
+          else
+            task.status = result.statusChange.to
+          end
+          state.tasks_changed = true
+          break
+        end
+      end
+    end
+  end
+end
+
 local function read_new()
   local fh = state.path and io.open(state.path, "rb")
   if not fh then
@@ -109,6 +170,12 @@ local function read_new()
 
   local before, last_id = #state.replies, state.last_id
   for line in text:gmatch("[^\n]+") do
+    if line:find('"type":"tool_use"', 1, true) or line:find('"toolUseResult":{', 1, true) then
+      local ok, entry = pcall(vim.json.decode, line)
+      if ok and type(entry) == "table" and entry.message and entry.isSidechain ~= true then
+        track(entry)
+      end
+    end
     -- Cheap filter first: Claude Code writes compact JSON, and most lines are tool output.
     if line:find('"stop_reason":"end_turn"', 1, true) then
       local ok, entry = pcall(vim.json.decode, line)
@@ -128,6 +195,7 @@ local function read_new()
             table.insert(state.replies, body)
           end
           last_id = entry.message.id
+          state.activity = nil
         end
       end
     end
@@ -162,7 +230,12 @@ end
 local function status_line()
   local parts = {}
   if state.status then
-    table.insert(parts, ("%%#%s#%s"):format(status_hl[state.status] or "Comment", state.status))
+    local activity = state.status == "working" and state.activity
+    table.insert(
+      parts,
+      ("%%#%s#%s"):format(status_hl[state.status] or "Comment", state.status)
+        .. (activity and ("%#Comment# " .. activity:gsub("%%", "%%%%")) or "")
+    )
   end
   local info = state.statusline or {}
   local window = info.context_window or {}
@@ -196,12 +269,20 @@ end
 
 local function set_winbars()
   if viewer_valid() then
-    local title = state.index > 0 and ("Claude · reply %d/%d"):format(state.index, #state.replies)
+    local done = #vim.tbl_filter(function(task)
+      return task.status == "completed"
+    end, state.tasks)
+    local tasks = #state.tasks > 0 and ("tasks %d/%d"):format(done, #state.tasks)
+    local title = state.view == "tasks" and ("Claude · " .. (tasks or "no tasks"))
+      or state.index > 0 and ("Claude · reply %d/%d"):format(state.index, #state.replies)
       or "Claude · no reply yet"
+    if state.view ~= "tasks" and tasks then
+      title = title .. " · " .. tasks
+    end
     vim.wo[state.viewer.win].winbar = "%#WinBar# 󰚩 "
       .. title
       .. status_line()
-      .. "%=%#Comment#[r ]r older/newer · <CR> quote "
+      .. "%=%#Comment#[r ]r older/newer · <CR> quote · <leader>ak tasks "
   end
   if state.prompt.win and vim.api.nvim_win_is_valid(state.prompt.win) then
     vim.wo[state.prompt.win].winbar =
@@ -248,7 +329,7 @@ local function show(index, message)
   if not (buf and vim.api.nvim_buf_is_valid(buf)) then
     return
   end
-  state.index = index
+  state.index, state.view = index, "reply"
   local text = message or state.replies[index] or "_No finished reply in this session yet._"
   draw(vim.split(text, "\n"))
   if viewer_valid() then
@@ -257,14 +338,50 @@ local function show(index, message)
   set_winbars()
 end
 
--- Picks up new replies. Following the newest unless you've stepped back to an older one.
+-- The task list in the viewer, in place of the reply, as markdown checkboxes.
+local function show_tasks()
+  local buf = state.viewer.buf
+  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    return
+  end
+  state.view = "tasks"
+  local box = { completed = "[x]", in_progress = "[-]" }
+  local lines = #state.tasks == 0 and { "_No tasks in this session._" }
+    or vim.tbl_map(function(task)
+      return ("- %s %s"):format(box[task.status] or "[ ]", task.subject or "")
+    end, state.tasks)
+  draw(lines)
+  set_winbars()
+end
+
+local function toggle_tasks()
+  if state.view == "tasks" then
+    show(state.index)
+  else
+    show_tasks()
+  end
+end
+
+-- Picks up new replies and tasks. Following the newest reply unless you've stepped
+-- back to an older one; the task list stays up when one arrives, redrawn as it changes.
 local function refresh()
   local following = state.index == #state.replies
-  if read_new() and following then
+  local new_reply = read_new()
+  if state.view == "tasks" then
+    if following then
+      state.index = #state.replies
+    end
+    if state.tasks_changed then
+      show_tasks()
+    else
+      set_winbars()
+    end
+  elseif new_reply and following then
     show(#state.replies)
   else
     set_winbars()
   end
+  state.tasks_changed = false
 end
 
 -- Claude restarted or /clear'd: start over on the new transcript.
@@ -276,6 +393,7 @@ local function attach_to(path, err)
     state.watcher:stop()
   end
   state.path, state.offset, state.partial, state.replies, state.last_id = path, 0, "", {}, nil
+  state.tasks, state.activity = {}, nil
   if not path then
     return show(0, "_" .. err .. "._")
   end
@@ -689,6 +807,7 @@ local function open_viewer(prompt_win)
     step(1)
   end, "Newer Reply")
   map("n", "R", attach, "Reload Reply")
+  map("n", "<leader>ak", toggle_tasks, "Claude's Tasks")
 end
 
 -- Runs in the .md file scripts/claude-prompt opens, not an empty buffer: a file argument
@@ -710,6 +829,7 @@ function M.open()
   map("n", "<leader>aQ", unquote, "Strip Quoted Lines")
   map("n", "<leader>ah", pick_history, "Sent Prompts")
   map("n", "<leader>at", pick_template, "Prompt Templates")
+  map("n", "<leader>ak", toggle_tasks, "Claude's Tasks")
   map("n", "[r", function()
     step(-1)
   end, "Older Reply")
