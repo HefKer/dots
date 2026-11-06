@@ -144,7 +144,8 @@ local function set_winbars()
     vim.wo[state.viewer.win].winbar = "%#WinBar# 󰚩 " .. title .. "%=%#Comment#[r ]r older/newer · <CR> quote "
   end
   if state.prompt.win and vim.api.nvim_win_is_valid(state.prompt.win) then
-    vim.wo[state.prompt.win].winbar = "%#WinBar# 󰏫 Prompt%=%#Comment#M-j/k M-u/d scroll reply · <leader>as send "
+    vim.wo[state.prompt.win].winbar =
+      "%#WinBar# 󰏫 Prompt%=%#Comment#M-j/k M-u/d scroll reply · <leader>ah history · <leader>at template · <leader>as send "
   end
 end
 
@@ -379,6 +380,115 @@ local function set_quote_hl()
 end
 
 ------------------------------------------------------------------------------
+-- History and templates
+
+-- Every sent prompt, one JSON object a line, newest last.
+local history_path = vim.fn.stdpath("state") .. "/claude-prompts.jsonl"
+-- Reusable prompts, one .md file each, kept in this repo.
+local templates_dir = vim.fn.stdpath("config") .. "/prompts"
+
+local function record(text)
+  vim.fn.mkdir(vim.fs.dirname(history_path), "p")
+  local entry = vim.json.encode({ time = os.time(), cwd = vim.fn.getcwd(), text = text })
+  vim.fn.writefile({ entry }, history_path, "a")
+end
+
+-- Puts text in the prompt at its cursor, replacing the prompt if it's empty, and
+-- leaves the cursor in insert mode at the text's `$0`, if a template has one, or at its end.
+local function insert_text(text)
+  local buf, win = state.prompt.buf, state.prompt.win
+  if not (buf and win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+  local lines = vim.split(vim.trim(text), "\n")
+  local empty = vim.trim(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")) == ""
+  local start
+  if empty then
+    start = 0
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  else
+    start = vim.api.nvim_win_get_cursor(win)[1]
+    table.insert(lines, 1, "")
+    vim.api.nvim_buf_set_lines(buf, start, start, false, lines)
+  end
+  local row, col, marked = start + #lines, #lines[#lines], false
+  for i, line in ipairs(lines) do
+    local at = line:find("$0", 1, true)
+    if at then
+      row, col, marked = start + i, at - 1, true
+      vim.api.nvim_buf_set_lines(buf, row - 1, row, false, { line:sub(1, at - 1) .. line:sub(at + 2) })
+      break
+    end
+  end
+  vim.api.nvim_set_current_win(win)
+  vim.api.nvim_win_set_cursor(win, { row, col })
+  -- A marker at a line's end sits past its last character, which only append reaches.
+  vim.cmd.startinsert({ bang = not marked or col >= #vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1] })
+end
+
+local function pick_history()
+  local items, seen = {}, {}
+  local lines = vim.fn.filereadable(history_path) == 1 and vim.fn.readfile(history_path) or {}
+  for i = #lines, 1, -1 do
+    local ok, entry = pcall(vim.json.decode, lines[i])
+    if ok and not seen[entry.text] then
+      seen[entry.text] = true
+      table.insert(items, {
+        text = entry.text,
+        when = os.date("%m-%d %H:%M", entry.time),
+        where = vim.fn.fnamemodify(entry.cwd, ":t"),
+        title = entry.text:match("[^\n]*"),
+        preview = { text = entry.text, ft = "markdown" },
+      })
+    end
+  end
+  if #items == 0 then
+    return notify_error("No sent prompts yet")
+  end
+  Snacks.picker.pick({
+    title = "Sent Prompts",
+    items = items,
+    preview = "preview",
+    format = function(item)
+      return {
+        { item.when, "Comment" },
+        { " " },
+        { ("%-12s"):format(item.where:sub(1, 12)), "Directory" },
+        { " " },
+        { item.title },
+      }
+    end,
+    confirm = function(picker, item)
+      picker:close()
+      if item then
+        insert_text(item.text)
+      end
+    end,
+  })
+end
+
+local function pick_template()
+  local items = {}
+  for _, path in ipairs(vim.fn.glob(templates_dir .. "/*.md", false, true)) do
+    table.insert(items, { text = vim.fn.fnamemodify(path, ":t:r"), file = path })
+  end
+  if #items == 0 then
+    return notify_error("No templates in " .. templates_dir)
+  end
+  Snacks.picker.pick({
+    title = "Prompt Templates",
+    items = items,
+    format = "text",
+    confirm = function(picker, item)
+      picker:close()
+      if item then
+        insert_text(table.concat(vim.fn.readfile(item.file), "\n"))
+      end
+    end,
+  })
+end
+
+------------------------------------------------------------------------------
 -- Sending
 
 local function send()
@@ -386,6 +496,7 @@ local function send()
   if text == "" then
     return
   end
+  local text_sent = text -- whole, before a leading /skill is split off
   local agent, err = M.find_agent()
   if agent then
     -- Claude only runs a leading /skill outside a long paste, which it reads as plain
@@ -405,6 +516,7 @@ local function send()
   if err then
     return notify_error(err)
   end
+  record(text_sent)
   vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
   -- The session may have changed since open (a restarted Claude); follow it.
   attach()
@@ -465,6 +577,8 @@ function M.open()
   map("n", "<leader>as", send, "Send Prompt to Claude")
   map("n", "<leader>aq", quote_all, "Quote Claude's Whole Reply")
   map("n", "<leader>aQ", unquote, "Strip Quoted Lines")
+  map("n", "<leader>ah", pick_history, "Sent Prompts")
+  map("n", "<leader>at", pick_template, "Prompt Templates")
   map("n", "[r", function()
     step(-1)
   end, "Older Reply")
