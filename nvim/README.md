@@ -15,9 +15,9 @@ Claude Code from Neovim.
 ## Worth stealing
 
 - <a id="prompt-pane"></a>**Prompt pane for Claude Code.** In
-  [herdr](../herdr/), `prefix+a` opens an nvim scratch buffer beside the Claude
-  pane and moves Claude's unsent prompt into it. `<leader>as` sends the buffer to
-  Claude. You get a real editor for long prompts while the agent stays visible.
+  [herdr](../herdr/), `prefix+a` opens an nvim scratch buffer zoomed over the
+  Claude pane and moves Claude's unsent prompt into it. `<leader>as` sends the
+  buffer to Claude. You get a full-screen editor for long prompts.
   - Claude's last reply sits rendered above the prompt, read from the session
     transcript and refreshed when a turn ends, so narration between tool calls
     never replaces it. `Alt+j/k/u/d` scroll it from the prompt, even in insert

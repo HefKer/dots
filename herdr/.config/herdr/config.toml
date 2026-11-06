@@ -45,7 +45,6 @@ new_worktree = []
 [[keys.command]]
 key = "prefix+a"
 type = "shell"
-# Not type = "pane": that one opens zoomed.
 command = "$HOME/dots/scripts/claude-prompt"
 
 [[keys.command]]

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Open the prompt pane (nvim's lua/config/prompt.lua) beside the active herdr pane,
+# Open the prompt pane (nvim's lua/config/prompt.lua) zoomed over the active herdr pane,
 # moving Claude's unsent prompt into it. Run by herdr's prefix+a.
 pane="$HERDR_ACTIVE_PANE_ID"
 marker="${XDG_RUNTIME_DIR:-/tmp}/claude-prompt-capture"
@@ -21,4 +21,5 @@ if [ -n "$pid" ] && tr '\0' '\n' <"/proc/$pid/environ" 2>/dev/null | grep -qx "V
 fi
 
 new=$(herdr pane split "$pane" --direction right --ratio 0.4 --focus | jq -r .result.pane.pane_id)
+herdr pane zoom "$new" --on >/dev/null
 herdr pane run "$new" "exec nvim $draft -c 'lua require(\"config.prompt\").open()'" >/dev/null

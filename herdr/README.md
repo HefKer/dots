@@ -7,8 +7,8 @@ It's where my Claude Code sessions, shells and editors live. Only
 
 ## Worth stealing
 
-- <a id="prompt-pane"></a>**`prefix+a`: a Neovim prompt pane beside Claude.** It
-  opens an nvim buffer next to the agent holding Claude's unsent prompt, and
+- <a id="prompt-pane"></a>**`prefix+a`: a full-screen Neovim prompt pane over Claude.**
+  It opens a zoomed nvim buffer holding Claude's unsent prompt, and
   sends it back when you're done. See the
   [nvim README](../nvim/README.md#prompt-pane) for the editor side.
 - <a id="review"></a>**`prefix+d`: review the agent's diff and comment back.**
