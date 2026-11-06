@@ -35,7 +35,7 @@ The defaults are listed under `bindings.default` in `qute://help/settings.html`.
 
 ## Testing in a live page
 
-To try a userscript, keybind or config change in a real page, use `scripts/qute-sandbox` (`--help` has the commands). It runs the repo's config in a throwaway instance and leaves the user's browser alone.
+To try a userscript, keybind or config change in a real page, or to debug a page (memory growth, crashes, DevTools protocol, local test pages), use `scripts/qute-sandbox` (`--help` has the commands). It runs the repo's config in a throwaway instance and leaves the user's browser alone; `--profile` covers pages that need the user's logins.
 
 ## Editor integration
 

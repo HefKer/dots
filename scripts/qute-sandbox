@@ -9,15 +9,23 @@ usage() {
 	cat <<EOF
 usage: qute-sandbox <command>
 
-  start [--profile] [url]  start the instance and wait for the page to load
+  start [--profile] [--cdp] [url]
+                           start the instance and wait for the page to load
                            --profile: use a copy of the real data dir (cookies,
                            logins, generated scripts), never the original
+                           --cdp: open the DevTools protocol on a free local
+                           port and print its URL (tab list at <url>/json/list),
+                           for heap snapshots, tracing and the like
   eval <js>                print the value of a JS expression in the active tab;
                            a Promise is awaited, a string prints raw, anything
                            else as JSON, a throw exits 1. Wrap statements in an
                            IIFE. No eval(), so it works under a strict CSP
   cmd <:command>           send a qutebrowser command, e.g. ':reload -f'
-  stop                     stop this instance and remove its basedir
+  serve <dir>              serve <dir> over local HTTP for test pages and print
+                           its URL; replaces an earlier serve, and stop ends it
+  mem [secs]               RSS of each of the instance's processes; with secs,
+                           a line of totals every secs seconds until killed
+  stop                     stop this instance and its server, remove its basedir
 
 Basedir: $B, with the instance's log in log. config/ has
 links to the repo's files, so edits apply on ':config-source' or the next start;
@@ -37,14 +45,31 @@ die() {
 B=${TMPDIR:-/tmp}/qute-sandbox-$UID
 repo=$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")
 
-# The PID recorded at start, checked against its command line so a recycled PID
-# never counts as ours. Never look the instance up by pattern: a pkill -f or
-# pgrep -f on the basedir also matches any shell whose command line mentions it.
-running() {
+# A PID recorded in $1, checked against its command line containing $2 so a
+# recycled PID never counts as ours. Never look a process up by pattern: a
+# pkill -f or pgrep -f also matches any shell whose command line mentions it.
+alive() {
 	local cmdline
-	[[ -r $B/pid ]] || return 1
-	cmdline=$({ tr '\0' ' ' <"/proc/$(<"$B/pid")/cmdline"; } 2>/dev/null) || return 1
-	[[ $cmdline == *"--basedir $B "* ]]
+	[[ -r $1 ]] || return 1
+	cmdline=$({ tr '\0' ' ' <"/proc/$(<"$1")/cmdline"; } 2>/dev/null) || return 1
+	[[ $cmdline == *"$2"* ]]
+}
+
+running() { alive "$B/pid" "--basedir $B "; }
+
+free_port() {
+	python3 -Ic 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1])'
+}
+
+# Ends the process group a setsid'd PID leads: TERM, then KILL after 10s.
+end_group() {
+	local i
+	kill -- "-$1" 2>/dev/null || return 0
+	for i in {1..100}; do
+		kill -0 -- "-$1" 2>/dev/null || return 0
+		sleep 0.1
+	done
+	kill -KILL -- "-$1" 2>/dev/null || true
 }
 
 # Without a live instance, qutebrowser --basedir would start a new one.
@@ -161,10 +186,11 @@ EOF
 }
 
 cmd_start() {
-	local mode=fresh url=about:blank ready='document.readyState === "complete"' i
+	local mode=fresh url=about:blank ready='document.readyState === "complete"' i cdp=
 	while (($#)); do
 		case $1 in
 		--profile) mode=profile ;;
+		--cdp) cdp=$(free_port) ;;
 		-*) die "unknown option: $1" ;;
 		*) url=$1 ;;
 		esac
@@ -173,10 +199,15 @@ cmd_start() {
 	[[ $url == about:blank ]] || ready+=' && location.href !== "about:blank"'
 
 	running && die "already running (pid $(<"$B/pid")), use: qute-sandbox stop"
+	alive "$B/serve.pid" http.server && end_group "$(<"$B/serve.pid")"
 	rm -rf "$B"
 	populate "$mode"
 
 	# setsid: survive the caller's shell, and give stop a process group to clean up.
+	if [[ -n $cdp ]]; then
+		echo "$cdp" >"$B/cdp-port"
+		export QTWEBENGINE_REMOTE_DEBUGGING=127.0.0.1:$cdp
+	fi
 	setsid qutebrowser --basedir "$B" "$url" </dev/null >>"$B/log" 2>&1 &
 	echo $! >"$B/pid"
 
@@ -199,11 +230,57 @@ cmd_start() {
 	done
 	((i < 30)) || echo "qute-sandbox: page still not loaded after 60s" >&2
 	echo "$B"
+	[[ -z $cdp ]] || echo "cdp: http://127.0.0.1:$cdp"
+}
+
+# Lives in the basedir, so start's cleanup and stop both reach it.
+cmd_serve() {
+	local dir port i
+	dir=$(readlink -f "$1") && [[ -d $dir ]] || die "not a directory: $1"
+	running || die "not running, use: qute-sandbox start"
+	alive "$B/serve.pid" http.server && end_group "$(<"$B/serve.pid")"
+	port=$(free_port)
+	setsid python3 -I -m http.server -b 127.0.0.1 -d "$dir" "$port" </dev/null >>"$B/serve.log" 2>&1 &
+	echo $! >"$B/serve.pid"
+	for i in {1..50}; do
+		(echo >"/dev/tcp/127.0.0.1/$port") 2>/dev/null && break
+		alive "$B/serve.pid" http.server || die "server exited, see $B/serve.log"
+		sleep 0.1
+	done
+	echo "http://127.0.0.1:$port/"
+}
+
+# Selects by process group, which start's setsid made the instance's PID, so
+# renderers count and no command line pattern is involved.
+mem_rows() {
+	local p type rss
+	for p in $(pgrep -g "$(<"$B/pid")"); do
+		rss=$(awk '/^VmRSS/{print int($2/1024)}' "/proc/$p/status" 2>/dev/null) || continue
+		type=$(tr '\0 ' '\n\n' <"/proc/$p/cmdline" 2>/dev/null | sed -n 's/^--type=//p')
+		printf '%s %s %s\n' "$p" "${type:-browser}" "${rss:-0}"
+	done
+}
+
+cmd_mem() {
+	running || die "not running, use: qute-sandbox start"
+	if (($# == 0)); then
+		printf '%-8s %-14s %s\n' PID TYPE RSS_MB
+		mem_rows | sort -k3 -nr | xargs -r printf '%-8s %-14s %s\n'
+		return
+	fi
+	[[ $1 =~ ^[0-9]+$ ]] || die "usage: qute-sandbox mem [secs]"
+	while running; do
+		mem_rows | awk -v t="$(date +%T)" '
+			{ total += $3; if ($2 == "renderer" && $3 > top) top = $3 }
+			END { printf "%s total=%dMB top_renderer=%dMB procs=%d\n", t, total, top, NR }'
+		sleep "$1"
+	done
 }
 
 cmd_stop() {
 	local pid i
 	[[ -e $B ]] || return 0
+	alive "$B/serve.pid" http.server && end_group "$(<"$B/serve.pid")"
 	if running; then
 		pid=$(<"$B/pid")
 		kill "$pid"
@@ -230,6 +307,14 @@ cmd)
 	shift
 	[[ ${1-} == :* ]] || die "usage: qute-sandbox cmd <:command>"
 	send "$*"
+	;;
+serve)
+	(($# == 2)) || die "usage: qute-sandbox serve <dir>"
+	cmd_serve "$2"
+	;;
+mem)
+	shift
+	cmd_mem "$@"
 	;;
 stop) cmd_stop ;;
 -h | --help | help) usage ;;
