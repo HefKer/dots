@@ -143,7 +143,7 @@ obscurely (defaults, or errors reading their config) rather than loudly.
 | [`DankMaterialShell`](DankMaterialShell/) | [DMS](https://github.com/AvengeMedia/DankMaterialShell) niri shell | `~/.config/DankMaterialShell/`, and `~/.config/Dux Shell/` for the nvim colorscheme | Settings, themes, plugin metadata. |
 | [`nvim`](nvim/) | Neovim | `~/.config/nvim/` | [LazyVim](https://www.lazyvim.org/) base. User plugins in `lua/plugins/`, config in `lua/config/`. |
 | [`wezterm`](wezterm/) | [WezTerm](https://wezterm.org/) | `~/.config/wezterm/` | `wezterm.lua` loads `keys.lua` and sets `color_scheme = "dank-theme"` from `colors/dank-theme.toml`. |
-| [`herdr`](herdr/) | [herdr](https://herdr.dev) agent multiplexer | `config.toml` only | See note below. |
+| [`herdr`](herdr/) | [herdr](https://herdr.dev) agent multiplexer | `config.toml`, the hunk-diff plugin config, and `~/.config/herdr-auto-title/config.env` | See note below; auto-title's directory also holds its state, so only `config.env` is linked. |
 | [`git`](git/) | git | `config` and `ignore` only | The directory takes git's runtime state (credential store, gitk), so the two files are linked alone. |
 | [`qutebrowser`](qutebrowser/) | [qutebrowser](https://qutebrowser.org/) | `~/.config/qutebrowser/`, plus `userscripts/` | Multi-file config split across `appearance`, `privacy`, `filepicker`, `binds`, `search_engines`. Themes under `themes/`. Only `userscripts/` is linked under `~/.local/share/qutebrowser`, whose history and caches stay out of here. See deps below. |
 | [`mpv`](mpv/) | [mpv](https://mpv.io/) | `~/.config/mpv/` | `mpv.conf` + `input.conf`. |

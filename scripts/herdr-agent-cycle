@@ -1,27 +1,47 @@
 #!/bin/sh
-# Focus the next or previous agent in sidebar order, as herdr's next_agent and
-# previous_agent do, but land on the agent's prompt pane (scripts/claude-prompt) when
-# its tab has one, zoomed over Claude as it was opened. Run by herdr's ctrl+alt+j/k.
-# Usage: herdr-agent-cycle next|prev
-step=1
-[ "$1" = prev ] && step=-1
+# Focus an agent the way herdr's next_agent, previous_agent and focus_agent do, but
+# land on its prompt pane (scripts/claude-prompt) when its tab has one, zoomed over
+# Claude as it was opened. Run by herdr's ctrl+alt+j/k, ctrl+alt+1..9 and ctrl+alt+a.
+#
+# Usage: herdr-agent-cycle next|prev|attention|1..9
+#   next, prev  the agent after or before the current one, in sidebar order
+#   1..9        the agent at that place in the sidebar
+#   attention   the next agent waiting on you: a blocked one (a question or an
+#               approval) if any, otherwise one that finished unseen (done)
+case "$1" in
+  next | prev | attention | [1-9]) ;;
+  *)
+    echo "usage: herdr-agent-cycle next|prev|attention|1..9" >&2
+    exit 2
+    ;;
+esac
 
-target=$(herdr api snapshot | jq -r --argjson step "$step" '
+target=$(herdr api snapshot | jq -r --arg mode "$1" '
   .result.snapshot as $s
   | ($s.workspaces | map({ (.workspace_id): .number }) | add) as $ws
   | ($s.tabs | map({ (.tab_id): .number }) | add) as $tabs
   | [$s.agents | to_entries[]
      | .value + { order: [$ws[.value.workspace_id], $tabs[.value.tab_id], .key] }]
-  | sort_by(.order) as $agents
-  | ($agents | length) as $n
-  | select($n > 0)
+  | sort_by(.order)
   # The current agent is the focused pane, or else the first agent in the focused
   # tab, which is where the prompt pane leaves it.
-  | ([$agents | to_entries[] | select(.value.pane_id == $s.focused_pane_id) | .key][0]
-     // [$agents | to_entries[] | select(.value.tab_id == $s.focused_tab_id) | .key][0]) as $cur
-  | if $cur == null then (if $step > 0 then 0 else $n - 1 end)
-    else ($cur + $step + $n) % $n end
-  | $agents[.].pane_id')
+  | . as $agents
+  | ((map(.pane_id) | index($s.focused_pane_id))
+     // (map(.tab_id) | index($s.focused_tab_id))) as $cur
+  # The first of $pool after the current agent, wrapping; the first of $pool when
+  # the current agent is not an agent at all.
+  | def after($pool; $step):
+      ($agents | length) as $n
+      | [range(1; $n + 1) | (($cur // (if $step > 0 then -1 else 0 end)) + . * $step + $n * $n) % $n]
+      | map($agents[.] | select(.pane_id | IN($pool[].pane_id)))
+      | .[0].pane_id // empty;
+  if $mode == "next" then after($agents; 1)
+  elif $mode == "prev" then after($agents; -1)
+  elif $mode == "attention" then
+    (map(select(.agent_status == "blocked"))) as $blocked
+    | if ($blocked | length) > 0 then after($blocked; 1)
+      else after(map(select(.agent_status == "done")); 1) end
+  else .[($mode | tonumber) - 1].pane_id // empty end')
 [ -n "$target" ] || exit 0
 
 herdr agent focus "$target" >/dev/null

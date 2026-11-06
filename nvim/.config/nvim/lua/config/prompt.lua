@@ -152,19 +152,32 @@ local function pct_hl(pct)
   return pct >= 80 and "DiagnosticError" or pct >= 50 and "DiagnosticWarn" or "Comment"
 end
 
+-- Time until a rate limit resets, as "2d3h", "2h05m" or "47m", like the statusline's.
+local function until_reset(at)
+  local left = math.max(0, (tonumber(at) or 0) - os.time())
+  local d, h, m = math.floor(left / 86400), math.floor(left % 86400 / 3600), math.floor(left % 3600 / 60)
+  return d > 0 and ("%dd%dh"):format(d, h) or h > 0 and ("%dh%02dm"):format(h, m) or ("%dm"):format(m)
+end
+
 local function status_line()
   local parts = {}
   if state.status then
     table.insert(parts, ("%%#%s#%s"):format(status_hl[state.status] or "Comment", state.status))
   end
   local info = state.statusline or {}
-  local ctx = vim.tbl_get(info, "context_window", "used_percentage")
-  if ctx then
-    table.insert(parts, ("%%#%s#ctx %d%%%%"):format(pct_hl(ctx), ctx))
+  local window = info.context_window or {}
+  if window.used_percentage and window.total_input_tokens then
+    local tokens = window.total_input_tokens + (window.total_output_tokens or 0)
+    table.insert(parts, ("%%#%s#%.1fk ctx"):format(pct_hl(window.used_percentage), tokens / 1000))
   end
-  local five = vim.tbl_get(info, "rate_limits", "five_hour", "used_percentage")
-  if five then
-    table.insert(parts, ("%%#%s#5h %d%%%%"):format(pct_hl(five), five))
+  -- Coloured by use, counting down to the reset. resets_at is epoch seconds; an
+  -- ISO time from an older Claude just leaves the countdown out.
+  for _, limit in ipairs({ { "five_hour", "5h" }, { "seven_day", "wk" } }) do
+    local rl = vim.tbl_get(info, "rate_limits", limit[1]) or {}
+    if rl.used_percentage then
+      local reset = tonumber(rl.resets_at) and (" " .. until_reset(rl.resets_at)) or ""
+      table.insert(parts, ("%%#%s#%s %d%%%%%s"):format(pct_hl(rl.used_percentage), limit[2], rl.used_percentage, reset))
+    end
   end
   return #parts > 0 and ("%#Comment# · " .. table.concat(parts, "%#Comment# · ")) or ""
 end

@@ -44,9 +44,9 @@ next_workspace = ["prefix+shift+j", "ctrl+shift+j"]
 # Taken by scripts/herdr-agent-cycle below, which lands on a tab's prompt pane.
 previous_agent = []
 next_agent = []
+focus_agent = []
 switch_tab = ["prefix+1..9", "ctrl+1..9"]
 switch_workspace = "ctrl+shift+1..9"
-focus_agent = ["prefix+alt+1..9", "ctrl+alt+1..9"]
 # Unused, and its default prefix+shift+g takes priority over herdr-lazygit's open-tab.
 new_worktree = []
 
@@ -55,7 +55,8 @@ key = "prefix+a"
 type = "shell"
 command = "$HOME/dots/scripts/claude-prompt"
 
-# next_agent/previous_agent, but focusing the agent's prompt pane when its tab has one.
+# next_agent/previous_agent/focus_agent, but focusing the agent's prompt pane when its
+# tab has one; prefix+alt+a/ctrl+alt+a go to the next agent blocked on you, else done.
 [[keys.command]]
 key = "prefix+alt+j"
 type = "shell"
@@ -75,6 +76,108 @@ command = "$HOME/dots/scripts/herdr-agent-cycle prev"
 key = "ctrl+alt+k"
 type = "shell"
 command = "$HOME/dots/scripts/herdr-agent-cycle prev"
+
+[[keys.command]]
+key = "prefix+alt+1"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 1"
+
+[[keys.command]]
+key = "ctrl+alt+1"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 1"
+
+[[keys.command]]
+key = "prefix+alt+2"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 2"
+
+[[keys.command]]
+key = "ctrl+alt+2"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 2"
+
+[[keys.command]]
+key = "prefix+alt+3"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 3"
+
+[[keys.command]]
+key = "ctrl+alt+3"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 3"
+
+[[keys.command]]
+key = "prefix+alt+4"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 4"
+
+[[keys.command]]
+key = "ctrl+alt+4"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 4"
+
+[[keys.command]]
+key = "prefix+alt+5"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 5"
+
+[[keys.command]]
+key = "ctrl+alt+5"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 5"
+
+[[keys.command]]
+key = "prefix+alt+6"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 6"
+
+[[keys.command]]
+key = "ctrl+alt+6"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 6"
+
+[[keys.command]]
+key = "prefix+alt+7"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 7"
+
+[[keys.command]]
+key = "ctrl+alt+7"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 7"
+
+[[keys.command]]
+key = "prefix+alt+8"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 8"
+
+[[keys.command]]
+key = "ctrl+alt+8"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 8"
+
+[[keys.command]]
+key = "prefix+alt+9"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 9"
+
+[[keys.command]]
+key = "ctrl+alt+9"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle 9"
+
+[[keys.command]]
+key = "prefix+alt+a"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle attention"
+description = "agent waiting on you"
+
+[[keys.command]]
+key = "ctrl+alt+a"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-agent-cycle attention"
+description = "agent waiting on you"
 
 [[keys.command]]
 key = "prefix+d"
