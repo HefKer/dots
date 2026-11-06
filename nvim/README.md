@@ -22,6 +22,8 @@ Claude Code from Neovim.
     transcript and refreshed when a turn ends, so narration between tool calls
     never replaces it. `Alt+j/k/u/d` scroll it from the prompt, even in insert
     mode, and `[r`/`]r` step through earlier replies.
+  - Tables in the reply are redrawn as box grids whose cells wrap to fit the
+    pane, so a wide table never breaks mid-row; quoting one quotes its markdown.
   - `<CR>` in the reply quotes the list item, code block, table or paragraph
     under the cursor into the prompt (a visual selection quotes just that), with
     an empty line under it to answer on. Quotes in the prompt are dimmed.
@@ -39,6 +41,7 @@ Claude Code from Neovim.
 
   [`config/prompt.lua`](.config/nvim/lua/config/prompt.lua),
   [`config/prompt_source.lua`](.config/nvim/lua/config/prompt_source.lua),
+  [`config/prompt_table.lua`](.config/nvim/lua/config/prompt_table.lua),
   [`prompts/`](.config/nvim/prompts/),
   [`plugins/img-clip.lua`](.config/nvim/lua/plugins/img-clip.lua),
   [`scripts/claude-prompt`](../scripts/claude-prompt) ·

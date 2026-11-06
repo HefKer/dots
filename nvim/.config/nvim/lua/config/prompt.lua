@@ -4,12 +4,16 @@
 -- herdr/.config/herdr/config.toml, through scripts/claude-prompt.
 local M = {}
 
+local tables = require("config.prompt_table")
+
 local ns = vim.api.nvim_create_namespace("claude_prompt_quote")
+local ns_table = vim.api.nvim_create_namespace("claude_prompt_table")
 
 -- One prompt pane per nvim, so its state is module-wide.
 local state = {
   prompt = { buf = nil, win = nil },
   viewer = { buf = nil, win = nil },
+  shown = { lines = {}, source = {} }, -- the reply's markdown, and viewer rows drawn from its tables
   path = nil, -- transcript being read
   offset = 0, -- bytes of it already parsed
   partial = "", -- a line still being written when last read
@@ -149,6 +153,38 @@ local function set_winbars()
   end
 end
 
+-- Fills the viewer with markdown, its tables drawn to fit the window (config.prompt_table).
+local function draw(lines)
+  local buf = state.viewer.buf
+  local width = 80
+  if viewer_valid() then
+    local info = vim.fn.getwininfo(state.viewer.win)[1]
+    width = info.width - info.textoff
+  end
+  -- one column short, so a full-width box row doesn't wrap
+  local drawn = tables.render(lines, width - 1)
+  vim.bo[buf].modifiable = true
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, drawn.lines)
+  vim.bo[buf].modifiable = false
+  vim.api.nvim_buf_clear_namespace(buf, ns_table, 0, -1)
+  for _, m in ipairs(drawn.marks) do
+    vim.api.nvim_buf_set_extmark(buf, ns_table, m[1], m[2], { end_col = m[3], hl_group = m[4], priority = m[5] })
+  end
+  state.shown = { lines = lines, source = drawn.source }
+end
+
+-- Redraws the tables for a resized viewer, keeping the view near where it was.
+local function redraw()
+  local buf = state.viewer.buf
+  if viewer_valid() and buf and vim.api.nvim_buf_is_valid(buf) then
+    vim.api.nvim_win_call(state.viewer.win, function()
+      local view = vim.fn.winsaveview()
+      draw(state.shown.lines)
+      vim.fn.winrestview(view)
+    end)
+  end
+end
+
 ---@param index integer
 ---@param message? string shown instead of a reply
 local function show(index, message)
@@ -158,9 +194,7 @@ local function show(index, message)
   end
   state.index = index
   local text = message or state.replies[index] or "_No finished reply in this session yet._"
-  vim.bo[buf].modifiable = true
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(text, "\n"))
-  vim.bo[buf].modifiable = false
+  draw(vim.split(text, "\n"))
   if viewer_valid() then
     vim.api.nvim_win_set_cursor(state.viewer.win, { 1, 0 })
   end
@@ -293,6 +327,10 @@ end
 -- quote as a whole, otherwise the paragraph or heading.
 local function block_at_cursor()
   local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+  local table_at = state.shown.source[row + 1]
+  if table_at then
+    return vim.list_slice(state.shown.lines, table_at[1], table_at[2])
+  end
   pcall(function()
     vim.treesitter.get_parser(0):parse()
   end)
@@ -323,10 +361,22 @@ local function quote_block()
   insert_quote(quote_lines(block_at_cursor()))
 end
 
+-- A table drawn in the selection is quoted whole, as its markdown.
 local function quote_selection()
   local from, to = vim.fn.line("v"), vim.fn.line(".")
   vim.cmd.normal({ vim.keycode("<Esc>"), bang = true })
-  insert_quote(quote_lines(vim.api.nvim_buf_get_lines(0, math.min(from, to) - 1, math.max(from, to), false)))
+  from, to = math.min(from, to), math.max(from, to)
+  local lines, last = {}, nil
+  for row, line in ipairs(vim.api.nvim_buf_get_lines(0, from - 1, to, false)) do
+    local table_at = state.shown.source[from + row - 1]
+    if not table_at then
+      table.insert(lines, line)
+    elseif table_at ~= last then
+      vim.list_extend(lines, vim.list_slice(state.shown.lines, table_at[1], table_at[2]))
+    end
+    last = table_at
+  end
+  insert_quote(quote_lines(lines))
 end
 
 -- The whole reply shown, for replying between its lines and deleting what doesn't
@@ -618,6 +668,16 @@ function M.open()
     end,
   })
   vim.api.nvim_create_autocmd("FocusGained", { group = group, callback = attach })
+  -- Tables are drawn to the viewer's width, so redraw them when it changes.
+  vim.api.nvim_create_autocmd("WinResized", {
+    group = group,
+    callback = function()
+      if vim.tbl_contains(vim.v.event.windows, state.viewer.win) then
+        redraw()
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd("VimResized", { group = group, callback = redraw })
 
   open_viewer(win)
   attach()
