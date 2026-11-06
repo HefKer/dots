@@ -1,0 +1,29 @@
+/* Hide Shop, Nitro, Quest, and related tabs */
+[href="/shop"], [href="/store"], [href="/quest-home"], [href="/activities"] {
+  display: none !important;
+}
+
+/* Hide the upsell banners and buttons */
+[class*="upsell"], [class*="buttonContainer"] .app-launcher-entrypoint, [class*="chipletContainer"] {
+  display: none !important;
+}
+
+/* Hide the "Send a gift" button (often linked to Nitro) */
+[aria-label="Send a gift"] {
+  display: none !important;
+}   
+
+/* Code blocks in the terminal's font */
+:root {
+  --font-code: "Victor Mono", monospace !important;
+}
+
+/* Square corners, matching niri; avatars stay round (--radius-round untouched) */
+:root, .visual-refresh {
+  --radius-xs: 0 !important;
+  --radius-sm: 0 !important;
+  --radius-md: 0 !important;
+  --radius-lg: 0 !important;
+  --radius-xl: 0 !important;
+  --radius-xxl: 0 !important;
+}
