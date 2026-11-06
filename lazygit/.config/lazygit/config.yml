@@ -206,6 +206,12 @@ customCommands:
       command: ~/dots/scripts/git-prune-merged
       output: popup
       outputTitle: Deleted merged branches
+    # C writes the commit message with AI, through herdr-lazygit's picker; in its herdr pane, the plugin's own C wins.
+    - key: C
+      context: files
+      description: Commit with an AI-written message
+      command: lazygit-ai-commit
+      output: terminal
 # services: {}
 notARepository: skip  # prompt|create|skip|quit; skip opens the most recent repo
 # promptToReturnFromSubprocess: true

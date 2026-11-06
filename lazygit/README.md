@@ -17,3 +17,8 @@ sidebar pane loads this file first, then lays its own layout and keys over it.
   worktree with changes or a branch with unmerged commits is kept, by git's own
   checks.
   [`git-prune-merged`](../scripts/git-prune-merged)
+- <a id="ai-commit"></a>**`C` commits with an AI-written message, even
+  outside herdr.** It runs herdr-lazygit's picker full-screen, where Haiku
+  offers three messages to pick or edit. Inside the plugin's herdr pane, the
+  plugin's own split-pane `C` takes over.
+  [`config.yml`](.config/lazygit/config.yml)
