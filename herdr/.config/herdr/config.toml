@@ -13,6 +13,10 @@ resume_agents_on_restore = true
 [ui]
 # herdr-auto-title names new tabs; a name typed at the prompt would count as manual and pin it.
 prompt_new_tab_name = false
+# Claude's account-wide 5h and weekly usage and time to reset, from scripts/claude-limits.
+tab_bar_right = [
+  { type = "command", command = "$HOME/dots/scripts/claude-limits", interval_seconds = 30, timeout_seconds = 2 },
+]
 
 # herdr-auto-title reports what each workspace's active tab is doing as $topic.
 [ui.sidebar.spaces]
@@ -178,6 +182,13 @@ key = "ctrl+alt+a"
 type = "shell"
 command = "$HOME/dots/scripts/herdr-agent-cycle attention"
 description = "agent waiting on you"
+
+# herdr/plugins/agent-focus: the sidebar and agent keys keep to this space, plus
+# agents waiting on you elsewhere.
+[[keys.command]]
+key = "prefix+v"
+type = "plugin_action"
+command = "hefker.agent-focus.toggle"
 
 [[keys.command]]
 key = "prefix+d"

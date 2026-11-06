@@ -33,6 +33,9 @@ Claude Code from Neovim.
     context in tokens, and 5-hour and weekly usage with the time to each reset,
     which the Claude statusline the pane covers shares in
     `$XDG_RUNTIME_DIR/claude-statusline/`.
+  - `<leader>ap` in any other nvim in the tab adds `@file`, or `@file#L10-20`
+    for a selection, to the draft, relative to Claude's directory. It opens the
+    prompt pane first if there isn't one, and focuses it to keep writing.
   - `/skill` and `@file` complete as they do in Claude's own input.
   - `<leader>ah` picks from every prompt sent before, newest first with its
     directory, and `<leader>at` from the templates in

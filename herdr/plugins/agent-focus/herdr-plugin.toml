@@ -1,0 +1,20 @@
+# Agent focus: narrows the agent sidebar, and with it ctrl+alt+j/k and 1..9, to the
+# current space plus agents elsewhere that are waiting on you. Toggled by prefix+v in
+# herdr's config.toml; the choice survives a server restart.
+id = "hefker.agent-focus"
+name = "Agent focus"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Show only this space's agents, plus blocked or unseen ones elsewhere"
+platforms = ["linux"]
+
+# Herdr forgets an agent view when the server exits, so put the saved one back.
+[[startup]]
+command = ["python3", "agent-focus.py", "restore"]
+
+[[actions]]
+id = "toggle"
+title = "Agent focus: toggle"
+description = "Switch the agent sidebar between this space (plus agents waiting on you) and every agent"
+contexts = ["global"]
+command = ["python3", "agent-focus.py", "toggle"]

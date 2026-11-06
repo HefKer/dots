@@ -597,6 +597,28 @@ local function pick_template()
   })
 end
 
+-- Where config.prompt_ref finds this pane's nvim, keyed by the herdr pane it runs in.
+-- Without the pane id's colon, which nvim would read as a TCP host:port.
+function M.socket(pane_id)
+  return ("%s/claude-prompt/%s.sock"):format(vim.env.XDG_RUNTIME_DIR or "/tmp", (pane_id:gsub(":", "-")))
+end
+
+-- Called over RPC by config.prompt_ref: puts a file reference at the end of the
+-- prompt, on the last line if it has text, and leaves insert mode after it.
+function M.add_ref(ref)
+  local buf, win = state.prompt.buf, state.prompt.win
+  if not (buf and win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+  local count = vim.api.nvim_buf_line_count(buf)
+  local last = vim.api.nvim_buf_get_lines(buf, count - 1, count, false)[1]
+  local line = vim.trim(last) == "" and ref or (last:gsub("%s+$", "") .. " " .. ref)
+  vim.api.nvim_buf_set_lines(buf, count - 1, count, false, { line .. " " })
+  vim.api.nvim_set_current_win(win)
+  vim.api.nvim_win_set_cursor(win, { count, #line + 1 })
+  vim.cmd.startinsert({ bang = true })
+end
+
 ------------------------------------------------------------------------------
 -- Sending
 
@@ -737,6 +759,13 @@ function M.open()
     end,
   })
   vim.api.nvim_create_autocmd("VimResized", { group = group, callback = redraw })
+
+  if vim.env.HERDR_PANE_ID then
+    local sock = M.socket(vim.env.HERDR_PANE_ID)
+    vim.fn.mkdir(vim.fs.dirname(sock), "p")
+    vim.fn.delete(sock) -- left by a prompt pane that didn't exit cleanly
+    pcall(vim.fn.serverstart, sock)
+  end
 
   open_viewer(win)
   attach()

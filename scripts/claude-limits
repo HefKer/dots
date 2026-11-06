@@ -1,0 +1,20 @@
+#!/bin/sh
+# Claude's 5-hour and weekly usage with the time to each reset, e.g.
+# "5h 23% 2h12m · wk 51% 3d4h", for herdr's tab bar (ui.tab_bar_right). Read from the
+# newest render ~/.claude/statusline.sh shared: the limits are account-wide, so any
+# session's will do. Prints nothing, which hides the entry, before the first render.
+latest=$(ls -t "${XDG_RUNTIME_DIR:-/tmp}"/claude-statusline/*.json 2>/dev/null | head -n 1)
+[ -n "$latest" ] || exit 0
+jq -r --argjson now "$(date +%s)" '
+  def left($at):
+    ([$at - $now, 0] | max) as $s
+    | ($s / 86400 | floor) as $d | ($s % 86400 / 3600 | floor) as $h | ($s % 3600 / 60 | floor) as $m
+    | if $d > 0 then "\($d)d\($h)h" elif $h > 0 then "\($h)h\($m | tostring | if length < 2 then "0" + . else . end)m" else "\($m)m" end;
+  # A window that reset since the last render shows no stale percentage.
+  def limit($name; $key):
+    .rate_limits[$key] // empty | select(.used_percentage != null)
+    | if (.resets_at | type) != "number" then "\($name) \(.used_percentage | floor)%"
+      elif .resets_at <= $now then "\($name) reset"
+      else "\($name) \(.used_percentage | floor)% \(left(.resets_at))" end;
+  [limit("5h"; "five_hour"), limit("wk"; "seven_day")] | select(length > 0) | join(" · ")
+' "$latest"

@@ -37,5 +37,16 @@ It's where my Claude Code sessions, shells and editors live. Only
   [`scripts/herdr-agent-cycle`](../scripts/herdr-agent-cycle),
   [4a2ee88](https://github.com/HefKer/dots/commit/4a2ee88),
   [e9f7f12](https://github.com/HefKer/dots/commit/e9f7f12)
+- <a id="agent-focus"></a>**`prefix+v`: keep agent navigation in this space.**
+  The [agent-focus plugin](plugins/agent-focus/herdr-plugin.toml) narrows the
+  agent sidebar, and with it `ctrl+alt+j/k` and `1..9`, to the current space's
+  agents, plus any agent elsewhere that is blocked or finished unseen. The choice
+  survives a server restart. It isn't Nix-packaged: link it once with
+  `herdr plugin link ~/dots/herdr/plugins/agent-focus`.
+  [`agent-focus.py`](plugins/agent-focus/agent-focus.py)
+- <a id="limits"></a>**Claude's usage limits in the tab bar.** The right of the
+  tab row shows `5h 29% 3h17m · wk 52% 3d15h`: usage and time to reset of the
+  account-wide limits, read from the newest render the Claude statusline shares.
+  [`scripts/claude-limits`](../scripts/claude-limits)
 
 The prefix is `Ctrl+Space`.

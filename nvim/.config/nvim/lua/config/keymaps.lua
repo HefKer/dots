@@ -43,3 +43,11 @@ end, { desc = "Rename File" })
 vim.keymap.set("n", "<leader>fn", function()
   require("config.obsidian").new_note()
 end, { desc = "New File" })
+
+-- Add this file, or the selected lines, to the prompt pane's draft (config/prompt_ref.lua).
+vim.keymap.set("n", "<leader>ap", function()
+  require("config.prompt_ref").add()
+end, { desc = "Add File to Claude Prompt" })
+vim.keymap.set("x", "<leader>ap", function()
+  require("config.prompt_ref").add_selection()
+end, { desc = "Add Lines to Claude Prompt" })
