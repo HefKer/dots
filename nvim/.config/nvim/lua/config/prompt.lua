@@ -261,7 +261,8 @@ local function read_statusline(agent)
   local session = agent and vim.tbl_get(agent, "agent_session", "value")
   local path = session and ("%s/claude-statusline/%s.json"):format(vim.env.XDG_RUNTIME_DIR or "/tmp", session)
   local ok, info = pcall(function()
-    return vim.json.decode(table.concat(vim.fn.readfile(path), "\n"))
+    -- luanil: a fresh session's nulls (used_percentage) become nil, not truthy vim.NIL.
+    return vim.json.decode(table.concat(vim.fn.readfile(path), "\n"), { luanil = { object = true, array = true } })
   end)
   state.status = agent and agent.agent_status
   state.statusline = ok and info or nil
