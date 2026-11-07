@@ -27,8 +27,9 @@ It's where my Claude Code sessions, shells and editors live. Only
   yazi, and `prefix+f` a floating shell, each through a herdr plugin.
 - <a id="nav"></a>**Agent navigation.** `ctrl+alt+j/k` cycles through agents,
   `ctrl+alt+1..9` jumps to the agent at that position in the sidebar, and
-  `ctrl+alt+a` goes to the next agent waiting on you: blocked on a question or
-  approval first, else finished unseen. Each lands on the tab's
+  `ctrl+alt+a` walks the agents waiting on you: blocked on a question or
+  approval, then finished unseen, then idle, each newest first, while its prompt
+  cache is warm. Repeated presses skip agents already visited. Each lands on the tab's
   [prompt pane](#prompt-pane) instead of Claude when it has one (`prefix+alt+…`
   works too). Each agent's sidebar entry shows its context in tokens as `$ctx`,
   reported by the Claude statusline, and

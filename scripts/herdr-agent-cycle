@@ -6,8 +6,11 @@
 # Usage: herdr-agent-cycle next|prev|attention|1..9
 #   next, prev  the agent after or before the current one, in sidebar order
 #   1..9        the agent at that place in the sidebar
-#   attention   the next agent waiting on you: a blocked one (a question or an
-#               approval) if any, otherwise one that finished unseen (done)
+#   attention   the next agent waiting on you: blocked ones (a question or an
+#               approval), then finished unseen (done), then idle, each newest
+#               first, since a recent reply's prompt cache is still warm. Repeated
+#               presses walk the queue, skipping agents already visited this run;
+#               a run ends when you move elsewhere, or wraps once all are visited.
 case "$1" in
   next | prev | attention | [1-9]) ;;
   *)
@@ -20,7 +23,11 @@ esac
 # not the agent list read here, so apply the same filter while it is on.
 focus=$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/herdr/plugins/hefker.agent-focus/mode" 2>/dev/null)
 
-target=$(herdr api snapshot | jq -r --arg mode "$1" --arg focus "${focus:-off}" '
+# attention's run: the pane it last went to, then the panes visited so far.
+run="${XDG_RUNTIME_DIR:-/tmp}/herdr-agent-cycle-attention"
+visited='[]'; [ -f "$run" ] && visited=$(jq -Rn '[inputs]' "$run")
+
+target=$(herdr api snapshot | jq -r --arg mode "$1" --arg focus "${focus:-off}" --argjson run "$visited" '
   .result.snapshot as $s
   | ($s.workspaces | map({ (.workspace_id): .number }) | add) as $ws
   | ($s.tabs | map({ (.tab_id): .number }) | add) as $tabs
@@ -45,11 +52,23 @@ target=$(herdr api snapshot | jq -r --arg mode "$1" --arg focus "${focus:-off}" 
   if $mode == "next" then after($agents; 1)
   elif $mode == "prev" then after($agents; -1)
   elif $mode == "attention" then
-    (map(select(.agent_status == "blocked"))) as $blocked
-    | if ($blocked | length) > 0 then after($blocked; 1)
-      else after(map(select(.agent_status == "done")); 1) end
+    (if $cur then $agents[$cur].pane_id else "" end) as $here
+    # Still on the pane last jumped to: the run goes on, else a new one starts.
+    | (if $run[0] == $here then $run[1:] else [] end) as $seen
+    | {blocked: 0, done: 1, idle: 2} as $rank
+    | [.[] | select($rank[.agent_status] != null and .pane_id != $here)]
+    | sort_by([$rank[.agent_status], -.state_change_seq])
+    | (map(select(.pane_id | IN($seen[]) | not)) | .[0].pane_id) as $next
+    # All visited: wrap to the head of the queue with a fresh run.
+    | (if $next then [$next] + $seen elif length > 0 then [.[0].pane_id] else empty end)
+    | . + [$here | select(. != "")]
+    | join("\n")
   else .[($mode | tonumber) - 1].pane_id // empty end')
 [ -n "$target" ] || exit 0
+if [ "$1" = attention ]; then
+  printf '%s\n' "$target" >"$run"
+  target=$(head -n1 "$run")
+fi
 
 herdr agent focus "$target" >/dev/null
 tab=$(herdr pane get "$target" | jq -r .result.pane.tab_id)

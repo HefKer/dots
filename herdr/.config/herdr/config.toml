@@ -60,7 +60,7 @@ type = "shell"
 command = "$HOME/dots/scripts/claude-prompt"
 
 # next_agent/previous_agent/focus_agent, but focusing the agent's prompt pane when its
-# tab has one; prefix+alt+a/ctrl+alt+a go to the next agent blocked on you, else done.
+# tab has one; prefix+alt+a/ctrl+alt+a walk agents waiting on you: blocked, done, idle, newest first.
 [[keys.command]]
 key = "prefix+alt+j"
 type = "shell"
