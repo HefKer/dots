@@ -7,7 +7,7 @@
     "enabledThemes": [
         "dank-discord.css"
     ],
-    "enableReactDevtools": false,
+    "enableReactDevtools": true,
     "frameless": false,
     "transparent": false,
     "winCtrlQ": false,
@@ -348,7 +348,10 @@
             "enabled": false
         },
         "OnePingPerDM": {
-            "enabled": true
+            "enabled": true,
+            "channelToAffect": "both_dms",
+            "allowMentions": false,
+            "allowEveryone": false
         },
         "oneko": {
             "enabled": false
@@ -557,7 +560,8 @@
             "enabled": false
         },
         "VolumeBooster": {
-            "enabled": true
+            "enabled": true,
+            "multiplier": 2
         },
         "WebKeybinds": {
             "enabled": true,
@@ -620,13 +624,14 @@
             "enabled": true
         },
         "GifProviderSwitcher": {
-            "enabled": true
+            "enabled": true,
+            "provider": "tenor"
         },
         "ExpressionManager": {
-            "enabled": false
+            "enabled": true
         },
         "DirectFileDownload": {
-            "enabled": false
+            "enabled": true
         },
         "JumpToTop": {
             "enabled": false
@@ -636,6 +641,38 @@
         },
         "FixDiscordCss": {
             "enabled": true
+        },
+        "VcActions": {
+            "enabled": true,
+            "hotkeys": ""
+        },
+        "VcPresets": {
+            "enabled": true,
+            "presets": [
+                {
+                    "name": "screen",
+                    "video": {
+                        "monitor": "DP-3"
+                    },
+                    "audio": "Entire System",
+                    "excludeSources": [],
+                    "resolution": 1080,
+                    "frameRate": 60,
+                    "contentHint": "motion"
+                },
+                {
+                    "name": "osu",
+                    "video": {
+                        "windowAppId": "^osu"
+                    },
+                    "audio": [
+                        "osu!"
+                    ],
+                    "resolution": 1080,
+                    "frameRate": 60,
+                    "contentHint": "motion"
+                }
+            ]
         }
     },
     "uiElements": {
@@ -652,7 +689,7 @@
         "authenticated": false,
         "url": "https://api.vencord.dev/",
         "settingsSync": false,
-        "settingsSyncVersion": 1793948681753
+        "settingsSyncVersion": 1794045661091
     },
     "windowsMaterial": "none",
     "nativeTitleBar": false
