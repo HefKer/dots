@@ -24,6 +24,7 @@ return {
         pyright = {},
         jsonls = {},
         nil_ls = { mason = false }, -- nil_ls provided by nix
+        taplo = { mason = false }, -- provided by nix
       },
     },
   },
