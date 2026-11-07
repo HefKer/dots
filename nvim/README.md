@@ -21,7 +21,15 @@ Claude Code from Neovim.
   - Claude's last reply sits rendered above the prompt, read from the session
     transcript and refreshed when a turn ends, so narration between tool calls
     never replaces it. `Alt+j/k/u/d` scroll it from the prompt, even in insert
-    mode, and `[r`/`]r` step through earlier replies.
+    mode, and `[r`/`]r` step through earlier replies. Replies Claude ends
+    several turns with, with no prompt of yours between (a background task
+    finishing, say), join the one shown under a rule, keeping your place in it,
+    so none is skipped behind the newest.
+  - The prompt is saved as you type, synced to disk, to
+    `~/.local/state/nvim/claude-drafts/<session-id>.md`, and deleted once sent.
+    A crash, reboot or power cut doesn't take it: the next `prefix+a` in the tab
+    herdr resumes brings it back. `<leader>ad` picks from every other saved
+    draft, for a pane that's gone.
   - Tables in the reply are redrawn as box grids whose cells wrap to fit the
     pane, so a wide table never breaks mid-row; quoting one quotes its markdown.
   - `<CR>` in the reply quotes the list item, code block, table or paragraph

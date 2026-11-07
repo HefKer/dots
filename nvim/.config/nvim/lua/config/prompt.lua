@@ -17,7 +17,10 @@ local state = {
   path = nil, -- transcript being read
   offset = 0, -- bytes of it already parsed
   partial = "", -- a line still being written when last read
-  replies = {}, -- finished replies, oldest first
+  replies = {}, -- finished replies, oldest first; those with no prompt of yours between are one
+  prompted = true, -- whether you've written to Claude since its last reply
+  session = nil, -- Claude's session id, last seen
+  draft = nil, -- file the prompt is saved to
   index = 0, -- the one shown; 0 when there are none
   view = "reply", -- or "tasks", the task list shown in its place
   tasks = {}, -- Claude's task list: { id?, subject, status }
@@ -94,8 +97,6 @@ end
 -- Claude ends the turn with, stop_reason end_turn), so the narration it writes
 -- between tool calls never replaces the reply you're reading.
 
--- Parses whatever was appended since the last read, so a long session isn't
--- re-read on every write. Returns whether a new reply arrived.
 -- What a tool call is doing, for the bar while Claude works: "Edit prompt.lua",
 -- "Bash Run the tests", an MCP tool by its own name.
 local function describe(block)
@@ -154,6 +155,32 @@ local function track(entry)
   end
 end
 
+-- Whether a user entry is something you wrote: a prompt or a /command, not a tool
+-- result, an injected reminder, a background task's notification or `!` output.
+local function from_you(entry)
+  if entry.type ~= "user" or entry.isMeta or entry.isSidechain or entry.toolUseResult ~= nil then
+    return false
+  end
+  local content = entry.message and entry.message.content
+  if type(content) == "table" then
+    for _, block in ipairs(content) do
+      if block.type == "tool_result" then
+        return false
+      end
+    end
+    return true
+  end
+  return type(content) == "string"
+    and not content:find("^<task%-notification>")
+    and not content:find("^<bash%-std")
+    and not content:find("^<local%-command")
+end
+
+-- Parses whatever was appended since the last read, so a long session isn't
+-- re-read on every write. Replies Claude ends several turns with, with no prompt of
+-- yours between (a background task finishing, say), join the one before them, so
+-- none is hidden behind the newest. Returns whether a reply arrived, and whether
+-- it was joined to the last one rather than starting a new one.
 local function read_new()
   local fh = state.path and io.open(state.path, "rb")
   if not fh then
@@ -168,8 +195,14 @@ local function read_new()
   state.partial = last_nl and text:sub(last_nl + 1) or text
   text = last_nl and text:sub(1, last_nl) or ""
 
-  local before, last_id = #state.replies, state.last_id
+  local before, last_id, joined = #state.replies, state.last_id, false
   for line in text:gmatch("[^\n]+") do
+    if line:find('"type":"user"', 1, true) and not line:find('"tool_use_id"', 1, true) then
+      local ok, entry = pcall(vim.json.decode, line)
+      if ok and type(entry) == "table" and from_you(entry) then
+        state.prompted = true
+      end
+    end
     if line:find('"type":"tool_use"', 1, true) or line:find('"toolUseResult":{', 1, true) then
       local ok, entry = pcall(vim.json.decode, line)
       if ok and type(entry) == "table" and entry.message and entry.isSidechain ~= true then
@@ -189,19 +222,25 @@ local function read_new()
         if #texts > 0 then
           local body = table.concat(texts, "\n")
           -- A message's content blocks arrive as separate entries; join them.
+          local last = state.replies[#state.replies]
           if entry.message.id and entry.message.id == last_id then
-            state.replies[#state.replies] = state.replies[#state.replies] .. "\n" .. body
+            state.replies[#state.replies] = last .. "\n" .. body
+            joined = joined or #state.replies == before
+          elseif last and not state.prompted then
+            state.replies[#state.replies] = last .. "\n\n---\n\n" .. body
+            joined = joined or #state.replies == before
           else
             table.insert(state.replies, body)
           end
           last_id = entry.message.id
+          state.prompted = false
           state.activity = nil
         end
       end
     end
   end
   state.last_id = last_id
-  return #state.replies > before
+  return #state.replies > before, joined
 end
 
 ------------------------------------------------------------------------------
@@ -250,6 +289,8 @@ local function read_statusline(agent)
     return vim.json.decode(table.concat(vim.fn.readfile(path), "\n"), { luanil = { object = true, array = true } })
   end)
   state.status = agent and agent.agent_status
+  -- Kept through a failed lookup, so a herdr hiccup doesn't move the draft.
+  state.session = session or state.session
   state.statusline = ok and info or nil
 end
 
@@ -268,7 +309,8 @@ local function set_winbars()
     vim.wo[state.viewer.win].winbar = "%#WinBar# 󰚩 " .. title .. status_line() .. "%=%#Comment#<leader>ak tasks "
   end
   if state.prompt.win and vim.api.nvim_win_is_valid(state.prompt.win) then
-    vim.wo[state.prompt.win].winbar = "%#WinBar# 󰏫 Prompt%=%#Comment#<leader>ah history · <leader>at template "
+    vim.wo[state.prompt.win].winbar =
+      "%#WinBar# 󰏫 Prompt%=%#Comment#<leader>ah history · <leader>at template · <leader>ad drafts "
   end
 end
 
@@ -348,7 +390,7 @@ end
 -- back to an older one; the task list stays up when one arrives, redrawn as it changes.
 local function refresh()
   local following = state.index == #state.replies
-  local new_reply = read_new()
+  local new_reply, joined = read_new()
   if state.view == "tasks" then
     if following then
       state.index = #state.replies
@@ -360,6 +402,15 @@ local function refresh()
     end
   elseif new_reply and following then
     show(#state.replies)
+  elseif joined and following and viewer_valid() then
+    -- More of the reply you're reading: keep your place in it.
+    vim.api.nvim_win_call(state.viewer.win, function()
+      local view = vim.fn.winsaveview()
+      draw(vim.split(state.replies[state.index], "\n"))
+      vim.fn.winrestview(view)
+    end)
+    set_winbars()
+    vim.notify("Claude added to its reply", vim.log.levels.INFO, { title = "Claude prompt" })
   else
     set_winbars()
   end
@@ -375,6 +426,7 @@ local function attach_to(path, err)
     state.watcher:stop()
   end
   state.path, state.offset, state.partial, state.replies, state.last_id = path, 0, "", {}, nil
+  state.prompted = true
   state.tasks, state.activity = {}, nil
   if not path then
     return show(0, "_" .. err .. "._")
@@ -697,6 +749,122 @@ local function pick_template()
   })
 end
 
+------------------------------------------------------------------------------
+-- Drafts
+
+-- The prompt, saved as you type so a crash, reboot or power cut doesn't take it:
+-- one file per Claude session, which herdr resumes under the same id after a
+-- restart, so the next prefix+a in that tab brings it back; per pane until the
+-- session exists. Deleted once sent or emptied.
+local drafts_dir = vim.fn.stdpath("state") .. "/claude-drafts"
+
+local function draft_path()
+  local key = state.session or (vim.env.HERDR_PANE_ID and "pane-" .. vim.env.HERDR_PANE_ID:gsub(":", "-"))
+  return key and ("%s/%s.md"):format(drafts_dir, key)
+end
+
+local function save_draft()
+  local buf = state.prompt.buf
+  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    return
+  end
+  local path = draft_path()
+  -- The session changed under the pane (/clear, a restarted Claude): follow it.
+  if state.draft and state.draft ~= path then
+    vim.fn.delete(state.draft)
+  end
+  state.draft = path
+  if not path then
+    return
+  end
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  if vim.trim(table.concat(lines, "\n")) == "" then
+    vim.fn.delete(path)
+    return
+  end
+  vim.fn.mkdir(drafts_dir, "p")
+  -- Synced and renamed into place, so a power cut leaves the old draft or the new
+  -- one, never half of one.
+  local tmp = path .. ".tmp"
+  if vim.fn.writefile(lines, tmp, "s") == 0 then
+    vim.uv.fs_rename(tmp, path)
+  end
+end
+
+local function schedule_save()
+  state.save_timer = state.save_timer or vim.uv.new_timer()
+  state.save_timer:start(500, 0, vim.schedule_wrap(save_draft))
+end
+
+-- Puts this session's saved draft in the prompt, above any unsent input
+-- scripts/claude-prompt moved in from Claude.
+local function restore_draft(buf)
+  local path = draft_path()
+  state.draft = path
+  if not (path and vim.fn.filereadable(path) == 1) then
+    return
+  end
+  local lines = vim.fn.readfile(path)
+  local current = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  if vim.trim(table.concat(current, "\n")) ~= "" then
+    table.insert(lines, "")
+    vim.list_extend(lines, current)
+  end
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+end
+
+-- Every other saved draft, newest first: one whose pane is gone, or whose session
+-- came back under a new id. Picking one moves it into this prompt.
+local function pick_draft()
+  local items = {}
+  for _, path in ipairs(vim.fn.glob(drafts_dir .. "/*.md", false, true)) do
+    if path ~= state.draft then
+      local text = table.concat(vim.fn.readfile(path), "\n")
+      local key = vim.fn.fnamemodify(path, ":t:r")
+      local project = vim.fn.glob("~/.claude/projects/*/" .. key .. ".jsonl", false, true)[1]
+      local time = vim.fn.getftime(path)
+      table.insert(items, {
+        text = text,
+        file = path,
+        time = time,
+        when = os.date("%m-%d %H:%M", time),
+        -- ~/.claude/projects/-home-me-dots/ → dots
+        where = project and vim.fn.fnamemodify(project, ":h:t"):match("[^-]+$") or "",
+        title = text:match("[^\n]*"),
+        preview = { text = text, ft = "markdown" },
+      })
+    end
+  end
+  if #items == 0 then
+    return notify_error("No other saved drafts")
+  end
+  table.sort(items, function(a, b)
+    return a.time > b.time
+  end)
+  Snacks.picker.pick({
+    title = "Saved Drafts",
+    items = items,
+    preview = "preview",
+    format = function(item)
+      return {
+        { item.when, "Comment" },
+        { " " },
+        { ("%-12s"):format(item.where:sub(1, 12)), "Directory" },
+        { " " },
+        { item.title },
+      }
+    end,
+    confirm = function(picker, item)
+      picker:close()
+      if item then
+        insert_text(item.text)
+        vim.fn.delete(item.file)
+        save_draft()
+      end
+    end,
+  })
+end
+
 -- Where config.prompt_ref finds this pane's nvim, keyed by the herdr pane it runs in.
 -- Without the pane id's colon, which nvim would read as a TCP host:port.
 function M.socket(pane_id)
@@ -749,6 +917,7 @@ local function send()
   end
   record(text_sent)
   vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
+  save_draft()
   -- The session may have changed since open (a restarted Claude); follow it.
   attach()
 end
@@ -802,6 +971,9 @@ function M.open()
   vim.b[buf].claude_prompt = true -- turns on config.prompt_source
   state.prompt = { buf = buf, win = win }
   vim.wo[win].winfixheight = true
+  local agent = M.find_agent()
+  state.session = agent and vim.tbl_get(agent, "agent_session", "value")
+  restore_draft(buf)
 
   local map = function(mode, lhs, rhs, desc)
     vim.keymap.set(mode, lhs, rhs, { buffer = buf, desc = desc })
@@ -811,6 +983,7 @@ function M.open()
   map("n", "<leader>aQ", unquote, "Strip Quoted Lines")
   map("n", "<leader>ah", pick_history, "Sent Prompts")
   map("n", "<leader>at", pick_template, "Prompt Templates")
+  map("n", "<leader>ad", pick_draft, "Saved Drafts")
   map("n", "<leader>ak", toggle_tasks, "Claude's Tasks")
   map("n", "[r", function()
     step(-1)
@@ -840,6 +1013,11 @@ function M.open()
       dim_quotes(buf)
     end,
   })
+  vim.api.nvim_create_autocmd(
+    { "TextChanged", "TextChangedI" },
+    { group = group, buffer = buf, callback = schedule_save }
+  )
+  vim.api.nvim_create_autocmd({ "InsertLeave", "FocusLost", "VimLeavePre" }, { group = group, callback = save_draft })
   -- :q in the prompt closes the pane, not just the prompt window.
   vim.api.nvim_create_autocmd("QuitPre", {
     group = group,
