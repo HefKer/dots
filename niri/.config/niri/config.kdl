@@ -388,10 +388,6 @@ binds {
     Mod+Shift+BackSpace allow-when-locked=true hotkey-overlay-title="Restart Kanata" { spawn "kanata-restart"; }
     // Lists every open window in fuzzel and focuses the pick (from the nixos flake's window-pick).
     Mod+P hotkey-overlay-title="Pick a Window" { spawn "window-pick"; }
-    // Point niri's "Dynamic Cast Target" (pick it once in the screenshare dialog) at the right screen, at osu, or at nothing.
-    Mod+Alt+C hotkey-overlay-title="Cast the Right Screen" { spawn-sh "niri msg action set-dynamic-cast-monitor DP-3"; }
-    Mod+Alt+Shift+C hotkey-overlay-title="Cast osu" { spawn-sh r#"niri msg action set-dynamic-cast-window --id "$(niri msg --json windows | jq -r 'map(select(.app_id | test("^osu"; "i"))) | first | .id // empty')""#; }
-    Mod+Alt+X hotkey-overlay-title="Stop Casting a Target" { spawn-sh "niri msg action clear-dynamic-cast-target"; }
 
     // Kanata's Fn2 a/s/d send F13-F15, which xkb names XF86Tools/Launch5/Launch6. Plain: the focused
     // window's app (from the nixos flake's window-volume package). Shift + them = master volume, a shell bind,
