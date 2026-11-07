@@ -129,10 +129,11 @@ for the reasoning and the [glossary] for the terms.
 
 #### Bootstrapping a new machine
 
-This directory must exist at `~/dots` **before the first rebuild**. Syncthing
-is what puts it there. Nix cannot verify it: if it is missing, the rebuild
-succeeds anyway, every link dangles silently, and the applications fail
-obscurely (defaults, or errors reading their config) rather than loudly.
+Syncthing puts this directory at `~/dots`, and the NixOS config declares
+Syncthing, so it arrives **after** the first rebuild; the order is in the
+NixOS config's README. Nix cannot verify it: until it arrives, every link
+dangles silently, and the applications fail obscurely (defaults, or errors
+reading their config) rather than loudly.
 
 ### What's linked where
 
@@ -157,7 +158,6 @@ destroys a file-level link.
 
 #### Unlinked dirs
 
-- [`syncthing/`](syncthing/) — Shared `.stglobalignore` across all Syncthing folders/hosts. Not in the link set; placed by hand per Syncthing folder — see [`syncthing/README.md`](syncthing/README.md).
 - [`kanata/`](kanata/) — The [kanata](https://github.com/jtroo/kanata) keymap shared by every keyboard. Not in the link set: the NixOS config's kanata services read `keymap.kbd` straight from here through a read-only bind, and each instance's `defcfg` (devices, TCP port) is generated there and `include`s this file. Edit it, then press Fn2+`\` (`lrld`) to live-reload. `keymap-drawer.yaml` gives the keymap viewer (Mod+/) legends for the aliases its parser can't read; the viewer redraws on every save.
 - [`helium/`](helium/) — Browser extension settings (vimiumc), imported by hand in the browser rather than linked.
 - [`wallpapers/`](wallpapers/) — Wallpapers, stored as lossless JPEG XL in Git LFS (needs `git-lfs`; `.githooks/pre-push` uploads them). DMS points at them directly via its saved `wallpaperPath`, so nothing links them.
@@ -172,10 +172,11 @@ runtime lands here too. That is contained with ignore rules rather than by
 linking individual files:
 
 - **git** — `.gitignore`, so `git status` reports only what is authored here.
-- **Syncthing** — [`syncthing/.dotsignore`][dotsignore], so each host keeps
-  its own copy instead of receiving the other's.
+- **Syncthing** — the `dots` row in the NixOS config's
+  [`homes/modules/syncthing/table.nix`][syncthing-table], so each host keeps its
+  own copy instead of receiving the other's. A rule there takes a rebuild.
 
-[dotsignore]: syncthing/.dotsignore
+[syncthing-table]: https://github.com/HefKer/nixos-config/blob/main/homes/modules/syncthing/table.nix
 
 Both lists must stay in step. The load-bearing case is
 `niri/.config/niri/dms/outputs.kdl`: DMS regenerates it from the compositor's
