@@ -20,3 +20,28 @@ layout {
 
     default-column-width { proportion 1.0; }
 }
+
+// One screen, so the desktop's chat and web workspaces become config.kdl's numbered ones:
+// the terminal on 1, the browser on 10, chat on 9.
+spawn-at-startup "vesktop"
+spawn-at-startup "qutebrowser"
+spawn-at-startup "wezterm"
+
+// spotify | vesktop side by side on 9, wherever they're opened; Spotify isn't started, but
+// Mod+Alt+S opens it there.
+window-rule {
+    match app-id="^spotify$"
+    match app-id="^vesktop$"
+    open-on-workspace "9"
+    default-column-width { proportion 0.5; }
+}
+// Only the startup browser and terminal are placed; at-startup covers niri's first 60 s,
+// so later windows open where you are.
+window-rule {
+    match app-id="^org\\.qutebrowser\\.qutebrowser$" at-startup=true
+    open-on-workspace "10"
+}
+window-rule {
+    match app-id="^org\\.wezfurlong\\.wezterm$" at-startup=true
+    open-on-workspace "1"
+}
