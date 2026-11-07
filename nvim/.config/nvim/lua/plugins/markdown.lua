@@ -31,6 +31,64 @@ return {
     ft = { "markdown", "text", "gitcommit" },
     init = function()
       vim.g.bullets_set_mappings = 0 -- o and O stay plain new lines
+      -- bullets' renumbering always counts from 1, so a list starting at 12
+      -- became 1, 2, ... Renumber below instead, counting from the first item.
+      vim.g.bullets_renumber_on_change = 0
+
+      -- Renumber the numbered items at the cursor line's indent, from the list's
+      -- first number. Nested and wrapped lines (deeper indent) are passed over;
+      -- a blank line, a shallower one, or a non-numbered one at this indent ends
+      -- the list.
+      local function renumber()
+        local row = vim.fn.line(".")
+        local indent = vim.fn.indent(row)
+        local function item(lnum)
+          local line = vim.fn.getline(lnum)
+          if line:match("^%s*$") or vim.fn.indent(lnum) < indent then
+            return false
+          end
+          if vim.fn.indent(lnum) > indent then
+            return nil -- nested or wrapped: skip, keep going
+          end
+          local lead, num, rest = line:match("^(%s*)(%d+)([.)]%s.*)$")
+          return num and { lead = lead, num = tonumber(num), rest = rest } or false
+        end
+        if not item(row) then
+          return
+        end
+        local first, last = row, row
+        for lnum = row - 1, 1, -1 do
+          local it = item(lnum)
+          if it == false then
+            break
+          elseif it then
+            first = lnum
+          end
+        end
+        for lnum = row + 1, vim.fn.line("$") do
+          local it = item(lnum)
+          if it == false then
+            break
+          elseif it then
+            last = lnum
+          end
+        end
+        local n = item(first).num
+        for lnum = first, last do
+          local it = item(lnum)
+          if it then
+            local new = it.lead .. n .. it.rest
+            if new ~= vim.fn.getline(lnum) then
+              vim.fn.setline(lnum, new)
+            end
+            n = n + 1
+          end
+        end
+        -- bullets left the cursor at the end of the new item; keep it there if
+        -- the number grew (9 -> 10).
+        vim.api.nvim_win_set_cursor(0, { row, #vim.api.nvim_get_current_line() })
+      end
+
       -- Off a list item, bullets' own <CR> queues the newline behind any keys
       -- already typed, so a macro or . repeat puts it after the text that
       -- followed. Hand it only an item with the cursor at the end of the line.
@@ -38,10 +96,11 @@ return {
         group = vim.api.nvim_create_augroup("bullets_cr", { clear = true }),
         pattern = { "markdown", "text", "gitcommit" },
         callback = function(ev)
+          vim.keymap.set("i", "<Plug>(renumber-list)", renumber, { buffer = ev.buf })
           vim.keymap.set("i", "<CR>", function()
             local line = vim.api.nvim_get_current_line()
             local item = line:match("^%s*[-*+]%s") or line:match("^%s*%d+[.)]%s") or line:match("^%s*%a[.)]%s")
-            return (item and vim.fn.col(".") > #line) and "<Plug>(bullets-newline)" or "<CR>"
+            return (item and vim.fn.col(".") > #line) and "<Plug>(bullets-newline)<Plug>(renumber-list)" or "<CR>"
           end, { buffer = ev.buf, expr = true, remap = true, desc = "Continue List" })
         end,
       })
