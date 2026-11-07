@@ -212,19 +212,13 @@ local function viewer_valid()
 end
 
 -- What Claude's own statusline would show, hidden under the zoomed pane: its state
--- from herdr, and context and 5h usage from the render ~/.claude/statusline.sh shares.
+-- from herdr, and context from the render ~/.claude/statusline.sh shares. Usage
+-- limits are left to herdr's tab bar.
 local status_hl =
   { working = "DiagnosticWarn", blocked = "DiagnosticError", idle = "DiagnosticOk", done = "DiagnosticOk" }
 
 local function pct_hl(pct)
   return pct >= 80 and "DiagnosticError" or pct >= 50 and "DiagnosticWarn" or "Comment"
-end
-
--- Time until a rate limit resets, as "2d3h", "2h05m" or "47m", like the statusline's.
-local function until_reset(at)
-  local left = math.max(0, (tonumber(at) or 0) - os.time())
-  local d, h, m = math.floor(left / 86400), math.floor(left % 86400 / 3600), math.floor(left % 3600 / 60)
-  return d > 0 and ("%dd%dh"):format(d, h) or h > 0 and ("%dh%02dm"):format(h, m) or ("%dm"):format(m)
 end
 
 local function status_line()
@@ -242,15 +236,6 @@ local function status_line()
   if window.used_percentage and window.total_input_tokens then
     local tokens = window.total_input_tokens + (window.total_output_tokens or 0)
     table.insert(parts, ("%%#%s#%.1fk ctx"):format(pct_hl(window.used_percentage), tokens / 1000))
-  end
-  -- Coloured by use, counting down to the reset. resets_at is epoch seconds; an
-  -- ISO time from an older Claude just leaves the countdown out.
-  for _, limit in ipairs({ { "five_hour", "5h" }, { "seven_day", "wk" } }) do
-    local rl = vim.tbl_get(info, "rate_limits", limit[1]) or {}
-    if rl.used_percentage then
-      local reset = tonumber(rl.resets_at) and (" " .. until_reset(rl.resets_at)) or ""
-      table.insert(parts, ("%%#%s#%s %d%%%%%s"):format(pct_hl(rl.used_percentage), limit[2], rl.used_percentage, reset))
-    end
   end
   return #parts > 0 and ("%#Comment# · " .. table.concat(parts, "%#Comment# · ")) or ""
 end
@@ -280,14 +265,10 @@ local function set_winbars()
     if state.view ~= "tasks" and tasks then
       title = title .. " · " .. tasks
     end
-    vim.wo[state.viewer.win].winbar = "%#WinBar# 󰚩 "
-      .. title
-      .. status_line()
-      .. "%=%#Comment#[r ]r older/newer · <CR> quote · <leader>ak tasks "
+    vim.wo[state.viewer.win].winbar = "%#WinBar# 󰚩 " .. title .. status_line() .. "%=%#Comment#<leader>ak tasks "
   end
   if state.prompt.win and vim.api.nvim_win_is_valid(state.prompt.win) then
-    vim.wo[state.prompt.win].winbar =
-      "%#WinBar# 󰏫 Prompt%=%#Comment#M-j/k M-u/d scroll reply · <leader>ah history · <leader>at template · <leader>as send "
+    vim.wo[state.prompt.win].winbar = "%#WinBar# 󰏫 Prompt%=%#Comment#<leader>ah history · <leader>at template "
   end
 end
 
