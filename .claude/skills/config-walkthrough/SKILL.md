@@ -33,11 +33,11 @@ Done when the user has rebuilt and the config path resolves to this repo.
 Group the options by what the user would notice, biggest change first: colours and borders, font and sizing, contents, position and matching, then keybindings and niche settings. For each round:
 
 1. Show a table of the round's options: name, current value, what it changes.
-2. Give your recommendation with its reason, and flag the options that affect another consumer or that are worth trying alone.
-3. Apply what the user picked and validate. For each option with a visible effect, shoot `<option>-1-before.png` just before its edit and `<option>-2-after.png` just after into `.scratch/<program>/`, with `scripts/claude-shot`. Shoot on demo content that exercises the option, such as a throwaway repo in the scratchpad, since the user's own data may not show it. Look at each image before naming it, since a blank window or wrong directory only shows there. Options with no visible effect get no screenshot. Then name the pairs to compare and what to open to try it.
+2. Give your recommendation with its reason, and flag the options that affect another consumer or that are worth trying alone. Prototype each recommended option with a visible effect before the user picks, since a look is judged by seeing it: shoot it (below), apply and validate, shoot again. Present the recommendation with its pairs and what to open to try it.
+3. Apply the rest of what the user picked, shooting each visible one the same way, and restore the default on prototypes they turned down.
 4. Take their reaction and iterate until they move on.
 
-The first round can be applied as a proposal, since a look is judged by seeing it. Later rounds wait for the user's picks.
+**Shooting**: `<option>-1-before.png` just before the edit and `<option>-2-after.png` just after, into `.scratch/<program>/`, with `scripts/claude-shot`. Shoot on demo content that exercises the option, such as a throwaway repo in the scratchpad, since the user's own data may not show it. Look at each image before naming it: a blank window or wrong directory only shows there, and an after identical to its before means something else draws that element (a plugin with its own border, say) and the edit belongs there. Options with no visible effect get no screenshot.
 
 Edit by uncommenting and changing the template's line in place, so the file keeps its shape. To undo a change, restore the commented default. Leave a note on a line the user wants to revisit, in the template's `# a|b|c` style.
 
