@@ -54,6 +54,13 @@ Commands are autoloaded from [`functions/`](.config/fish/functions/), one per fi
   moves the sessions along, so `--resume` still finds them.
   [`cmv.fish`](.config/fish/functions/cmv.fish) ·
   [4b62e61](https://github.com/HefKer/dots/commit/4b62e61)
+- <a id="csend"></a>**`csend`: move a Claude session to your other account.**
+  Sessions are files under each account's config dir, and nothing server-side
+  ties one to an account, so `csend <id>` moves them between `~/.claude` and
+  `~/.claude-hulio` and `-r` resumes it there. `claude-hulio` (`CH`) starts the
+  second account.
+  [`csend.fish`](.config/fish/functions/csend.fish),
+  [`claude-hulio.fish`](.config/fish/functions/claude-hulio.fish)
 - <a id="yt"></a>**`yt_summarize` / `yt_chat`: talk about a YouTube video.**
   These fetch a video's transcript and hand it to Claude Code.
   [`yt_summarize.fish`](.config/fish/functions/yt_summarize.fish),
