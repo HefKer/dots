@@ -46,3 +46,6 @@ quickmarks
 !/.claude/skills/
 /qutebrowser/.local/share/qutebrowser/userscripts/qutewarden
 /qutebrowser/.local/share/qutebrowser/userscripts/aniqute
+
+# proxy — the direct-sites list names banks, school and other sites I use
+/proxy/direct.txt
