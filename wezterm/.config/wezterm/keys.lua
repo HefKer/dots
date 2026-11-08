@@ -390,6 +390,12 @@ local keys = {
 		mods = "CTRL|SHIFT",
 		action = act.DisableDefaultAssignment,
 	},
+	-- herdr's copy_mode; herdr copies its own mouse selections.
+	{
+		key = "c",
+		mods = "CTRL|SHIFT",
+		action = act.DisableDefaultAssignment,
+	},
 }
 
 -- herdr's switch_workspace takes ctrl+shift+1..9. WezTerm's ActivateTab
