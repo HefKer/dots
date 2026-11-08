@@ -11,6 +11,11 @@ It's where my Claude Code sessions, shells and editors live. Only
   It opens a zoomed nvim buffer holding Claude's unsent prompt, and
   sends it back when you're done. See the
   [nvim README](../nvim/README.md#prompt-pane) for the editor side.
+- <a id="account-switch"></a>**`prefix+u`: move the focused Claude session to
+  your other account.** It exits an idle Claude and resumes the same session in
+  the same pane under the other account, through the fish
+  [`csend`](../fish/README.md#csend). For when one account's weekly limit runs out.
+  [`scripts/herdr-claude-account`](../scripts/herdr-claude-account)
 - <a id="review"></a>**`prefix+d`: review the agent's diff and comment back.**
   This opens [herdr-hunk-diff](https://github.com/jhochenbaum/herdr-hunk-diff)'s
   review pane, which refreshes as files change. `prefix+shift+s` sends the inline

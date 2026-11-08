@@ -1,0 +1,43 @@
+#!/bin/sh
+# Move the focused pane's Claude session to the other account (main <-> hulio) and
+# resume it there, in the same pane: exit Claude, then csend -r at the shell prompt.
+# Run by herdr's prefix+u. An unsent prompt in the box is cleared, not carried over.
+pane="$HERDR_ACTIVE_PANE_ID"
+
+fail() {
+  herdr notification show "Account switch" --body "$1" >/dev/null
+  exit 1
+}
+
+info=$(herdr pane get "$pane" | jq -c '.result.pane')
+[ "$(printf '%s' "$info" | jq -r .agent)" = claude ] || fail "No Claude in this pane"
+case $(printf '%s' "$info" | jq -r .agent_status) in
+  idle | done) ;;
+  *) fail "Claude is busy or waiting on you; switch once it's idle" ;;
+esac
+
+pid=$(herdr pane process-info --pane "$pane" \
+  | jq -r '[.result.process_info.foreground_processes[] | select(.name | test("claude"))][0].pid // empty')
+[ -n "$pid" ] || fail "Can't find Claude's process"
+cfg=$(tr '\0' '\n' <"/proc/$pid/environ" | sed -n 's/^CLAUDE_CONFIG_DIR=//p')
+case ${cfg%/} in
+  "$HOME/.claude-hulio") to=main ;;
+  *) to=hulio ;;
+esac
+# Claude's own record for this pid names the session as soon as it starts; herdr's can lag.
+id=$(jq -r '.sessionId // empty' "${cfg:-$HOME/.claude}/sessions/$pid.json" 2>/dev/null)
+[ -n "$id" ] || id=$(printf '%s' "$info" | jq -r '.agent_session.value // empty')
+[ -n "$id" ] || fail "Can't tell which session this is"
+
+# Ctrl+C clears any draft; on an empty box it only arms a second press, which /exit makes moot.
+herdr pane send-keys "$pane" ctrl+c >/dev/null
+herdr pane send-text "$pane" /exit >/dev/null
+herdr pane send-keys "$pane" enter >/dev/null
+i=0
+while kill -0 "$pid" 2>/dev/null; do
+  i=$((i + 1))
+  [ "$i" -le 100 ] || fail "Claude didn't exit within 10s; session left on its account"
+  sleep 0.1
+done
+
+herdr pane run "$pane" "csend -r $id $to" >/dev/null

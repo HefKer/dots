@@ -59,6 +59,13 @@ key = "prefix+a"
 type = "shell"
 command = "$HOME/dots/scripts/claude-prompt"
 
+# Move the focused Claude session to the other account (main <-> hulio) and resume it.
+[[keys.command]]
+key = "prefix+u"
+type = "shell"
+command = "$HOME/dots/scripts/herdr-claude-account"
+description = "claude session to the other account"
+
 # next_agent/previous_agent/focus_agent, but focusing the agent's prompt pane when its
 # tab has one; prefix+alt+a/ctrl+alt+a walk agents waiting on you: blocked, done, idle, newest first.
 [[keys.command]]
