@@ -1,11 +1,17 @@
 #!/bin/sh
 # Claude's 5-hour and weekly usage with the time to each reset, e.g.
 # "5h 23% 2h12m · wk 51% 3d4h", for herdr's tab bar (ui.tab_bar_right). Read from the
-# newest render ~/.claude/statusline.sh shared: the limits are account-wide, so any
-# session's will do. Prints nothing, which hides the entry, before the first render.
-latest=$(ls -t "${XDG_RUNTIME_DIR:-/tmp}"/claude-statusline/*.json 2>/dev/null | head -n 1)
-[ -n "$latest" ] || exit 0
-jq -r --argjson now "$(date +%s)" '
+# newest render ~/.claude/statusline.sh shared for each account: the limits are
+# account-wide, so any of its sessions will do. The hulio account, when it has a render,
+# follows as "hulio 5h … · wk …". Prints nothing, which hides the entry, before the
+# first render. A render without an account tag predates them and is main's.
+newest() {
+  for f in $(ls -t "${XDG_RUNTIME_DIR:-/tmp}"/claude-statusline/*.json 2>/dev/null); do
+    [ "$(jq -r '.account // "main"' "$f" 2>/dev/null)" = "$1" ] && { echo "$f"; return; }
+  done
+}
+limits() {
+  jq -r --argjson now "$(date +%s)" '
   def left($at):
     ([$at - $now, 0] | max) as $s
     | ($s / 86400 | floor) as $d | ($s % 86400 / 3600 | floor) as $h | ($s % 3600 / 60 | floor) as $m
@@ -17,4 +23,12 @@ jq -r --argjson now "$(date +%s)" '
       elif .resets_at <= $now then "\($name) reset"
       else "\($name) \(.used_percentage | floor)% \(left(.resets_at))" end;
   [limit("5h"; "five_hour"), limit("wk"; "seven_day")] | select(length > 0) | join(" · ")
-' "$latest"
+' "$1"
+}
+main=$(newest main)
+hulio=$(newest hulio)
+out=${main:+$(limits "$main")}
+if [ -n "$hulio" ] && h=$(limits "$hulio") && [ -n "$h" ]; then
+  out="${out:+$out │ }hulio $h"
+fi
+printf '%s\n' "$out" | sed '/^$/d'

@@ -4,12 +4,18 @@
 
 INPUT=$(cat)
 
-# Share this render with the prompt pane (~/dots nvim config/prompt.lua), which sits
-# zoomed over Claude and so hides this statusline. Keyed by session, as the pane is.
+# The render names no account, but this script inherits the session's CLAUDE_CONFIG_DIR.
+ACCOUNT=main
+[ "${CLAUDE_CONFIG_DIR%/}" = "$HOME/.claude-hulio" ] && ACCOUNT=hulio
+
+# Share this render, tagged with the account, with the prompt pane (~/dots nvim
+# config/prompt.lua), which sits zoomed over Claude and so hides this statusline, and
+# with scripts/claude-limits. Keyed by session, as the pane is.
 SID=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
 if [ -n "$SID" ]; then
   SHARE="${XDG_RUNTIME_DIR:-/tmp}/claude-statusline"
-  mkdir -p "$SHARE" && printf '%s' "$INPUT" >"$SHARE/$SID.json"
+  mkdir -p "$SHARE" && printf '%s' "$INPUT" | jq -c --arg a "$ACCOUNT" '. + {account: $a}' >"$SHARE/$SID.json.tmp" \
+    && mv -f "$SHARE/$SID.json.tmp" "$SHARE/$SID.json"
 fi
 CAVEMAN_SCRIPT="$HOME/.claude/plugins/cache/caveman/caveman/84cc3c14fa1e/hooks/caveman-statusline.sh"
 
@@ -32,7 +38,7 @@ fi
 # The statusline JSON names no account, but this script inherits the session's
 # CLAUDE_CONFIG_DIR. hulio is someone else's quota, so it leads every pane.
 ACCOUNT_BADGE=""
-[ "${CLAUDE_CONFIG_DIR%/}" = "$HOME/.claude-hulio" ] && ACCOUNT_BADGE="${EF_PURPLE}hulio${EF_RESET}"
+[ "$ACCOUNT" = hulio ] && ACCOUNT_BADGE="${EF_PURPLE}hulio${EF_RESET}"
 
 MODE=$(printf '%s' "$INPUT" | jq -r '.vim.mode // .editor.mode // empty' 2>/dev/null)
 

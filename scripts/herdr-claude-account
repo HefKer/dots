@@ -10,7 +10,14 @@ fail() {
 }
 
 info=$(herdr pane get "$pane" | jq -c '.result.pane')
-[ "$(printf '%s' "$info" | jq -r .agent)" = claude ] || fail "No Claude in this pane"
+# From the prompt pane (scripts/claude-prompt), act on the Claude it sits over: the tab's only one.
+if [ "$(printf '%s' "$info" | jq -r .agent)" != claude ]; then
+  info=$(herdr pane list --workspace "$(printf '%s' "$info" | jq -r .workspace_id)" \
+    | jq -c --arg tab "$(printf '%s' "$info" | jq -r .tab_id)" \
+      '[.result.panes[] | select(.tab_id == $tab and .agent == "claude")] | if length == 1 then .[0] else empty end')
+  [ -n "$info" ] || fail "No single Claude in this tab"
+  pane=$(printf '%s' "$info" | jq -r .pane_id)
+fi
 case $(printf '%s' "$info" | jq -r .agent_status) in
   idle | done) ;;
   *) fail "Claude is busy or waiting on you; switch once it's idle" ;;

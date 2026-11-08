@@ -69,7 +69,8 @@ local function session_path(agent, err)
   if not session then
     return nil, err or "Claude has no session yet"
   end
-  local path = vim.fn.glob("~/.claude/projects/*/" .. session .. ".jsonl", false, true)[1]
+  -- ~/.claude* covers both accounts' config dirs, ~/.claude and ~/.claude-hulio.
+  local path = vim.fn.glob("~/.claude*/projects/*/" .. session .. ".jsonl", false, true)[1]
   return path, not path and "No transcript for this session yet" or nil
 end
 
@@ -262,6 +263,10 @@ end
 
 local function status_line()
   local parts = {}
+  -- The statusline's account badge is hidden under this pane too; hulio is someone else's quota.
+  if (state.statusline or {}).account == "hulio" then
+    table.insert(parts, "%#DiagnosticHint#hulio")
+  end
   if state.status then
     local activity = state.status == "working" and state.activity
     table.insert(
@@ -821,7 +826,7 @@ local function pick_draft()
     if path ~= state.draft then
       local text = table.concat(vim.fn.readfile(path), "\n")
       local key = vim.fn.fnamemodify(path, ":t:r")
-      local project = vim.fn.glob("~/.claude/projects/*/" .. key .. ".jsonl", false, true)[1]
+      local project = vim.fn.glob("~/.claude*/projects/*/" .. key .. ".jsonl", false, true)[1]
       local time = vim.fn.getftime(path)
       table.insert(items, {
         text = text,

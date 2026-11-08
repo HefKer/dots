@@ -33,7 +33,7 @@ end
 -- The newest listing in the project's transcripts, since a session only writes its own
 -- on its first prompt, which is when a skill is most likely to be wanted.
 local function listed_skills(cwd)
-  local dir = "~/.claude/projects/" .. cwd:gsub("%W", "-")
+  local dir = "~/.claude*/projects/" .. cwd:gsub("%W", "-")
   local paths = vim.fn.glob(dir .. "/*.jsonl", false, true)
   table.sort(paths, function(a, b)
     return vim.fn.getftime(a) > vim.fn.getftime(b)

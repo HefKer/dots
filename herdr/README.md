@@ -15,6 +15,8 @@ It's where my Claude Code sessions, shells and editors live. Only
   your other account.** It exits an idle Claude and resumes the same session in
   the same pane under the other account, through the fish
   [`csend`](../fish/README.md#csend). For when one account's weekly limit runs out.
+  It works from the [prompt pane](#prompt-pane) too, which keeps its draft, and
+  shows a `hulio` badge in place of the statusline it covers.
   [`scripts/herdr-claude-account`](../scripts/herdr-claude-account)
 - <a id="review"></a>**`prefix+d`: review the agent's diff and comment back.**
   This opens [herdr-hunk-diff](https://github.com/jhochenbaum/herdr-hunk-diff)'s
@@ -53,6 +55,7 @@ It's where my Claude Code sessions, shells and editors live. Only
 - <a id="limits"></a>**Claude's usage limits in the tab bar.** The right of the
   tab row shows `5h 29% 3h17m · wk 52% 3d15h`: usage and time to reset of the
   account-wide limits, read from the newest render the Claude statusline shares.
+  With a second account in use, its limits follow as `│ hulio 5h 3% · wk 1%`.
   [`scripts/claude-limits`](../scripts/claude-limits)
 
 The prefix is `Ctrl+Space`.
