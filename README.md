@@ -84,6 +84,7 @@ stealing list][nixos-worth-stealing].
 | [vesktop](vesktop/) | Discord client: Vesktop and Vencord settings and Quick CSS; the theme comes from DankMaterialShell | [README](vesktop/README.md) |
 | [xdg](xdg/) | Default apps for file types and link schemes | [README](xdg/README.md) |
 | [xdg-desktop-portal-termfilechooser](xdg-desktop-portal-termfilechooser/) | File picker portal: apps that use it get yazi in WezTerm | |
+| [claude](claude/) | Claude Code: global `CLAUDE.md`, keybindings, statusline, hooks and the launch guard; `settings.json` stays in `~/.claude`, since Claude Code rewrites it | |
 | [scripts](scripts/) | Helpers the configs call (prompt pane, qutebrowser sandbox, unfocused screenshots) | |
 
 Each package mirrors where its files go under `$HOME`, so
