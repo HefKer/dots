@@ -896,7 +896,11 @@ end
 -- Sending
 
 local function send()
-  local text = vim.trim(table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), "\n"))
+  local buf = state.prompt.buf
+  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    return
+  end
+  local text = vim.trim(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n"))
   if text == "" then
     return
   end
@@ -921,7 +925,7 @@ local function send()
     return notify_error(err)
   end
   record(text_sent)
-  vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
   save_draft()
   -- The session may have changed since open (a restarted Claude); follow it.
   attach()
@@ -964,6 +968,17 @@ local function open_viewer(prompt_win)
   end, "Newer Reply")
   map("n", "R", attach, "Reload Reply")
   map("n", "<leader>ak", toggle_tasks, "Claude's Tasks")
+  map("n", "<leader>as", send, "Send Prompt to Claude")
+  -- The reply can't be edited, so insert keys move to the prompt and run there.
+  for _, key in ipairs({ "i", "a", "I", "A", "o", "O" }) do
+    map("n", key, function()
+      local win = state.prompt.win
+      if win and vim.api.nvim_win_is_valid(win) then
+        vim.api.nvim_set_current_win(win)
+        vim.api.nvim_feedkeys(key, "n", false)
+      end
+    end, "Write in Prompt")
+  end
 end
 
 -- Runs in the .md file scripts/claude-prompt opens, not an empty buffer: a file argument
