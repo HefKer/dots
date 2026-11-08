@@ -395,6 +395,10 @@ binds {
     // Searches ~/memes and copies the pick; the second saves the copied link (from the nixos flake's memes package).
     Mod+G hotkey-overlay-title="Pick a Meme" { spawn "meme-pick"; }
     Mod+Shift+G hotkey-overlay-title="Save the Copied Meme" { spawn "meme-add"; }
+    // Plays a pick from ~/memes/sounds into the "Soundboard mic" and to you; saves the copied link's audio; cuts it off.
+    Mod+Ctrl+G hotkey-overlay-title="Play a Sound" { spawn "sound-pick"; }
+    Mod+Ctrl+Shift+G hotkey-overlay-title="Save the Copied Sound" { spawn "sound-add"; }
+    Mod+Ctrl+X hotkey-overlay-title="Stop the Sound" { spawn "sound-stop"; }
 
     // Kanata's Fn2 a/s/d send F13-F15, which xkb names XF86Tools/Launch5/Launch6. Plain: the focused
     // window's app (from the nixos flake's window-volume package). Shift + them = master volume, a shell bind,
