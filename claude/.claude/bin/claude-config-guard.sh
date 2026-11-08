@@ -179,6 +179,21 @@ scrub_org() {
   log "org-name scrub failed; config left untouched"
 }
 
+# Claude keeps trust for $HOME to the session ("home trust is session-only") and never
+# saves it, but it does honor the flag when it's already set, so set it on each launch.
+trust_home() {
+  local tmp
+  jq -e --arg h "$HOME" '.projects[$h].hasTrustDialogAccepted == true' "$CONFIG" >/dev/null 2>&1 && return 0
+  [ "$DRY_RUN" = 1 ] && { log "would trust $HOME"; return 0; }
+  tmp=$(mktemp "$CONFIG.trust.XXXXXX") || return 1
+  if jq --arg h "$HOME" '.projects[$h].hasTrustDialogAccepted = true' "$CONFIG" >"$tmp" \
+     && is_good "$tmp" && chmod 644 "$tmp" && mv -f "$tmp" "$CONFIG"; then
+    return 0
+  fi
+  rm -f "$tmp"
+  log "home trust failed; config left untouched"
+}
+
 prune_corrupt() {
   [ "$DRY_RUN" = 1 ] && return 0
   ls -t "$CONFIG".corrupt.* 2>/dev/null \
@@ -189,6 +204,7 @@ main() {
   is_good "$CONFIG" || restore
   is_good "$CONFIG" && merge_projects
   scrub_org
+  trust_home
   prune_corrupt
 }
 

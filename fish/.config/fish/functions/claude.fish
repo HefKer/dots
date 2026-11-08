@@ -15,7 +15,8 @@ function claude --description 'claude-code, behind the launch guard, with the hu
     # truncate-then-write, so a batch of simultaneous launches (herdr restoring
     # panes) can leave it empty -- losing project permissions, trust, and MCP
     # config. The guard validates it, restores from the newest good backup if it
-    # was wiped, scrubs the email out of the welcome-box org name, and serialises
+    # was wiped, scrubs the email out of the welcome-box org name, marks $HOME
+    # trusted (Claude never saves that itself), and serialises
     # all of that under a lock. It runs before the CLI reads the file, which is
     # the only point where no session is holding it. It inherits
     # CLAUDE_CONFIG_DIR, so it can tell which account's .claude.json to guard.
