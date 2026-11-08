@@ -13,6 +13,10 @@ function secret --description "Edit or set a sops secret in ~/nixos/<worktree>/s
         echo "  secret -w proton-torrent ...  # ~/nixos/proton-torrent instead of main"
         return 1
     end
+    # the user's age key lives in Bitwarden (~/nixos/main/README.md), fetched per call
+    if not set -q SOPS_AGE_KEY; and not set -q SOPS_AGE_KEY_FILE; and not set -q SOPS_AGE_KEY_CMD
+        set -fx SOPS_AGE_KEY_CMD "rbw get sops-age-key"
+    end
     set -l file $dir/$argv[1].yaml
     set -l idx "[\"$argv[2]\"]"
     if test (count $argv) -eq 1
