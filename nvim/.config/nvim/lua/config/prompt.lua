@@ -27,7 +27,13 @@ local state = {
   activity = nil, -- the tool call Claude made last, while a turn runs
   watcher = nil,
   timer = nil,
+  unseen = false, -- a reply arrived while a file covered the viewer
 }
+
+-- The viewer window's look while it shows the reply; a file shown there gets the
+-- global values back. Set with vim.wo[win][0], like :setlocal, so other windows keep them.
+local viewer_opts =
+  { number = false, relativenumber = false, signcolumn = "no", spell = false, wrap = true, linebreak = true }
 
 -- herdr prints errors as JSON on stderr; fall back to the raw text for anything else.
 local function herdr_error(result)
@@ -247,8 +253,10 @@ end
 ------------------------------------------------------------------------------
 -- Viewer
 
+-- Whether the reply is on screen: a file opened in the pane can cover it.
 local function viewer_valid()
-  return state.viewer.win and vim.api.nvim_win_is_valid(state.viewer.win)
+  local win = state.viewer.win
+  return win and vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == state.viewer.buf
 end
 
 -- What Claude's own statusline would show, hidden under the zoomed pane: its state
@@ -311,10 +319,10 @@ local function set_winbars()
     if state.view ~= "tasks" and tasks then
       title = title .. " · " .. tasks
     end
-    vim.wo[state.viewer.win].winbar = "%#WinBar# 󰚩 " .. title .. status_line() .. "%=%#Comment#<leader>ak tasks "
+    vim.wo[state.viewer.win][0].winbar = "%#WinBar# 󰚩 " .. title .. status_line() .. "%=%#Comment#<leader>ak tasks "
   end
   if state.prompt.win and vim.api.nvim_win_is_valid(state.prompt.win) then
-    vim.wo[state.prompt.win].winbar =
+    vim.wo[state.prompt.win][0].winbar =
       "%#WinBar# 󰏫 Prompt%=%#Comment#<leader>ah history · <leader>at template · <leader>ad drafts "
   end
 end
@@ -396,6 +404,10 @@ end
 local function refresh()
   local following = state.index == #state.replies
   local new_reply, joined = read_new()
+  if (new_reply or joined) and not viewer_valid() then
+    state.unseen = true
+    vim.notify("Claude replied · <leader>ar to show", vim.log.levels.INFO, { title = "Claude prompt" })
+  end
   if state.view == "tasks" then
     if following then
       state.index = #state.replies
@@ -943,15 +955,8 @@ local function open_viewer(prompt_win)
   vim.b[buf].snacks_scroll = false
   local height = math.floor(vim.o.lines * 0.62)
   local win = vim.api.nvim_open_win(buf, false, { split = "above", win = prompt_win, height = height })
-  for opt, val in pairs({
-    number = false,
-    relativenumber = false,
-    signcolumn = "no",
-    spell = false,
-    wrap = true,
-    linebreak = true,
-  }) do
-    vim.wo[win][opt] = val
+  for opt, val in pairs(viewer_opts) do
+    vim.wo[win][0][opt] = val
   end
   state.viewer = { buf = buf, win = win }
 
@@ -979,6 +984,62 @@ local function open_viewer(prompt_win)
       end
     end, "Write in Prompt")
   end
+
+  -- Files opened in the pane go to this window, the bigger one. Pickers take the
+  -- window you used least recently, so from the reply a file lands in the prompt
+  -- window; move it up here and put the draft back.
+  vim.api.nvim_create_autocmd("BufWinEnter", {
+    group = vim.api.nvim_create_augroup("claude_prompt_viewer", { clear = true }),
+    callback = function(ev)
+      local pwin = state.prompt.win
+      if not vim.api.nvim_win_is_valid(win) then
+        return
+      end
+      if vim.api.nvim_win_get_buf(win) == ev.buf then
+        if ev.buf == buf then
+          for opt, val in pairs(viewer_opts) do
+            vim.wo[win][0][opt] = val
+          end
+          if state.unseen then
+            state.unseen = false
+            show(#state.replies)
+          else
+            redraw()
+            set_winbars()
+          end
+        else
+          for opt in pairs(viewer_opts) do
+            vim.wo[win][0][opt] = vim.go[opt]
+          end
+          vim.wo[win][0].winbar = "%#WinBar# 󰈙 %t%=%#Comment#<leader>ar reply "
+        end
+      elseif ev.buf ~= state.prompt.buf and pwin and vim.api.nvim_win_is_valid(pwin) then
+        if vim.api.nvim_win_get_buf(pwin) ~= ev.buf then
+          return
+        end
+        -- Scheduled so a picker's jump to the match has landed first.
+        vim.schedule(function()
+          if not (vim.api.nvim_win_is_valid(pwin) and vim.api.nvim_win_get_buf(pwin) == ev.buf) then
+            return
+          end
+          local cursor = vim.api.nvim_win_get_cursor(pwin)
+          vim.api.nvim_win_set_buf(pwin, state.prompt.buf)
+          vim.api.nvim_win_set_buf(win, ev.buf)
+          vim.api.nvim_set_current_win(win)
+          pcall(vim.api.nvim_win_set_cursor, win, cursor)
+          vim.cmd.normal({ "zz", bang = true })
+        end)
+      end
+    end,
+  })
+end
+
+-- Puts the reply back in the top window after a file covered it.
+local function show_reply()
+  local win = state.viewer.win
+  if win and vim.api.nvim_win_is_valid(win) and not viewer_valid() then
+    vim.api.nvim_win_set_buf(win, state.viewer.buf)
+  end
 end
 
 -- Runs in the .md file scripts/claude-prompt opens, not an empty buffer: a file argument
@@ -990,7 +1051,7 @@ function M.open()
   vim.bo[buf].swapfile = false
   vim.b[buf].claude_prompt = true -- turns on config.prompt_source
   state.prompt = { buf = buf, win = win }
-  vim.wo[win].winfixheight = true
+  vim.wo[win][0].winfixheight = true
   local agent = M.find_agent()
   state.session = agent and vim.tbl_get(agent, "agent_session", "value")
   restore_draft(buf)
@@ -999,6 +1060,8 @@ function M.open()
     vim.keymap.set(mode, lhs, rhs, { buffer = buf, desc = desc })
   end
   map("n", "<leader>as", send, "Send Prompt to Claude")
+  -- Global: it's needed from the file covering the reply. This nvim is the pane's alone.
+  vim.keymap.set("n", "<leader>ar", show_reply, { desc = "Show Claude's Reply" })
   map("n", "<leader>aq", quote_all, "Quote Claude's Whole Reply")
   map("n", "<leader>aQ", unquote, "Strip Quoted Lines")
   map("n", "<leader>ah", pick_history, "Sent Prompts")
@@ -1043,7 +1106,7 @@ function M.open()
     group = group,
     buffer = buf,
     callback = function()
-      if viewer_valid() then
+      if state.viewer.win and vim.api.nvim_win_is_valid(state.viewer.win) then
         vim.api.nvim_win_close(state.viewer.win, true)
       end
     end,
