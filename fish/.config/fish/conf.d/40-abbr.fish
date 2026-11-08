@@ -53,7 +53,12 @@ abbr -a st syncthing
 abbr -a H herdr
 abbr -a HH herdr --session
 abbr -a HSL herdr session list
-abbr -a HRS herdr --remote desktop --session
+# HRS attaches to the other machine's herdr: desktop <-> lenovo
+if test (prompt_hostname) = desktop
+    abbr -a HRS herdr --remote lenovo --session
+else
+    abbr -a HRS herdr --remote desktop --session
+end
 abbr -a Y y
 abbr -a cdi zi
 abbr -a py python
