@@ -1,4 +1,16 @@
 function claude --description 'claude-code, behind the launch guard, with the hulio account settings merged'
+    # herdr restores a pane by typing `claude --resume <id>` into a fresh shell, with no
+    # CLAUDE_CONFIG_DIR; a session filed under ~/.claude-hulio resumes as hulio, not "not found".
+    if not set -q CLAUDE_CONFIG_DIR
+        set -l id (string replace -rf -- '^--resume=' '' $argv)
+        set -l i (contains -i -- --resume $argv; or contains -i -- -r $argv)
+        test -n "$i"; and set -q argv[(math $i + 1)]; and set id $argv[(math $i + 1)]
+        if test -n "$id"
+            set -l hulio $HOME/.claude-hulio/projects/*/$id.jsonl
+            set -q hulio[1]; and set -fx CLAUDE_CONFIG_DIR $HOME/.claude-hulio
+        end
+    end
+
     # .claude.json is one global file that every session rewrites via
     # truncate-then-write, so a batch of simultaneous launches (herdr restoring
     # panes) can leave it empty -- losing project permissions, trust, and MCP
