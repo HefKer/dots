@@ -1,12 +1,30 @@
 #!/bin/sh
 # Move the focused pane's Claude session to the other account (main <-> hulio) and
 # resume it there, in the same pane: exit Claude, then csend -r at the shell prompt.
-# Run by herdr's prefix+u. An unsent prompt in the box is cleared, not carried over.
+# Run by herdr's prefix+u. An unsent prompt rides along through Claude's Ctrl+G
+# editor (scripts/claude-prompt-editor): pulled out before exit, put back after.
 pane="$HERDR_ACTIVE_PANE_ID"
+rt="${XDG_RUNTIME_DIR:-/tmp}"
+draft=""
 
 fail() {
+  [ -s "$draft" ] && set -- "$1; unsent prompt saved in $draft"
   herdr notification show "Account switch" --body "$1" >/dev/null
   exit 1
+}
+
+# Hand the editor a pending marker, press Ctrl+G, and wait for it to take the marker.
+# With resend, presses again every half second, for a Claude still loading.
+ctrl_g() { # marker, path, seconds, [resend]
+  echo "$2" >"$1"
+  n=0
+  while [ -e "$1" ] && [ "$n" -lt "$(($3 * 10))" ]; do
+    { [ "$n" -eq 0 ] || { [ -n "$4" ] && [ $((n % 5)) -eq 0 ]; }; } && herdr pane send-keys "$pane" ctrl+g >/dev/null
+    n=$((n + 1))
+    sleep 0.1
+  done
+  [ -e "$1" ] && { rm -f "$1"; return 1; }
+  return 0
 }
 
 info=$(herdr pane get "$pane" | jq -c '.result.pane')
@@ -36,7 +54,13 @@ id=$(jq -r '.sessionId // empty' "${cfg:-$HOME/.claude}/sessions/$pid.json" 2>/d
 [ -n "$id" ] || id=$(printf '%s' "$info" | jq -r '.agent_session.value // empty')
 [ -n "$id" ] || fail "Can't tell which session this is"
 
-# Ctrl+C clears any draft; on an empty box it only arms a second press, which /exit makes moot.
+# Without the editor (a Claude from before it was set up) Ctrl+G would open a real one.
+if tr '\0' '\n' <"/proc/$pid/environ" | grep -qx "VISUAL=$(dirname "$0")/claude-prompt-editor"; then
+  draft=$(mktemp "$rt/claude-account-draft.XXXXXX")
+  ctrl_g "$rt/claude-prompt-capture" "$draft" 1
+fi
+
+# Ctrl+C clears any draft left; on an empty box it only arms a second press, which /exit makes moot.
 herdr pane send-keys "$pane" ctrl+c >/dev/null
 herdr pane send-text "$pane" /exit >/dev/null
 herdr pane send-keys "$pane" enter >/dev/null
@@ -48,3 +72,18 @@ while kill -0 "$pid" 2>/dev/null; do
 done
 
 herdr pane run "$pane" "csend -r $id $to" >/dev/null
+
+if [ -s "$draft" ]; then
+  # Wait for the new Claude, then press Ctrl+G until its input box is up to take it.
+  i=0
+  until herdr pane process-info --pane "$pane" \
+    | jq -e --argjson old "$pid" '.result.process_info.foreground_processes[] | select((.name | test("claude")) and .pid != $old)' >/dev/null; do
+    i=$((i + 1))
+    [ "$i" -le 100 ] || fail "New Claude didn't start"
+    sleep 0.1
+  done
+  ctrl_g "$rt/claude-prompt-restore" "$draft" 15 resend || fail "Couldn't put the prompt back"
+  sleep 1
+  rm -f "$rt/claude-prompt-restore.done"
+fi
+[ -n "$draft" ] && rm -f "$draft"

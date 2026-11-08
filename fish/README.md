@@ -57,7 +57,8 @@ Commands are autoloaded from [`functions/`](.config/fish/functions/), one per fi
 - <a id="csend"></a>**`csend`: move a Claude session to your other account.**
   Sessions are files under each account's config dir, and nothing server-side
   ties one to an account, so `csend <id>` moves them between `~/.claude` and
-  `~/.claude-hulio` and `-r` resumes it there. `claude-hulio` (`CH`) starts the
+  `~/.claude-hulio` and `-r` resumes it there; `-r` on a session with nothing
+  sent yet, which has no transcript, starts a new one there. `claude-hulio` (`CH`) starts the
   second account.
   [`csend.fish`](.config/fish/functions/csend.fish),
   [`claude-hulio.fish`](.config/fish/functions/claude-hulio.fish)

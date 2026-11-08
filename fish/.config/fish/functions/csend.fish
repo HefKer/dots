@@ -20,6 +20,18 @@ function csend --description 'move a claude session to the other account (main <
         set -q found[1]; and set -a from $dirs[$i]
     end
     if not set -q from[1]
+        # Claude writes no transcript until the first message, so an empty session has
+        # nothing to move: with -r and an account, start afresh there instead.
+        if set -q _flag_resume; and contains -- "$argv[2]" main hulio
+            echo "csend: no transcript for $id (nothing sent yet); starting a new session on $argv[2]" >&2
+            if test $argv[2] = hulio
+                set -fx CLAUDE_CONFIG_DIR $HOME/.claude-hulio
+            else
+                set -fu CLAUDE_CONFIG_DIR
+            end
+            claude
+            return
+        end
         echo "csend: no session $id in either account" >&2
         return 1
     else if set -q from[2]

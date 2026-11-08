@@ -3,7 +3,10 @@
 # has a capture pending, moves the prompt out instead of editing it: Ctrl+G is the
 # only way to read Claude's input exactly, collapsed pastes included, and emptying
 # the file is what clears the input. Otherwise it's a normal editor launch.
+# A pending restore (scripts/herdr-claude-account) does the reverse: the file it
+# names becomes the input; for a second after, its retried Ctrl+Gs leave the input be.
 marker="${XDG_RUNTIME_DIR:-/tmp}/claude-prompt-capture"
+restore="${XDG_RUNTIME_DIR:-/tmp}/claude-prompt-restore"
 
 if [ -e "$marker" ]; then
   cp "$1" "$(cat "$marker")"
@@ -11,5 +14,11 @@ if [ -e "$marker" ]; then
   rm "$marker"
   exit 0
 fi
+if [ -e "$restore" ]; then
+  cp "$(cat "$restore")" "$1"
+  mv "$restore" "$restore.done"
+  exit 0
+fi
+[ -e "$restore.done" ] && exit 0
 
 exec "${EDITOR:-nvim}" "$@"

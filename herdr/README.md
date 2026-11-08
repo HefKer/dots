@@ -15,6 +15,8 @@ It's where my Claude Code sessions, shells and editors live. Only
   your other account.** It exits an idle Claude and resumes the same session in
   the same pane under the other account, through the fish
   [`csend`](../fish/README.md#csend). For when one account's weekly limit runs out.
+  An unsent prompt comes along, and a session with nothing sent yet starts afresh
+  on the other account.
   It works from the [prompt pane](#prompt-pane) too, which keeps its draft, and
   shows a `hulio` badge in place of the statusline it covers.
   [`scripts/herdr-claude-account`](../scripts/herdr-claude-account)
