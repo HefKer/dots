@@ -40,6 +40,10 @@ abbr -a CO 'claude --model opus'
 abbr -a CS 'claude --model sonnet'
 abbr -a CF 'claude --model fable'
 abbr -a CH claude-hulio
+abbr -a CHC claude-hulio -r
+abbr -a CHO 'claude-hulio --model opus'
+abbr -a CHS 'claude-hulio --model sonnet'
+abbr -a CHF 'claude-hulio --model fable'
 
 # CLI programs
 abbr -a n nvim
@@ -66,8 +70,8 @@ abbr -a ns 'nix search nixpkgs'
 
 # nix
 # nixos-rebuild picks the flake's attribute from the hostname; append #host to target another.
-abbr -a --command sudo nrs 'nixos-rebuild switch --flake /home/hefker/nixos/main'
-abbr -a --command sudo nrb 'nixos-rebuild boot --flake /home/hefker/nixos/main'
+abbr -a nrs 'sudo nixos-rebuild switch --flake /home/hefker/nixos/main'
+abbr -a nrb 'sudo nixos-rebuild boot --flake /home/hefker/nixos/main'
 abbr -a nsp nix shell
 abbr -a nfu nix flake update
 abbr -a nu nixup --all
