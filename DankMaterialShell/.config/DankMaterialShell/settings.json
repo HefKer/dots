@@ -204,6 +204,7 @@
           "enabled": true,
           "showMicPercent": true
         },
+        "lidAwake",
         {
           "id": "battery",
           "enabled": true
@@ -408,5 +409,9 @@
       "enabled": false
     }
   ],
-  "wellbeingAppLimits": {}
+  "wellbeingAppLimits": {},
+  "batteryNotifyLow": true,
+  "batteryLowThreshold": 20,
+  "batteryCriticalThreshold": 10,
+  "batteryNotifyCritical": true
 }

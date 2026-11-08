@@ -1,0 +1,11 @@
+{
+    "id": "lidAwake",
+    "name": "Lid Awake",
+    "description": "Bar toggle: keep the laptop on (reachable over ssh) with the lid shut. Hidden on machines without a battery.",
+    "version": "1.0.0",
+    "author": "hefker",
+    "type": "widget",
+    "icon": "coffee",
+    "component": "./LidAwakeWidget.qml",
+    "permissions": []
+}
