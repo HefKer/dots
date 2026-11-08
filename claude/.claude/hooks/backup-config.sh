@@ -11,11 +11,16 @@
 # so the rotation always holds recoverable state.
 #
 # Restore with:  cp ~/.claude.json.bak ~/.claude.json   (with no session running)
+#
+# Per account: a session with CLAUDE_CONFIG_DIR set (~/.claude-hulio) reads
+# $CLAUDE_CONFIG_DIR/.claude.json and runs this hook with the variable
+# inherited, so that file is the one backed up, into a .bak chain beside it.
 
 set -uo pipefail
 
-CONFIG="$HOME/.claude.json"
-BACKUP="$HOME/.claude.json.bak"
+CONFIG_DIR="${CLAUDE_CONFIG_DIR:+${CLAUDE_CONFIG_DIR%/}}"   # empty for the main account
+CONFIG="${CONFIG_DIR:-$HOME}/.claude.json"
+BACKUP="$CONFIG.bak"
 KEEP=20
 
 # Nothing to do if the config is missing or already empty.
@@ -45,7 +50,7 @@ done
 
 # Write to a temp file in the same directory, then rename, so the backup
 # itself is updated atomically and can never be observed half-written.
-TMP=$(mktemp "$HOME/.claude.json.bak.XXXXXX") || exit 0
+TMP=$(mktemp "$CONFIG.bak.XXXXXX") || exit 0
 if cp "$CONFIG" "$TMP" && mv -f "$TMP" "$BACKUP"; then
   exit 0
 fi

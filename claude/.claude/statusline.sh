@@ -1,5 +1,5 @@
 #!/bin/bash
-# Statusline wrapper: caveman badge + vim mode indicator
+# Statusline wrapper: account badge, caveman badge, vim mode indicator and more
 # Reads Claude Code statusline JSON on stdin.
 
 INPUT=$(cat)
@@ -20,6 +20,7 @@ EF_YELLOW=$'\033[38;2;219;188;127m'  # #dbbc7f
 EF_BLUE=$'\033[38;2;127;187;179m'    # #7fbbb3
 EF_AQUA=$'\033[38;2;131;192;146m'    # #83c092
 EF_GREY=$'\033[38;2;133;146;137m'    # #859289
+EF_PURPLE=$'\033[1;38;2;214;153;182m' # #d699b6, bold
 EF_RESET=$'\033[0m'
 
 CAVEMAN=""
@@ -27,6 +28,11 @@ if [ -x "$CAVEMAN_SCRIPT" ] || [ -f "$CAVEMAN_SCRIPT" ]; then
   CAVEMAN=$(printf '%s' "$INPUT" | bash "$CAVEMAN_SCRIPT" 2>/dev/null | sed $'s/\x1b\\[[0-9;]*m//g')
   [ -n "$CAVEMAN" ] && CAVEMAN="${EF_GREY}${CAVEMAN}${EF_RESET}"
 fi
+
+# The statusline JSON names no account, but this script inherits the session's
+# CLAUDE_CONFIG_DIR. hulio is someone else's quota, so it leads every pane.
+ACCOUNT_BADGE=""
+[ "${CLAUDE_CONFIG_DIR%/}" = "$HOME/.claude-hulio" ] && ACCOUNT_BADGE="${EF_PURPLE}hulio${EF_RESET}"
 
 MODE=$(printf '%s' "$INPUT" | jq -r '.vim.mode // .editor.mode // empty' 2>/dev/null)
 
@@ -131,7 +137,7 @@ if [ -n "$USED" ] && [ -n "$HERDR_PANE_ID" ]; then
 fi
 
 OUT=""
-for SEG in "$VIM_BADGE" "$DIR_BADGE" "$BRANCH_BADGE" "$CAVEMAN" "$CTX_BADGE" "$IDLE_BADGE" "$USAGE_BADGE"; do
+for SEG in "$ACCOUNT_BADGE" "$VIM_BADGE" "$DIR_BADGE" "$BRANCH_BADGE" "$CAVEMAN" "$CTX_BADGE" "$IDLE_BADGE" "$USAGE_BADGE"; do
   [ -z "$SEG" ] && continue
   [ -n "$OUT" ] && OUT="$OUT "
   OUT="$OUT$SEG"

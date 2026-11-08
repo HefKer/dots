@@ -99,7 +99,7 @@ restore() {
 merge_projects() {
   local work account missing allowed added_total=0 b n
   account=$(account_of "$CONFIG")
-  work=$(mktemp "$HOME/.claude.json.merge.XXXXXX") || return 1
+  work=$(mktemp "$CONFIG.merge.XXXXXX") || return 1
   cp "$CONFIG" "$work" || { rm -f "$work"; return 1; }
 
   # Shrink detection: the live file having fewer projects than a backup is the
@@ -133,7 +133,7 @@ merge_projects() {
     [ "$(jq 'length' <<<"$allowed")" -gt 0 ] || continue
 
     local tmp
-    tmp=$(mktemp "$HOME/.claude.json.merge.XXXXXX") || continue
+    tmp=$(mktemp "$CONFIG.merge.XXXXXX") || continue
     if jq --slurpfile b "$b" --argjson allow "$allowed" \
          '.projects += ($b[0].projects | with_entries(select(.key | IN($allow[]))))' \
          "$work" >"$tmp" && is_good "$tmp"; then
@@ -170,7 +170,7 @@ scrub_org() {
   local tmp
   jq -e '.oauthAccount.organizationName // "" | test("@")' "$CONFIG" >/dev/null 2>&1 || return 0
   [ "$DRY_RUN" = 1 ] && { log "would scrub email out of organizationName"; return 0; }
-  tmp=$(mktemp "$HOME/.claude.json.scrub.XXXXXX") || return 1
+  tmp=$(mktemp "$CONFIG.scrub.XXXXXX") || return 1
   if jq '.oauthAccount.organizationName = "Personal"' "$CONFIG" >"$tmp" \
      && is_good "$tmp" && chmod 644 "$tmp" && mv -f "$tmp" "$CONFIG"; then
     return 0
