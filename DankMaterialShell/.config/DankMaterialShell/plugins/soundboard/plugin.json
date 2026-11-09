@@ -1,0 +1,11 @@
+{
+    "id": "soundboard",
+    "name": "Soundboard",
+    "description": "Bar widget for sound-pick: sliders for the soundboard's volume in the call and in your ears, and a stop button.",
+    "version": "1.0.0",
+    "author": "hefker",
+    "type": "widget",
+    "icon": "campaign",
+    "component": "./SoundboardWidget.qml",
+    "permissions": []
+}
