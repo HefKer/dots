@@ -277,7 +277,7 @@
       "id": "dw_1792955260825_y6yccw6nj",
       "widgetType": "activateLinux",
       "name": "Activate Linux Watermark",
-      "enabled": false,
+      "enabled": true,
       "config": {
         "displayPreferences": [
           "all"
@@ -415,5 +415,7 @@
   "batteryNotifyLow": true,
   "batteryLowThreshold": 20,
   "batteryCriticalThreshold": 10,
-  "batteryNotifyCritical": true
+  "batteryNotifyCritical": true,
+  "notificationPopupBodyInvokesAction": true,
+  "notificationFocusedMonitor": true
 }
