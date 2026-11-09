@@ -5,7 +5,11 @@
 # config.set("content.webgl", False, "*")
 # config.set("content.canvas_reading", False)
 # config.set("content.geolocation", False) # Block sites from asking for location
-config.set("content.webrtc_ip_handling_policy", "default-public-interface-only")
+# Browse through local Privoxy (privoxy.service), which routes out via Proton VPN;
+# sites that break go in ~/dots/proxy/direct.txt to connect directly.
+c.content.proxy = "http://127.0.0.1:8118"
+# WebRTC over TCP via the proxy only, so UDP can't leak the real IP around it.
+config.set("content.webrtc_ip_handling_policy", "disable-non-proxied-udp")
 config.set("content.cookies.accept", "all")  # Options: all, no-3rdparty
 config.set("content.cookies.store", True)
 # config.set("content.javascript.enabled", False) # tsh keybind to toggle
