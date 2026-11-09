@@ -1,0 +1,40 @@
+Local changes to the quickCapture plugin (hthienloc/dms-quick-capture), a DMS
+plugin-manager clone that dots ignores, so an update or `dms plugins restore`
+overwrites them. Made against d9e4475 (plugins.lock.json). Re-apply after an update:
+
+  git -C ~/.config/DankMaterialShell/plugins/quickCapture apply ~/dots/DankMaterialShell/patches/quickCapture.patch
+
+- Merging audio tracks and converting to GIF run with no timeout, so long recordings finish.
+- Every saved recording is copied as a file:// link (text/uri-list), so Discord pastes the file and a GIF stays animated.
+
+diff --git a/components/recording/RecordingController.qml b/components/recording/RecordingController.qml
+index 0bd55b0..dbc68d1 100644
+--- a/components/recording/RecordingController.qml
++++ b/components/recording/RecordingController.qml
+@@ -395,7 +395,7 @@ Item {
+                 return;
+             }
+             Proc.runCommand("quickCapture.replaceMerged", ["mv", "-f", "--", tempOut, videoPath], finish);
+-        });
++        }, 0, Proc.noTimeout);
+     }
+ 
+     function finalizeRecording(videoPath, gifTarget) {
+@@ -419,7 +419,7 @@ Item {
+                     return;
+                 }
+                 root.extractThumbnailAndNotify(gifTarget, durationSecs);
+-            });
++            }, 0, Proc.noTimeout);
+             return;
+         }
+ 
+@@ -434,6 +434,8 @@ Item {
+     }
+ 
+     function extractThumbnailAndNotify(targetPath, durationSecs) {
++        // A file reference, not the bytes: Discord etc. paste it as the file, so a GIF stays animated.
++        Proc.runCommand("quickCapture.copyRecording", ["sh", "-c", 'printf "file://%s\\r\\n" "$1" | wl-copy --type text/uri-list', "_", targetPath]);
+         const thumbPath = "/tmp/dms_recording_thumb_" + Date.now() + ".png";
+         const ffmpegArgs = ["ffmpeg", "-y"];
+         if (durationSecs >= 1)

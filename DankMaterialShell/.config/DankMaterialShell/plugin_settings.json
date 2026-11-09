@@ -1,0 +1,22 @@
+{
+  "quickCapture": {
+    "enabled": true,
+    "doneAction": "clipboard",
+    "micDevice": "default_input",
+    "systemAudioDevice": "default_output",
+    "recordingBackend": "wf-recorder",
+    "recordingCodec": "auto",
+    "recordingQuality": "medium",
+    "recordingScreenTarget": "focused",
+    "recordingFormat": "gif"
+  },
+  "lidAwake": {
+    "enabled": true
+  },
+  "soundboard": {
+    "enabled": true
+  },
+  "micStatus": {
+    "enabled": true
+  }
+}

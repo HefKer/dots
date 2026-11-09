@@ -27,9 +27,7 @@ DankMaterialShell/.config/DankMaterialShell/plugins/*
 !DankMaterialShell/.config/DankMaterialShell/plugins/lidAwake/
 !DankMaterialShell/.config/DankMaterialShell/plugins/soundboard/
 !DankMaterialShell/.config/DankMaterialShell/plugins/micStatus/
-# DMS — input.kdl is regenerated from settings.json on start; plugin_settings
-# holds a recentEmojis list that changes on every use. Both still sync.
-DankMaterialShell/.config/DankMaterialShell/plugin_settings.json
+# DMS — input.kdl is regenerated from settings.json on start; it still syncs.
 niri/.config/niri/dms/input.kdl
 
 # qutebrowser
