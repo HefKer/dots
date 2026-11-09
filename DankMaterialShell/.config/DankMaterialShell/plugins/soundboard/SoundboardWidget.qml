@@ -49,20 +49,10 @@ PluginComponent {
     Component.onCompleted: readProc.running = true
 
     horizontalBarPill: Component {
-        Row {
-            spacing: Theme.spacingXS
-            DIcon {
-                name: "campaign"
-                color: Theme.surfaceText
-                size: root.iconSize
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            StyledText {
-                text: root.callVolume + "%"
-                color: Theme.surfaceText
-                font.pixelSize: Theme.fontSizeSmall
-                anchors.verticalCenter: parent.verticalCenter
-            }
+        DIcon {
+            name: "campaign"
+            color: Theme.surfaceText
+            size: root.iconSize
         }
     }
 
