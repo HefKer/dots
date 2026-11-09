@@ -204,6 +204,7 @@
           "enabled": true,
           "showMicPercent": true
         },
+        "micStatus",
         "soundboard",
         "lidAwake",
         {

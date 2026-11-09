@@ -1,0 +1,11 @@
+{
+    "id": "micStatus",
+    "name": "Mic Status",
+    "description": "Bar icon showing whether the default microphone is on or muted; click toggles mute.",
+    "version": "1.0.0",
+    "author": "hefker",
+    "type": "widget",
+    "icon": "mic",
+    "component": "./MicStatusWidget.qml",
+    "permissions": []
+}

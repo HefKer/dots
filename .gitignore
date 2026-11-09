@@ -23,9 +23,10 @@ fish/.config/fish/fish_variables
 DankMaterialShell/.config/DankMaterialShell/.firstlaunch
 DankMaterialShell/.config/DankMaterialShell/.changelog-*
 DankMaterialShell/.config/DankMaterialShell/plugins/*
-# lidAwake and soundboard are mine, not plugin-manager clones
+# lidAwake, soundboard and micStatus are mine, not plugin-manager clones
 !DankMaterialShell/.config/DankMaterialShell/plugins/lidAwake/
 !DankMaterialShell/.config/DankMaterialShell/plugins/soundboard/
+!DankMaterialShell/.config/DankMaterialShell/plugins/micStatus/
 # DMS — input.kdl is regenerated from settings.json on start; plugin_settings
 # holds a recentEmojis list that changes on every use. Both still sync.
 DankMaterialShell/.config/DankMaterialShell/plugin_settings.json
