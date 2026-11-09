@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+"""Reverse-search a hinted image with Google Lens in a new tab.
+
+Usage:
+    :hint images userscript reverse-img
+
+A userscript rather than a plain `open` bind because {hint-url} isn't
+URL-encoded: an image URL with its own query (preview.redd.it?...&s=...)
+would leak its params into Lens's.
+"""
+
+import os
+from urllib.parse import quote
+
+url = quote(os.environ["QUTE_URL"], safe="")
+with open(os.environ["QUTE_FIFO"], "w") as fifo:
+    fifo.write(f"open -t https://lens.google.com/uploadbyurl?url={url}\n")

@@ -20,6 +20,11 @@ config.bind("gD", "tab-clone")
 config.bind("gp", "open -p {url}")  # reopen the current page in a private window
 config.bind("gP", "cmd-set-text -s :open -p")  # prompt, then open in a private window
 config.bind(";r", "hint all right-click")
+# Recover removed/dead content: [w]ayback's latest snapshot of this page or a hinted
+# link; reverse-search a hinted image with Google [l]ens
+config.bind("gw", "open -t https://web.archive.org/web/{url}")
+config.bind(";w", "hint links run open -t https://web.archive.org/web/{hint-url}")
+config.bind(";l", "hint images userscript reverse-img")
 # --- testing ---
 # Hint outermost/overlay elements to escape stubborn dialogs
 c.hints.selectors["outer"] = [
