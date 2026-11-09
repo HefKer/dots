@@ -352,6 +352,12 @@ window-rule {
     clip-to-geometry true
 }
 
+// Discord (vesktop) asks for focus when its notification is clicked or invoked from the DMS
+// center, but without a valid activation serial, which niri ignores by default.
+debug {
+    honor-xdg-activation-with-invalid-serial
+}
+
 // DMS-generated look, after config.kdl's own layout block so DMS's settings win:
 // colours from the theme, border/ring width and corner radius from DMS's settings,
 // the alt-tab highlight's radius, and the overview's blurred wallpaper layer.
