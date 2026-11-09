@@ -166,6 +166,8 @@ config.bind(
 )
 config.bind("emdF", "hint --rapid links spawn /home/hefker/.local/bin/ytdl {hint-url}")
 config.bind("emdd", "spawn wezterm -e /home/hefker/.local/bin/ytdl {url}")
+# Save a hinted image as a [M]eme; the way in for Reddit, which refuses meme-add's logged-out download of a post page
+config.bind("eM", "hint images spawn --detach meme-add {hint-url}")
 # [d]ownloads — act on the most recent download of this session
 config.bind("edo", "download-open")
 config.bind("edz", "download-open zathura {}")
