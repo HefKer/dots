@@ -1,27 +1,30 @@
 binds {
-    Alt+Print hotkey-overlay-title="Screenshot a Window" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "window" "edit"; }
     Ctrl+Alt+BackSpace hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "focusOrToggle"; }
-    Ctrl+Print hotkey-overlay-title="Screenshot the Screen" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "output" "edit"; }
+    Ctrl+Print hotkey-overlay-title="Copy the Screen" { spawn "dms" "screenshot" "full" "--no-file"; }
+    Ctrl+Shift+Print hotkey-overlay-title="Record the Screen (GIF)" { spawn "dms" "ipc" "call" "quickCapture" "recordToggle" "screen"; }
     Ctrl+Shift+R hotkey-overlay-title="Rename Workspace" { spawn "dms" "ipc" "call" "workspace-rename" "open"; }
     Ctrl+XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "decrement" "3"; }
     Ctrl+XF86AudioRaiseVolume allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "increment" "3"; }
     Mod+Alt+L hotkey-overlay-title="Lock Screen" { spawn "dms" "ipc" "call" "lock" "lock"; }
     Mod+Alt+N hotkey-overlay-title="Do Not Disturb" { spawn "dms" "ipc" "call" "notifications" "toggleDoNotDisturb"; }
+    Mod+Alt+Print hotkey-overlay-title="Edit a Window" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "window" "edit"; }
     Mod+Comma hotkey-overlay-title="Settings" { spawn "dms" "ipc" "call" "settings" "focusOrToggle"; }
     Mod+Ctrl+N hotkey-overlay-title="Open last notification" { spawn "dms" "ipc" "call" "notifications" "invokeLast"; }
+    Mod+Ctrl+Print hotkey-overlay-title="Edit the Screen" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "full" "edit"; }
     Mod+M hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "focusOrToggle"; }
     Mod+N hotkey-overlay-title="Notification Center" { spawn "dms" "ipc" "call" "notifications" "toggle"; }
+    Mod+Print hotkey-overlay-title="Edit a Region" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
     Mod+Shift+N hotkey-overlay-title="Notepad" { spawn "dms" "ipc" "call" "notepad" "toggle"; }
     Mod+Shift+Slash hotkey-overlay-title="Keybind Cheatsheet" { spawn "dms" "ipc" "call" "keybinds" "toggle" "niri"; }
     Mod+Shift+W hotkey-overlay-title="Create window rule" { spawn "dms" "ipc" "call" "window-rules" "toggle"; }
     Mod+Space hotkey-overlay-title="Application Launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
     Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
     Mod+Y hotkey-overlay-title="Browse Wallpapers" { spawn "dms" "ipc" "call" "dankdash" "wallpaper"; }
-    Print hotkey-overlay-title="Screenshot a Region" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
+    Print hotkey-overlay-title="Copy a Region" { spawn "dms" "screenshot" "region" "--no-file" "--no-confirm"; }
     Shift+Print hotkey-overlay-title="Record a Region (GIF)" { spawn "dms" "ipc" "call" "quickCapture" "recordToggle" "region"; }
-    Shift+XF86Launch5 hotkey-overlay-title="Mute Master Volume" allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "mute"; }
+    Shift+XF86Launch5 allow-when-locked=true hotkey-overlay-title="Mute Master Volume" { spawn "dms" "ipc" "call" "audio" "mute"; }
     Shift+XF86Launch6 allow-when-locked=true hotkey-overlay-title="Master Volume Up" { spawn "dms" "ipc" "call" "audio" "increment" "5"; }
-    Shift+XF86Tools hotkey-overlay-title="Master Volume Down" allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
+    Shift+XF86Tools allow-when-locked=true hotkey-overlay-title="Master Volume Down" { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
     Super+X hotkey-overlay-title="Power Menu: Toggle" { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
     XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "decrement" "3"; }
     XF86AudioMicMute allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "micmute"; }
@@ -67,6 +70,7 @@ binds {
     Mod+Shift+U { move-workspace-down; }
     Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
     Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
+    Alt+Print hotkey-overlay-title="Copy a Window" { screenshot-window write-to-disk=false; }
     Alt+XF86Launch1 { screenshot-window; }
     Mod+BracketLeft { consume-or-expel-window-left; }
     Mod+BracketRight { consume-or-expel-window-right; }

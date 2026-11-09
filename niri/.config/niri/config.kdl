@@ -401,6 +401,9 @@ binds {
     // Searches ~/memes and copies the pick; the second saves the copied link (from the nixos flake's memes package).
     Mod+G hotkey-overlay-title="Pick a Meme" { spawn "meme-pick"; }
     Mod+Shift+G hotkey-overlay-title="Save the Copied Meme" { spawn "meme-add"; }
+    Mod+Alt+G hotkey-overlay-title="Browse Memes" { spawn-sh "wezterm start --class yazi -- yazi ~/memes"; }
+    // Quick Capture saves recordings here (its default recordingDirectory).
+    Mod+Shift+Print hotkey-overlay-title="Browse Recordings" { spawn-sh "wezterm start --class yazi -- yazi ~/Videos/Recordings"; }
     // Plays a pick from ~/memes/sounds into the "Soundboard mic" and to you; saves the copied link's audio; cuts it off.
     Mod+Ctrl+G hotkey-overlay-title="Play a Sound" { spawn "sound-pick"; }
     Mod+Ctrl+Shift+G hotkey-overlay-title="Save the Copied Sound" { spawn "sound-add"; }
