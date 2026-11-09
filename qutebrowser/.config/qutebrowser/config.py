@@ -11,6 +11,10 @@ config.source("injectfix.py")
 
 c.auto_save.session = False
 
+# Lets greasemonkey/osugacha-gc.js call gc(). QtWebEngine 6.140's Blink never
+# collects osugacha's garbage on its own (dots-issues#19). Needs a restart.
+c.qt.args = ["js-flags=--expose-gc"]
+
 c.completion.shrink = True
 c.completion.quick = True
 c.completion.use_best_match = True
