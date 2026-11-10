@@ -420,6 +420,7 @@ binds {
     Mod+Alt+B hotkey-overlay-title="Summon qutebrowser" { spawn "summon" "org.qutebrowser.qutebrowser" "qutebrowser"; }
     Mod+Alt+T hotkey-overlay-title="Summon WezTerm" { spawn "summon" "org.wezfurlong.wezterm" "wezterm"; }
     Mod+Alt+D hotkey-overlay-title="Summon Vesktop" { spawn "summon" "vesktop" "vesktop"; }
+    Mod+Alt+Shift+D hotkey-overlay-title="Restart Vesktop" { spawn "sh" "-c" "pkill -f 'Vesktop/resources/app.asar'; while pgrep -f 'Vesktop/resources/app.asar' >/dev/null; do sleep 0.2; done; vesktop"; }
     Mod+Alt+S hotkey-overlay-title="Summon Spotify" { spawn "summon" "spotify" "spotify"; }
 
     // Open/close the Overview: a zoomed-out view of workspaces and windows.
