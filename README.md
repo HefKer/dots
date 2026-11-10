@@ -82,6 +82,7 @@ stealing list][nixos-worth-stealing].
 | [lazygit](lazygit/) | Git TUI in the DMS accent: detailed graph, flat file list, g/G, edit in a herdr split | [README](lazygit/README.md) |
 | [swayimg](swayimg/) | Image viewer behind the keymap viewer (Mod+/): vim keys, page-like scrolling | |
 | [vesktop](vesktop/) | Discord client: Vesktop and Vencord settings and Quick CSS; the theme comes from DankMaterialShell | [README](vesktop/README.md) |
+| [wlr-which-key](wlr-which-key/) | The desktop leader (Mod+Ctrl+Space): a hint popup of rare desktop actions and app IPC actions, in LazyVim's groups; the bind palette (`s k`) searches it | |
 | [xdg](xdg/) | Default apps for file types and link schemes | [README](xdg/README.md) |
 | [xdg-desktop-portal-termfilechooser](xdg-desktop-portal-termfilechooser/) | File picker portal: apps that use it get yazi in WezTerm | |
 | [claude](claude/) | Claude Code: global `CLAUDE.md`, keybindings, statusline, hooks and the launch guard; `settings.json` stays in `~/.claude`, since Claude Code rewrites it | |

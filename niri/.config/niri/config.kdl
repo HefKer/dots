@@ -392,6 +392,9 @@ binds {
     Mod+Shift+Period hotkey-overlay-title="Flag a Keymap Misfire" { spawn "kanata-flag"; }
     // (Re)starts both kanata services, e.g. after killing a hung one (from the nixos flake's kanata-restart).
     Mod+Shift+BackSpace allow-when-locked=true hotkey-overlay-title="Restart Kanata" { spawn "kanata-restart"; }
+    // The desktop leader: herdr's prefix plus Mod, a which-key popup of rare desktop actions and app IPC
+    // actions; its menu is ~/.config/wlr-which-key/config.yaml (wlr-which-key from the nixos flake's binds module).
+    Mod+Ctrl+Space hotkey-overlay-title="Desktop Leader" { spawn "wlr-which-key"; }
     // Lists every open window in fuzzel and focuses the pick (from the nixos flake's window-pick).
     Mod+P hotkey-overlay-title="Pick a Window" { spawn "window-pick"; }
     // Point niri's "Dynamic Cast Target" (pick it once in the screenshare dialog) at the right screen, at osu, or at nothing.

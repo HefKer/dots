@@ -1,0 +1,54 @@
+# The desktop leader, Mod+Ctrl+Space: herdr's prefix (Ctrl+Space) raised one scope by
+# adding Mod. It holds rare desktop actions, and app actions reachable over the app's
+# IPC (qutebrowser's :commands, `dms ipc`). Groups use LazyVim's letters (ADR 0002);
+# the rung each action earns is in docs/agents/binds.md. The bind palette (s k) reads
+# this file as one more scope, so a leaf's desc is what search finds.
+
+font: monospace 13
+background: "#2d353bf0"
+color: "#d3c6aa"
+border: "#a7c080"
+separator: "  "
+border_width: 2
+corner_r: 10
+rows_per_column: 8
+column_padding: 30
+anchor: center
+inhibit_compositor_keyboard_shortcuts: true
+auto_kbd_layout: true
+
+menu:
+  - key: s
+    desc: +search
+    submenu:
+      - key: k
+        desc: Keymaps (bind palette)
+        cmd: bind-palette
+
+  - key: w
+    desc: +windows
+    submenu:
+      - key: p
+        desc: Pick a window
+        cmd: window-pick
+      - key: m
+        desc: Maximize the column
+        cmd: niri msg action maximize-column
+      - key: f
+        desc: Fullscreen the window
+        cmd: niri msg action fullscreen-window
+      - key: d
+        desc: Close the window
+        cmd: niri msg action close-window
+
+  - key: n
+    desc: Notification history
+    cmd: dms ipc call notifications toggle
+
+  # Sessions, as in nvim and qutebrowser. Only asks a running qutebrowser, never starts one.
+  - key: q
+    desc: +session
+    submenu:
+      - key: s
+        desc: Save the qutebrowser session
+        cmd: ls "$XDG_RUNTIME_DIR"/qutebrowser/ipc-* >/dev/null 2>&1 && qutebrowser :session-save
