@@ -32,6 +32,11 @@ rows = [
   ["agent", { token = "$ctx", dim = true }],
 ]
 
+# Desktop notifications come from plugins/agent-notify, whose clicks focus the agent;
+# herdr's own delivery = "system" can't take a click.
+[ui.toast]
+delivery = "off"
+
 [keys]
 prefix = "ctrl+space"
 goto = "prefix+space"

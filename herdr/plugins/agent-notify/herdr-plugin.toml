@@ -1,0 +1,13 @@
+# Agent notify: a desktop notification when an agent you aren't looking at finishes or
+# blocks; clicking it focuses that agent in herdr and raises the terminal running it.
+# Stands in for herdr's [ui.toast] delivery = "system", whose notify-send has no click action.
+id = "hefker.agent-notify"
+name = "Agent notify"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Clickable desktop notifications for finished or blocked agents"
+platforms = ["linux"]
+
+[[events]]
+on = "pane.agent_status_changed"
+command = ["python3", "agent-notify.py", "event"]
