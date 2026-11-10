@@ -12,6 +12,8 @@ c.content.proxy = "http://127.0.0.1:8118"
 config.set("content.webrtc_ip_handling_policy", "disable-non-proxied-udp")
 config.set("content.cookies.accept", "all")  # Options: all, no-3rdparty
 config.set("content.cookies.store", True)
+# Bad certs on third-party resources are blocked silently; the page's own still asks.
+config.set("content.tls.certificate_errors", "ask-block-thirdparty")
 # config.set("content.javascript.enabled", False) # tsh keybind to toggle
 
 # Brave Search's bot check keeps re-flagging the stock QtWebEngine UA, which
