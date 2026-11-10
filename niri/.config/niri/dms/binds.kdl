@@ -9,12 +9,12 @@ binds {
     Mod+Alt+N hotkey-overlay-title="Do Not Disturb" { spawn "dms" "ipc" "call" "notifications" "toggleDoNotDisturb"; }
     Mod+Alt+Print hotkey-overlay-title="Edit a Window" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "window" "edit"; }
     Mod+Comma hotkey-overlay-title="Settings" { spawn "dms" "ipc" "call" "settings" "focusOrToggle"; }
-    Mod+Ctrl+N hotkey-overlay-title="Open last notification" { spawn "dms" "ipc" "call" "notifications" "invokeLast"; }
+    Mod+Shift+N hotkey-overlay-title="Open last notification" { spawn "dms" "ipc" "call" "notifications" "invokeLast"; }
     Mod+Ctrl+Print hotkey-overlay-title="Edit the Screen" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "full" "edit"; }
     Mod+M hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "focusOrToggle"; }
     Mod+N hotkey-overlay-title="Notification Center" { spawn "dms" "ipc" "call" "notifications" "toggle"; }
     Mod+Print hotkey-overlay-title="Edit a Region" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
-    Mod+Shift+N hotkey-overlay-title="Notepad" { spawn "dms" "ipc" "call" "notepad" "toggle"; }
+    Mod+Ctrl+N hotkey-overlay-title="Notepad" { spawn "dms" "ipc" "call" "notepad" "toggle"; }
     Mod+Shift+Slash hotkey-overlay-title="Keybind Cheatsheet" { spawn "dms" "ipc" "call" "keybinds" "toggle" "niri"; }
     Mod+Shift+W hotkey-overlay-title="Create window rule" { spawn "dms" "ipc" "call" "window-rules" "toggle"; }
     Mod+Space hotkey-overlay-title="Application Launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }

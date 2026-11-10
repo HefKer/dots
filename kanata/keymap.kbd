@@ -73,7 +73,7 @@
 ;; Hold Caps. Ported from the Wootility "Typing Profile".
 (deflayermap (fn1)
   esc grv  1 f1  2 f2  3 f3  4 f4  5 f5  6 f6  7 f7  8 f8  9 f9  0 f10  - f11  = f12  bspc del
-  tab @fn2  q pgdn  w up  e pgup  r caps  \ ins
+  tab @fn2  q pgdn  w up  e pgup  r caps  \ ins  p bspc
   caps @cap  a left  s down  d rght  h home  j down  k up  l end  ' ins
   z ret  x prnt  c micmute  v mrgt
   / /  ralt ralt  rmet menu  menu menu  rctl rctl)
