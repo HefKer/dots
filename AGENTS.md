@@ -6,7 +6,6 @@
 - herdr plugins are registered by `~/nixos/main/homes/modules/herdr-plugins.nix`, whose sync writes `plugins.json` at rebuild: a plugin kept here (`herdr/plugins/<name>/`) goes in its `localPlugins` list and stays editable without a rebuild; a third-party one is packaged under `~/nixos/main/pkgs/`. Use `herdr plugin link` only to try a plugin out: it lives in this machine's `plugins.json` alone.
 - The repo is public, and features are shared by linking their **Worth stealing** entry in the package's `README.md`. A commit that adds something reusable adds its entry in the same commit, in the existing entries' format with the anchor, linking only the file, since the commit has no hash yet.
 - Before taking a screenshot, read `README.md`'s Screenshots section: it keeps browsing history, bookmarks and sessions out of the image.
-- Windows you open to test or screenshot something go to the screen the user isn't on, unfocused, so their typing stays in their own window: run them through `scripts/claude-shot`, or give the window the app-id `claude-shot-<that output>`, which niri's rules open floating there.
 - Commit directly to `main`; create a branch only when asked.
 - `reference/` holds clones of other people's dotfiles, kept to read for ideas. Gitignored, never linked — don't edit anything under it.
 
