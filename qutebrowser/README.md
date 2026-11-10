@@ -25,6 +25,7 @@ and greasemonkey scripts for the things qutebrowser doesn't do on its own.
 | [`printing.py`](.config/qutebrowser/printing.py) | Print-to-PDF fixes |
 | [`spotify.py`](.config/qutebrowser/spotify.py) | Hand Spotify links to the desktop app |
 | [`injectfix.py`](.config/qutebrowser/injectfix.py) | Workaround for page scripts dying after cross-site navigation |
+| [`tabreuse.py`](.config/qutebrowser/tabreuse.py) | Links to an already open site reuse its tab |
 | [`js/`](.config/qutebrowser/js/) | Small scripts the binds run through `jseval` |
 | [`greasemonkey/`](.config/qutebrowser/greasemonkey/) | Per-site userscripts |
 | [`userscripts/`](.local/share/qutebrowser/userscripts/) | qutebrowser userscripts, linked to `~/.local/share/qutebrowser/userscripts` |
@@ -148,6 +149,11 @@ file as it is now and to the commit that added it, which explains why.
   page backgrounds out so dark mode doesn't print dark pages.
   [220f237](https://github.com/HefKer/dots/commit/220f237),
   [54f484d](https://github.com/HefKer/dots/commit/54f484d)
+- <a id="tabreuse"></a>**Links reuse an open site's tab.** A link that would open
+  a new tab (middle-click, `target=_blank`, tab hints) switches to a tab already
+  on that site instead, navigating it when the path differs. Sites in
+  `EXCEPTIONS` (YouTube) still get new tabs.
+  [`tabreuse.py`](.config/qutebrowser/tabreuse.py)
 - <a id="spotify"></a>**Spotify links open the app.** Track, album, playlist and
   similar links go to the Spotify desktop app instead of the web player.
   [`spotify.py`](.config/qutebrowser/spotify.py) ·

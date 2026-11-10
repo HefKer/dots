@@ -8,6 +8,7 @@ config.source("search_engines.py")
 config.source("spotify.py")
 config.source("printing.py")
 config.source("injectfix.py")
+config.source("tabreuse.py")
 
 c.auto_save.session = False
 
