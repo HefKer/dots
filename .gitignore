@@ -51,3 +51,6 @@ quickmarks
 
 # proxy — the direct-sites list names banks, school and other sites I use
 /proxy/direct.txt
+
+# qutebrowser — osugacha capture userscript, a symlink into ~/dev/_osu/osugacha (that repo owns it)
+qutebrowser/.config/qutebrowser/greasemonkey/osugacha-capture.js
