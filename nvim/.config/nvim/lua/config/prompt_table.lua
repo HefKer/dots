@@ -116,6 +116,8 @@ end
 
 local function split_row(line)
   local cells = {}
+  -- links show their text: [text](target) -> text
+  line = line:gsub("%[([^%]]*)%]%b()", "%1")
   local body = line:gsub("\\|", "\0"):gsub("^%s*|", ""):gsub("|%s*$", "")
   for cell in (body .. "|"):gmatch("(.-)|") do
     table.insert(cells, (vim.trim(cell):gsub("%z", "|")))
@@ -141,7 +143,7 @@ end
 
 ---@param rows string[][] header first
 ---@param width integer columns available
----@param emit fun(line: string, marks: table[])
+---@param emit fun(line: string, marks: table[], ri?: integer) ri: the row a content line belongs to
 local function draw(rows, width, emit)
   local k = 0
   for _, r in ipairs(rows) do
@@ -197,7 +199,7 @@ local function draw(rows, width, emit)
         end
         line = line .. (" "):rep(w[c] - used) .. " │"
       end
-      emit(line, marks)
+      emit(line, marks, ri)
     end
     if ri == 1 then
       rule("├", "┼", "┤")
@@ -210,13 +212,14 @@ end
 ---@field lines string[] what the viewer shows
 ---@field marks table[] { row, start_col, end_col, hl_group }, 0-based rows
 ---@field source table<integer, integer[]> viewer row (1-based) -> { first, last } source lines of its table
+---@field line table<integer, integer> viewer row (1-based) -> source line of its table row; rules have none
 
 -- Redraws every pipe table outside code fences in `lines` as a box grid `width` wide.
 ---@param lines string[]
 ---@param width integer
 ---@return prompt_table.Rendered
 function M.render(lines, width)
-  local out = { lines = {}, marks = {}, source = {} }
+  local out = { lines = {}, marks = {}, source = {}, line = {} }
   local i, fence = 1, nil
   while i <= #lines do
     local line = lines[i]
@@ -231,10 +234,12 @@ function M.render(lines, width)
         table.insert(rows, split_row(lines[i]))
         i = i + 1
       end
-      draw(rows, width, function(text, marks)
+      draw(rows, width, function(text, marks, ri)
         table.insert(out.lines, text)
         local row = #out.lines
         out.source[row] = { first, i - 1 }
+        -- the header is the first source line; body rows follow the delimiter line
+        out.line[row] = ri and (ri == 1 and first or first + ri) or nil
         -- borders: the whole line, under the text marks
         table.insert(out.marks, { row - 1, 0, #text, "RenderMarkdownTableRow", 100 })
         for _, m in ipairs(marks) do
