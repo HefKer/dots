@@ -5,6 +5,8 @@ description: Conventions for editing the nvim package in this dotfiles repo, whi
 
 # nvim config (dots)
 
+Before proposing, adding or changing a bind, read `~/dots/docs/agents/binds.md`.
+
 This is a **LazyVim** distro, not a from-scratch config.
 
 ## Don't reinvent what LazyVim provides

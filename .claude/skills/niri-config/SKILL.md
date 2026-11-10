@@ -5,6 +5,8 @@ description: KDL editing conventions for the niri and DankMaterialShell packages
 
 # niri / DMS config (dots)
 
+Before proposing, adding or changing a bind, read `~/dots/docs/agents/binds.md`.
+
 ## KDL syntax
 
 Prefix a node with `/-` to comment it out:

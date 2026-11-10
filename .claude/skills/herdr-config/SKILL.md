@@ -5,6 +5,8 @@ description: Edit the herdr config in this dotfiles repo (herdr/.config/herdr/co
 
 # herdr config (dots)
 
+Before proposing, adding or changing a bind, read `~/dots/docs/agents/binds.md`.
+
 ## Link safety
 
 Only `config.toml` is linked, by home-manager's link set in `~/nixos/main/homes/modules/dotfiles.nix`. `~/.config/herdr/` is also herdr's **runtime state directory** — it holds `*.sock`, `*.log`, `session.json`, `release-notes.json`.

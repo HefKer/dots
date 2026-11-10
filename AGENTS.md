@@ -7,6 +7,7 @@
 - The repo is public, and features are shared by linking their **Worth stealing** entry in the package's `README.md`. A commit that adds something reusable adds its entry in the same commit, in the existing entries' format with the anchor, linking only the file, since the commit has no hash yet.
 - Before taking a screenshot, read `README.md`'s Screenshots section: it keeps browsing history, bookmarks and sessions out of the image.
 - Commit directly to `main`; create a branch only when asked.
+- Binds: before proposing, adding or changing a bind in any scope, read `docs/agents/binds.md`.
 - `reference/` holds clones of other people's dotfiles, kept to read for ideas. Gitignored, never linked — don't edit anything under it.
 
 ## Agent skills

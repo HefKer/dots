@@ -5,6 +5,8 @@ description: Conventions for editing the qutebrowser package in this dotfiles re
 
 # qutebrowser config (dots)
 
+Before proposing, adding or changing a bind, read `~/dots/docs/agents/binds.md`.
+
 ## Edit the right module
 
 `config.py` is a dispatcher — it `config.source()`s split modules (`appearance`, `privacy`, `filepicker`, `binds`, `search_engines`, …). Make changes in the module that owns the setting; don't pile them into `config.py`.
