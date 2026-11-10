@@ -34,21 +34,7 @@ menu:
       - key: m
         desc: Maximize the column
         cmd: niri msg action maximize-column
-      - key: f
-        desc: Fullscreen the window
-        cmd: niri msg action fullscreen-window
-      - key: d
-        desc: Close the window
-        cmd: niri msg action close-window
 
   - key: n
     desc: Notification history
     cmd: dms ipc call notifications toggle
-
-  # Sessions, as in nvim and qutebrowser. Only asks a running qutebrowser, never starts one.
-  - key: q
-    desc: +session
-    submenu:
-      - key: s
-        desc: Save the qutebrowser session
-        cmd: ls "$XDG_RUNTIME_DIR"/qutebrowser/ipc-* >/dev/null 2>&1 && qutebrowser :session-save
