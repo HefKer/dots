@@ -408,6 +408,8 @@ binds {
     Mod+Ctrl+G hotkey-overlay-title="Play a Sound" { spawn "sound-pick"; }
     Mod+Ctrl+Shift+G hotkey-overlay-title="Save the Copied Sound" { spawn "sound-add"; }
     Mod+Ctrl+X hotkey-overlay-title="Stop the Sound" { spawn "sound-stop"; }
+    // Type "10m tea" or "7:30 standup" to set a timer or alarm, or pick a pending one to cancel or snooze; synced across hosts (from the nixos flake's alarm package).
+    Mod+A hotkey-overlay-title="Set an Alarm" { spawn "alarm" "prompt"; }
 
     // Kanata's Fn2 a/s/d send F13-F15, which xkb names XF86Tools/Launch5/Launch6. Plain: the focused
     // window's app (from the nixos flake's window-volume package). Shift + them = master volume, a shell bind,

@@ -18,5 +18,8 @@
   },
   "micStatus": {
     "enabled": true
+  },
+  "alarms": {
+    "enabled": true
   }
 }

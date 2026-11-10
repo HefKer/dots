@@ -23,10 +23,11 @@ fish/.config/fish/fish_variables
 DankMaterialShell/.config/DankMaterialShell/.firstlaunch
 DankMaterialShell/.config/DankMaterialShell/.changelog-*
 DankMaterialShell/.config/DankMaterialShell/plugins/*
-# lidAwake, soundboard and micStatus are mine, not plugin-manager clones
+# lidAwake, soundboard, micStatus and alarms are mine, not plugin-manager clones
 !DankMaterialShell/.config/DankMaterialShell/plugins/lidAwake/
 !DankMaterialShell/.config/DankMaterialShell/plugins/soundboard/
 !DankMaterialShell/.config/DankMaterialShell/plugins/micStatus/
+!DankMaterialShell/.config/DankMaterialShell/plugins/alarms/
 # DMS — input.kdl is regenerated from settings.json on start; it still syncs.
 niri/.config/niri/dms/input.kdl
 

@@ -204,6 +204,7 @@
           "enabled": true,
           "showMicPercent": true
         },
+        "alarms",
         "micStatus",
         "soundboard",
         "lidAwake",

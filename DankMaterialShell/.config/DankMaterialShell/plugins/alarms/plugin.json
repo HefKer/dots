@@ -1,0 +1,11 @@
+{
+    "id": "alarms",
+    "name": "Alarms",
+    "description": "Bar widget for the alarm command: the next timer or alarm counting down, and a popout to set, snooze and cancel them; synced across hosts.",
+    "version": "1.0.0",
+    "author": "hefker",
+    "type": "widget",
+    "icon": "alarm",
+    "component": "./AlarmsWidget.qml",
+    "permissions": []
+}
