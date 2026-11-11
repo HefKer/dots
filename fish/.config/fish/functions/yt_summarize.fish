@@ -4,7 +4,7 @@ function yt_summarize --description "Summarize a YouTube video transcript"
         return 1
     end
 
-    set video_id (__extract_yt_id $argv[1])
+    set video_id (__extract_yt_id $argv[1]); or return 1
 
     youtube_transcript_api $video_id --format json \
         | jq -r '.[][].text' \
