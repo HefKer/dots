@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Follows Privoxy's journal (it needs `debug 2`) and hands each host whose Proton SOCKS
+# hop failed to proxy-why. A failure is a "Connect: socks5_connect: SOCKS5 ..." line
+# carrying one of the exit's reply codes, matched to its "Connect: to HOST:PORT" by the
+# thread ID in the third field. Negotiation errors and "socks5 server unreachable" mean
+# the tunnel itself is down, so they're left out.
+set -euo pipefail
+
+why="$(dirname "$(readlink -f "$0")")/proxy-why"
+
+journalctl --user -fu privoxy -o cat -n 0 |
+  awk '
+    $4 == "Connect:" && $5 == "to" { target[$3] = $6; next }
+    /Connect: socks5_connect: SOCKS5 (request failed|request denied|network unreachable|destination host unreachable|connection refused|TTL expired)$/ && ($3 in target) {
+      print target[$3]; fflush(); delete target[$3]
+    }
+  ' |
+  while read -r target; do
+    "$why" "$target" &
+  done

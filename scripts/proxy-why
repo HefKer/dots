@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Why did HOST[:PORT] fail through the browser proxy? Retests it through the Proton
+# SOCKS hop and directly, prints the reason, and when it's blocked on the exit sends a
+# notification whose "Go direct" action adds the host to the direct list. Hosts on the
+# direct list, or checked in the last hour, are skipped. proxy-watch calls this.
+set -euo pipefail
+
+usage() { echo "usage: proxy-why HOST[:PORT]   (port defaults to 443)" >&2; exit 2; }
+[[ $# -eq 1 && $1 != -* ]] || usage
+
+arg=$1 port=443
+case $arg in
+  \[*\]:*) host=${arg%:*} port=${arg##*:} ;;
+  \[*\]) host=$arg ;;
+  *:*:*) host=$arg ;;
+  *:*) host=${arg%:*} port=${arg##*:} ;;
+  *) host=$arg ;;
+esac
+host=${host#[} host=${host%]} host=${host,,}
+target="$host:$port"
+[[ $host == *:* ]] && target="[$host]:$port"
+
+direct_list="$(dirname "$(readlink -f "$0")")/../proxy/direct.txt"
+conf="${XDG_RUNTIME_DIR:?}/privoxy.conf"
+seen="$XDG_RUNTIME_DIR/proxy-why"
+
+# Same normalisation as Privoxy's config writer: drop comments, blanks and leading dots.
+entries() { [[ -f $direct_list ]] && sed -e 's/#.*//' -e 's/[[:space:]]//g' -e '/^$/d' -e 's/^\.*//' "$direct_list" | tr '[:upper:]' '[:lower:]'; }
+
+while read -r entry || [[ -n $entry ]]; do
+  if [[ $host == "$entry" || $host == *."$entry" ]]; then
+    echo "$host: on the direct list ($entry), not checked"
+    exit 0
+  fi
+done < <(entries || true)
+
+# One check per host an hour; the noclobber create is atomic, so parallel failures retest once.
+mkdir -p "$seen"
+mark="$seen/$host"
+find "$mark" -mmin +60 -delete 2>/dev/null || true
+if ! (set -C; : >"$mark") 2>/dev/null; then
+  echo "$host: checked within the hour, not retested"
+  exit 0
+fi
+
+socks=$(awk '$1 == "forward-socks5t" { print $3; exit }' "$conf")
+[[ -n $socks ]] || { echo "proxy-why: no forward-socks5t line in $conf" >&2; exit 1; }
+
+reach() { timeout 15 nc -z -w 10 "$@" "$host" "$port" >/dev/null 2>&1; }
+
+if reach -X 5 -x "$socks"; then
+  echo "$target: works through Proton on the retest, a passing blip"
+elif ! reach; then
+  echo "$target: fails through Proton and direct, the site is down"
+else
+  echo "$target: blocked on the Proton exit; works direct"
+  action=$(notify-send --app-name=proxy-why --action=go="Go direct" \
+    "Blocked on the exit" "$host is blocked on the Proton exit; works direct" || true)
+  if [[ $action == go ]]; then
+    if entries | grep -qxF "$host"; then
+      echo "$host: already on the direct list"
+    else
+      [[ -s $direct_list && -n $(tail -c1 "$direct_list") ]] && echo >>"$direct_list"
+      echo "$host" >>"$direct_list"
+      echo "$host: added to the direct list"
+    fi
+  fi
+fi
