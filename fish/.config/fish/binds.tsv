@@ -1,0 +1,15 @@
+# The fish scope's binds worth finding again, read by bind-palette (nixos flake).
+# trigger<TAB>description. A trigger is fish's key name written Mod+Key
+# (Alt+H is alt-h); the palette drops a row whose key fish no longer binds in
+# vi insert mode. A trigger with a space describes a gesture, not a key, and
+# is always listed.
+Alt+H	Man page for the command being typed (also F1)
+Alt+W	One-line summary of the token at the cursor
+Alt+T	tldr page for the command being typed
+Alt+E	Edit the command line in $EDITOR
+Alt+S	Prepend sudo
+Alt+L	List the directory at the cursor
+Alt+.	Insert the last argument of an earlier command
+Ctrl+F	fzf: insert a file
+Ctrl+G	fzf: cd into a directory
+Tab after cmd -	List the command's flags with descriptions

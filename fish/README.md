@@ -13,6 +13,7 @@ My [fish](https://fishshell.com/) config: vi keys, fzf widgets, a
 | [`00-env.fish`](.config/fish/conf.d/00-env.fish) | Exported variables, `PATH`, vi key mode |
 | [`10-tools.fish`](.config/fish/conf.d/10-tools.fish) | atuin |
 | [`20-fzf.fish`](.config/fish/conf.d/20-fzf.fish) | fzf defaults and widgets (`Ctrl+F` files, `Ctrl+G` dirs) |
+| [`25-help.fish`](.config/fish/conf.d/25-help.fish) | `Alt+T`: tldr page for the command being typed |
 | [`30-alias.fish`](.config/fish/conf.d/30-alias.fish) | Aliases |
 | [`40-abbr.fish`](.config/fish/conf.d/40-abbr.fish) | Abbreviations |
 | [`50-hooks.fish`](.config/fish/conf.d/50-hooks.fish) | Event handlers |
@@ -69,6 +70,11 @@ Commands are autoloaded from [`functions/`](.config/fish/functions/), one per fi
 
 ### Shell
 
+- <a id="alt-t"></a>**`Alt+T`: the tldr page for the command being typed**,
+  printed under the prompt the way fish's `Alt+W` prints a summary, with the
+  command line left as it was. It skips `sudo`, tries a subcommand's page
+  first (`git commit`), and with no page falls back to the `whatis` line.
+  [`__tldr_current_command.fish`](.config/fish/functions/__tldr_current_command.fish)
 - <a id="cd"></a>**`cd` through zoxide**, so plain `cd` also trains zoxide's
   database. [`cd.fish`](.config/fish/functions/cd.fish)
 - <a id="rm"></a>**A safer `rm`** that asks once for 3+ files and reports what

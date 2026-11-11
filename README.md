@@ -76,6 +76,7 @@ stealing list][nixos-worth-stealing].
 | [fastfetch](fastfetch/) | System info in Everforest, with icon keys in a frame | [screenshot](fastfetch/screenshots/fastfetch.png) |
 | [btop](btop/) | Resource monitor, Everforest soft | |
 | [atuin](atuin/) | Shell history search | |
+| [tealdeer](tealdeer/) | tldr pages, refreshing themselves; fish's Alt+T shows one for the command being typed | |
 | [fuzzel](fuzzel/) | App launcher and picker for the qutebrowser session scripts | |
 | [hunk](hunk/) | Diff viewer used for reviewing agent changes | |
 | [mpv](mpv/) | Video player | |

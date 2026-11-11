@@ -1,0 +1,5 @@
+# tealdeer (tldr): pages are cached offline; auto_update refreshes a cache older
+# than the interval on the next lookup, so it never goes stale.
+[updates]
+auto_update = true
+auto_update_interval_hours = 168
