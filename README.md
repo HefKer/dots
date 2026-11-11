@@ -89,7 +89,7 @@ stealing list][nixos-worth-stealing].
 | [xdg](xdg/) | Default apps for file types and link schemes | [README](xdg/README.md) |
 | [xdg-desktop-portal-termfilechooser](xdg-desktop-portal-termfilechooser/) | File picker portal: apps that use it get yazi in WezTerm | |
 | [claude](claude/) | Claude Code: global `CLAUDE.md`, keybindings, statusline, hooks and the launch guard; `settings.json` stays in `~/.claude`, since Claude Code rewrites it | |
-| [scripts](scripts/) | Helpers the configs call (prompt pane, qutebrowser sandbox, unfocused screenshots); [`jev`](scripts/jev) asks TypeSafe's decision model a yes/no, choice or rubric question from the shell | |
+| [scripts](scripts/) | Helpers the configs call (prompt pane, qutebrowser sandbox, unfocused screenshots); [`jev`](scripts/jev) asks TypeSafe's decision model a yes/no, choice or rubric question from the shell, or where something is in an image (`jev box`) | |
 
 Each package mirrors where its files go under `$HOME`, so
 `qutebrowser/.config/qutebrowser/` is `~/.config/qutebrowser/`. To borrow a

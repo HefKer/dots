@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Ask Jev, TypeSafe AI's decision model, a typed question about some text.
+"""Ask Jev, TypeSafe AI's decision model, a typed question about some text or an image.
 
 Jev doesn't generate text: it judges a `state` and answers with probabilities.
-The state comes from --state or stdin.
+The state comes from --state or stdin; for box, it is the image, named `image`.
 
     jev noul "Is this about billing?" < mail.txt         # prints 0.98; exit 1 below --threshold
     jev choice "Which tone?" calm angry "excited=eager or enthusiastic" -s "..."
     jev score "How urgent?" "can wait" "this week" "today" -s "..."
+    jev box shot.png "the table in `image`" --noul "Is there a table in `image`?"
+                                  # prints "left top right bottom confidence" (0-1 fractions),
+                                  # then the noul's probability; exit 1 below --threshold
     jev ask < request.json                                # any questions, raw response
     jev models
 
@@ -17,7 +20,9 @@ Exit status: 0 on an answer (for noul: a yes), 1 for a noul below the threshold,
 import argparse
 import json
 import os
+import struct
 import subprocess
+import uuid
 import sys
 import time
 import urllib.error
@@ -77,16 +82,16 @@ def explain(body):
     return detail if isinstance(detail, str) else json.dumps(detail)
 
 
-def call(path, body=None):
-    request = urllib.request.Request(
-        BASE_URL + path,
-        data=json.dumps(body).encode() if body is not None else None,
-        headers={
-            "Authorization": f"Bearer {api_key()}",
-            "Content-Type": "application/json",
-            "User-Agent": "jev-cli",
-        },
-    )
+def call(path, body=None, images=None):
+    """POST `body` as JSON, or as multipart with `images` ({part name: (format, bytes)})."""
+    headers = {"Authorization": f"Bearer {api_key()}", "User-Agent": "jev-cli"}
+    if images:
+        data, headers["Content-Type"] = multipart(body, images)
+        headers["TypeSafe-Danger-Zone-Images"] = "true"
+    else:
+        data = json.dumps(body).encode() if body is not None else None
+        headers["Content-Type"] = "application/json"
+    request = urllib.request.Request(BASE_URL + path, data=data, headers=headers)
     for attempt in range(RETRIES + 1):
         try:
             with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
@@ -103,6 +108,90 @@ def call(path, body=None):
             raise Failure(f"HTTP {error.code}: {explain(text)}") from None
         except (urllib.error.URLError, TimeoutError, ValueError) as error:
             raise Failure(f"request failed: {getattr(error, 'reason', error)}") from None
+
+
+def multipart(body, images):
+    """The `request` JSON part first, as the API requires, then one part per image."""
+    boundary = uuid.uuid4().hex
+    parts = [("request", "application/json", json.dumps(body).encode(), "")]
+    parts += [(name, f"image/{fmt}", data, f'; filename="{name}.{fmt}"') for name, (fmt, data) in images.items()]
+    out = b""
+    for name, kind, data, filename in parts:
+        out += (
+            f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"{filename}\r\n'
+            f"Content-Type: {kind}\r\n\r\n"
+        ).encode() + data + b"\r\n"
+    return out + f"--{boundary}--\r\n".encode(), f"multipart/form-data; boundary={boundary}"
+
+
+# The API never resizes, and one image out of range fails the whole request.
+IMAGE_SIDE = (280, 1568)
+IMAGE_PIXELS = 2_458_624
+IMAGE_BYTES = 16 * 1024 * 1024
+
+
+def image_size(data):
+    """(format, width, height) from a PNG's IHDR or a JPEG's first SOF marker."""
+    if data[:8] == b"\x89PNG\r\n\x1a\n" and data[12:16] == b"IHDR":
+        return ("png", *struct.unpack(">II", data[16:24]))
+    if data[:2] == b"\xff\xd8":
+        at = 2
+        while at + 9 <= len(data) and data[at] == 0xFF:
+            marker, length = data[at + 1], struct.unpack(">H", data[at + 2 : at + 4])[0]
+            if 0xC0 <= marker <= 0xCF and marker not in (0xC4, 0xC8, 0xCC):
+                height, width = struct.unpack(">HH", data[at + 5 : at + 9])
+                return ("jpeg", width, height)
+            at += 2 + length
+    raise Failure("not a PNG or JPEG image")
+
+
+def load_image(path):
+    try:
+        with open(path, "rb") as handle:
+            data = handle.read()
+    except OSError as error:
+        raise Failure(f"can't read {path}: {error.strerror}") from None
+    fmt, width, height = image_size(data)
+    low, high = IMAGE_SIDE
+    if not (low <= width <= high and low <= height <= high) or width * height > IMAGE_PIXELS:
+        raise Failure(f"{path} is {width}x{height}: each side must be {low}-{high} px, at most {IMAGE_PIXELS} px in all")
+    if len(data) > IMAGE_BYTES:
+        raise Failure(f"{path} is over 16 MiB")
+    return fmt, data
+
+
+def box(args):
+    """One request: a Box over the image, plus the optional companion Noul (Box always answers)."""
+    fmt, data = load_image(args.image)
+    ref = f"image-{uuid.uuid4()}"
+    questions = {"box": {"type": "box", "instructions": args.instructions}}
+    if args.noul:
+        questions["noul"] = {"type": "noul", "instructions": args.noul}
+    body = {
+        "model": args.model or MODEL,
+        "state": {"image": ref},
+        "assets": {ref: {"type": "image", "part": "image"}},
+        "questions": questions,
+    }
+    if args.save_request:
+        with open(args.save_request, "w", encoding="utf-8") as handle:
+            json.dump({"image": os.path.abspath(args.image), "request": body}, handle, indent=2)
+    answers = call("/v1/systemone", body, {"image": (fmt, data)}).get("answers", {})
+    try:
+        edges = answers["box"]["box"]
+        yes = answers["noul"]["noul"] if args.noul else None
+    except (KeyError, TypeError):
+        raise Failure(f"unexpected answer: {json.dumps(answers)[:300]}") from None
+    if args.json:
+        print(json.dumps(answers, ensure_ascii=False))
+    else:
+        confidence = answers["box"].get("confidence")
+        print(*(edges[side] for side in ("left", "top", "right", "bottom")), "null" if confidence is None else confidence)
+        if args.noul:
+            print(yes)
+    if args.noul and yes < args.threshold:
+        return 1
+    return 0
 
 
 def ask(state, questions, model=None):
@@ -150,6 +239,15 @@ def parse_args():
     score.add_argument("question")
     score.add_argument("levels", nargs="+", metavar="level", help="descriptions, lowest first (at most 10)")
 
+    find = commands.add_parser("box", help="locate something in an image: prints its edges as 0-1 fractions")
+    find.add_argument("image", help="PNG or JPEG, each side 280-1568 px; named `image` in the questions")
+    find.add_argument("instructions", help="what to find, e.g. \"the table in `image`\"")
+    find.add_argument("--noul", metavar="QUESTION", help="also ask this yes/no in the same request (a box always answers)")
+    find.add_argument("-t", "--threshold", type=float, default=0.5, help="exit 1 when the noul is below this (default 0.5)")
+    find.add_argument("--model", help=f"model ID or alias (default: {MODEL}; images need jev-1.14 or later)")
+    find.add_argument("--json", action="store_true", help="print the answers as JSON")
+    find.add_argument("--save-request", metavar="FILE", help="write the request JSON (without the image bytes) here")
+
     raw = commands.add_parser("ask", help="request JSON on stdin (model optional), response JSON out")
     raw.add_argument("--model", help=f"model when the request names none (default: {MODEL})")
     commands.add_parser("models", help="list the models")
@@ -161,6 +259,8 @@ def main():
     if args.command == "models":
         print(json.dumps(call("/v1/models"), indent=2))
         return 0
+    if args.command == "box":
+        return box(args)
     if args.command == "ask":
         try:
             request = json.load(sys.stdin)
