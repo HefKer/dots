@@ -16,6 +16,9 @@ niri/.config/niri/dms/outputs.kdl
 # kanata — misfire notes may quote private text; kanata-flag writes them
 kanata/misfires.md
 
+# qutebrowser — the directories download-file may move a download into; private
+qutebrowser/.config/qutebrowser/download-dirs
+
 # fish — universal variables, rewritten at runtime
 fish/.config/fish/fish_variables
 

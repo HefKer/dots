@@ -4,27 +4,45 @@
 Usage:
     :spawn --userscript download-file
 
-Takes the newest file directly in ~/Downloads and asks Jev, TypeSafe's decision
-model, which directory it belongs in: one of ~/Downloads' subdirectories or of
-EXTRA below. A fuzzel menu then lists the directories, likeliest first with
-Jev's probability, so Enter accepts the guess and any other row overrides it.
-When Jev can't answer the menu is alphabetical. Nothing is ever overwritten.
+Takes the newest file directly in qutebrowser's download directory and asks
+Jev, TypeSafe's decision model, which directory it belongs in. A fuzzel menu
+then lists the directories, likeliest first with Jev's probability, so Enter
+accepts the guess and any other row overrides it. A second question in the same
+request asks whether the file belongs in any of them, since a Choice always
+picks one: when it doesn't, leaving it where it is tops the menu. When Jev
+can't answer the menu is in the file's order. Nothing is ever overwritten.
+
+The directories come from `download-dirs` in qutebrowser's config directory,
+which is gitignored, so the list stays on this machine. One directory a line:
+
+    ~/Downloads/*                    # every subdirectory of ~/Downloads
+    ~/Documents/taxes | tax forms, receipts and letters from the tax office
+
+Text after ` | ` describes the directory to Jev, on top of the few file names
+read from it. The file is written with the first line above when missing.
 
 Jev is sent the file's name, the current page's title and its URL without the
-query string, plus each directory's name and a few of the file names in it.
+query string, plus each directory's path, description and a few file names.
 """
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
 
-DOWNLOADS = Path.home() / "Downloads"
-EXTRA = [Path.home() / name for name in ("Documents", "Pictures", "Videos", "Music")]
+DOWNLOADS = Path(os.environ.get("QUTE_DOWNLOAD_DIR") or Path.home() / "Downloads")
+DIRS_FILE = Path(os.environ.get("QUTE_CONFIG_DIR") or Path.home() / ".config/qutebrowser") / "download-dirs"
+DEFAULT_DIRS = """\
+# Where download-file may move a download. One directory a line; `dir/*` is every
+# subdirectory of dir; text after ` | ` describes the directory to Jev.
+~/Downloads/*
+"""
 EXAMPLES = 6  # file names described per directory
-STAY = "stay"
+MAX_FITS_TO_STAY = 0.3  # probability that the file fits some directory, below which staying tops the menu
+STAY = "leave where it is"
 
 
 def command(text):
@@ -48,26 +66,47 @@ def newest():
     return max(files, key=lambda p: p.stat().st_mtime, default=None)
 
 
+def label(directory):
+    try:
+        return "~/" + str(directory.relative_to(Path.home()))
+    except ValueError:
+        return str(directory)
+
+
 def targets():
-    """{label: directory}; a Downloads subdirectory is labelled by its name alone."""
-    found = {p.name: p for p in visible(DOWNLOADS) if p.is_dir() and p.name != STAY}
-    for directory in EXTRA:
-        if directory.is_dir():
-            found.setdefault(f"~/{directory.name}", directory)
+    """{label: (directory, description or None)} from DIRS_FILE, in its order."""
+    if not DIRS_FILE.exists():
+        DIRS_FILE.write_text(DEFAULT_DIRS, encoding="utf-8")
+    found = {}
+    for line in DIRS_FILE.read_text(encoding="utf-8").splitlines():
+        line = re.split(r"(?:^|\s)#", line)[0]  # a comment starts the line or follows a space
+        entry, _, description = (part.strip() for part in line.partition(" | "))
+        if not entry:
+            continue
+        if entry.endswith("/*"):
+            directories = [p for p in visible(Path(entry[:-2]).expanduser()) if p.is_dir()]
+        else:
+            directories = [Path(entry).expanduser()]
+        for directory in directories:
+            if directory.is_dir():
+                found.setdefault(label(directory), (directory, description or None))
     return found
 
 
-def describe(directory):
+def describe(directory, description):
     names = [p.name for p in visible(directory)][:EXAMPLES]
-    return f"Holds: {', '.join(names)}" if names else None
+    parts = [description, f"Holds: {', '.join(names)}" if names else None]
+    return ". ".join(part for part in parts if part) or None
 
 
-def probabilities(file, dirs):
-    """Jev's probability for each label and for STAY, or None."""
+def judge(file, dirs):
+    """(Jev's probability for each label, its probability that any fits), or (None, None)."""
     parts = urlsplit(os.environ.get("QUTE_URL", ""))
+    described = {name: describe(*entry) for name, entry in dirs.items()}
     request = {
         "state": {
             "file": file.name,
+            "directories": described,
             "downloaded_while_on": {
                 "url": f"{parts.scheme}://{parts.netloc}{parts.path}",
                 "title": os.environ.get("QUTE_TITLE", ""),
@@ -76,13 +115,17 @@ def probabilities(file, dirs):
         "questions": {
             "directory": {
                 "type": "choice",
-                "instructions": "Which directory should this downloaded file be moved into?",
-                # Last, since Jev leans toward the first option.
+                "instructions": "Which directory does the downloaded `file` belong in?",
+                "criteria": described,
+            },
+            "fits": {
+                "type": "noul",
+                "instructions": "Does the downloaded `file` belong in one of `directories`?",
                 "criteria": {
-                    **{label: describe(directory) for label, directory in dirs.items()},
-                    STAY: "None of the directories fits it",
+                    "true": "One directory holds files of the same subject or kind as this file",
+                    "false": "No directory has anything to do with this file",
                 },
-            }
+            },
         },
     }
     jev = shutil.which("jev") or os.path.expanduser("~/dots/scripts/jev")
@@ -90,23 +133,23 @@ def probabilities(file, dirs):
         done = subprocess.run(
             [jev, "ask"], input=json.dumps(request), capture_output=True, text=True, check=False
         )
-        return json.loads(done.stdout)["answers"]["directory"]["probabilities"]
+        answers = json.loads(done.stdout)["answers"]
+        return answers["directory"]["probabilities"], answers["fits"]["noul"]
     except (OSError, ValueError, KeyError):
         reason = done.stderr.strip() if "done" in locals() else "jev not found"
         msg("warning", f"no directory suggested ({reason or 'no answer'})")
-        return None
+        return None, None
 
 
-def pick(file, dirs, odds):
+def pick(file, dirs, odds, fits):
     """The label chosen in the menu, or None for staying put or dismissing it."""
-    labels = [*dirs, STAY]
+    labels = list(dirs)
     if odds:
-        labels.sort(key=lambda label: odds.get(label, 0), reverse=True)
-    rows = [
-        ("leave in Downloads" if label == STAY else label)
-        + (f"  {odds.get(label, 0):.0%}" if odds else "")
-        for label in labels
-    ]
+        labels.sort(key=lambda name: odds.get(name, 0), reverse=True)
+    rows = [name + (f"  {odds.get(name, 0):.0%}" if odds else "") for name in labels]
+    at = 0 if fits is not None and fits < MAX_FITS_TO_STAY else len(labels)
+    labels.insert(at, STAY)
+    rows.insert(at, STAY)
     done = subprocess.run(
         ["fuzzel", "--dmenu", "--index", "--prompt", f"move {file.name} to: "],
         input="\n".join(rows), capture_output=True, text=True, check=False,
@@ -122,14 +165,16 @@ def main():
     if file is None:
         return msg("error", f"no files in {DOWNLOADS}")
     dirs = targets()
-    label = pick(file, dirs, probabilities(file, dirs))
-    if label is None:
+    if not dirs:
+        return msg("error", f"no directories listed in {DIRS_FILE}")
+    chosen = pick(file, dirs, *judge(file, dirs))
+    if chosen is None:
         return None
-    destination = dirs[label] / file.name
+    destination = dirs[chosen][0] / file.name
     if destination.exists():
-        return msg("error", f"{label} already has a {file.name}")
+        return msg("error", f"{chosen} already has a {file.name}")
     shutil.move(file, destination)
-    msg("info", f"{file.name} moved to {label}")
+    msg("info", f"{file.name} moved to {chosen}")
 
 
 if __name__ == "__main__":

@@ -7,8 +7,10 @@ Usage:
 Quickmark names here start with a group word (`csa calendar`, `gh stars`), which
 is what makes them completable. This asks Jev, TypeSafe's decision model, which
 existing group the page belongs to, then opens a fuzzel prompt holding that
-group for the rest of the name to be typed. A page that fits no group, or any
-failure to reach Jev, leaves the prompt empty.
+group for the rest of the name to be typed. A second question in the same
+request asks whether the page shares a site or a subject with any group at
+all, since a Choice always picks one: a page that fits none, or any failure to reach Jev, leaves the
+prompt empty.
 
 Jev is sent the page's title and its URL without the query string, plus each
 group's name with a few of its marks' names and hosts.
@@ -24,8 +26,8 @@ from urllib.parse import urlsplit
 
 MIN_MARKS = 2  # marks sharing a first word before it counts as a group
 EXAMPLES = 4  # marks described per group
-MIN_PROBABILITY = 0.5  # below this the group isn't prefilled
-NONE = "none"
+MIN_FITS = 0.7  # probability that the page shares a site or subject with a group, below which none is prefilled
+MIN_PROBABILITY = 0.5  # of the picked group, below which it isn't prefilled
 
 
 def command(text):
@@ -44,7 +46,7 @@ def bare(url):
 
 
 def groups(path):
-    """{group: description} for every first word that several quickmark names share."""
+    """{group: its first marks, as "name (host)"} for every first word several names share."""
     marks = defaultdict(list)
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
@@ -56,9 +58,8 @@ def groups(path):
             marks[name.split()[0].lower()].append((name, urlsplit(url).hostname or ""))
     described = {}
     for group, members in sorted(marks.items()):
-        if len(members) >= MIN_MARKS and group != NONE:
-            shown = ", ".join(f"{name} ({host})" for name, host in members[:EXAMPLES])
-            described[group] = f"Marks in this group: {shown}"
+        if len(members) >= MIN_MARKS:
+            described[group] = [f"{name} ({host})" for name, host in members[:EXAMPLES]]
     return described
 
 
@@ -67,14 +68,25 @@ def guess(url, title, options):
     if not options:
         return None
     request = {
-        "state": {"url": bare(url), "title": title},
+        "state": {"page": {"url": bare(url), "title": title}, "bookmark_groups": options},
         "questions": {
             "group": {
                 "type": "choice",
-                "instructions": "Which of the user's bookmark groups does this page belong in?",
-                # Last, since Jev leans toward the first option.
-                "criteria": {**options, NONE: "It fits none of the groups"},
-            }
+                "instructions": "Which of the user's bookmark groups does `page` belong in?",
+                "criteria": {
+                    group: f"Marks in this group: {', '.join(marks)}" for group, marks in options.items()
+                },
+            },
+            # Either makes a group fit, and each is one judgment: asked as a single
+            # "same site or subject" question, a GitHub repo scored under the bar.
+            "same_site": {
+                "type": "noul",
+                "instructions": "Is `page` on the same website as the marks in one of `bookmark_groups`?",
+            },
+            "same_subject": {
+                "type": "noul",
+                "instructions": "Is `page` about the same subject as the marks in one of `bookmark_groups`?",
+            },
         },
     }
     jev = shutil.which("jev") or os.path.expanduser("~/dots/scripts/jev")
@@ -82,13 +94,15 @@ def guess(url, title, options):
         done = subprocess.run(
             [jev, "ask"], input=json.dumps(request), capture_output=True, text=True, check=False
         )
-        answer = json.loads(done.stdout)["answers"]["group"]
+        answers = json.loads(done.stdout)["answers"]
+        answer = answers["group"]
+        fits = max(answers["same_site"]["noul"], answers["same_subject"]["noul"])
     except (OSError, ValueError, KeyError):
         reason = done.stderr.strip() if "done" in locals() else "jev not found"
         msg("warning", f"no group suggested ({reason or 'no answer'})")
         return None
     group = answer["choice"]
-    if group == NONE or answer["probabilities"].get(group, 0) < MIN_PROBABILITY:
+    if fits < MIN_FITS or answer["probabilities"].get(group, 0) < MIN_PROBABILITY:
         return None
     return group
 

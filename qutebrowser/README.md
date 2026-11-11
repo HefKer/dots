@@ -69,15 +69,16 @@ file as it is now and to the commit that added it, which explains why.
   picker with a real click. [`js/hint-upload.js`](.config/qutebrowser/js/hint-upload.js) ·
   [9fe8f48](https://github.com/HefKer/dots/commit/9fe8f48)
 - <a id="download-file"></a>**Downloads filed by a decision model.** `edf`
-  takes the newest file in `~/Downloads` and asks
+  takes the newest download and asks
   [Jev](https://docs.typesafe.ai/llms.txt) which directory it belongs in, going
   by its name, the page it came from and what each directory already holds. A
   menu lists the directories likeliest first, so Enter accepts the guess and
-  any other row overrides it.
+  any other row overrides it. The directories are listed in a gitignored
+  `download-dirs` file, one a line, so they stay off the repo.
   [`download-file`](.local/share/qutebrowser/userscripts/download-file),
   [`scripts/jev`](../scripts/jev)
 - <a id="quickmark-file"></a>**Quickmarks filed into their group.** Quickmark
-  names start with a group word (`csa calendar`, `gh stars`). `m` asks
+  names start with a group word (`csa calendar`, `gh stars`). `,m` asks
   [Jev](https://docs.typesafe.ai/llms.txt), a decision model, which existing
   group the page fits, and opens the name prompt with that group typed. A page
   that fits none gets an empty prompt.

@@ -15,8 +15,9 @@ The response is `{"model", "answers": {"<name>": {...}}, "usage"}`. Errors carry
 
 Design rules:
 
-- Code stays in control: Jev answers narrow questions, and code applies the thresholds and acts.
-- A Choice always picks something, so add a `none` option or a companion Noul asking whether any option fits.
+- Code stays in control: Jev answers narrow questions, one judgment each, and code applies the thresholds and acts. Don't ask it to make the decision ("should this be escalated?").
+- Questions in a request can't see each other, so shared context goes in the state, as named fields a question cites in backticks.
+- A Choice always picks something, so ask a companion Noul in the same request whether any option fits; it works better than a `none` option.
 - `confidence` is derived from the distribution, not the chance the answer is right. Decide on `probabilities`.
 - Keep counting, arithmetic, date comparison and number precision in code, and avoid double negatives: Jev is weak at all of them.
 - Send only the relevant part of the state. Limits are 64k tokens a request and 32k a question.
