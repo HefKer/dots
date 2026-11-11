@@ -2,8 +2,8 @@ import sys
 
 from qutebrowser.config import configinit
 
-# Links to these sites (and their subdomains) always get a new tab.
-EXCEPTIONS = ["youtube.com"]
+# Only links to these sites (and their subdomains) reuse an open tab.
+REUSE = ["osugacha.com"]
 
 
 def site(url):
@@ -11,23 +11,27 @@ def site(url):
     return host.removeprefix("www.")
 
 
-def excepted(host):
-    return any(host == d or host.endswith("." + d) for d in EXCEPTIONS)
+def reusable(host):
+    return any(host == d or host.endswith("." + d) for d in REUSE)
 
 
 def find_tab(browser, url, skip):
-    """An open tab on url's site in a window of the same privacy, exact URL first."""
+    """An open tab on url's site in a window of the same privacy, exact URL first.
+
+    skip is a tab (or tabs) never to match: the new tab itself and the tab the link was
+    clicked in, so a same-site link can't navigate its own source tab."""
     from qutebrowser.utils import objreg
 
     host = site(url)
-    if not host or excepted(host):
+    if not host or not reusable(host):
         return None
+    skip = skip if isinstance(skip, tuple) else (skip,)
     browsers = [browser] + [
         w.tabbed_browser
         for w in objreg.window_registry.values()
         if w.tabbed_browser is not browser and w.tabbed_browser.is_private == browser.is_private
     ]
-    tabs = [(b, t) for b in browsers for t in b.widgets() if t is not skip]
+    tabs = [(b, t) for b in browsers for t in b.widgets() if t not in skip]
     same_site = [(b, t) for b, t in tabs if site(t.url()) == host]
     exact = [(b, t) for b, t in same_site if t.url() == url]
     return (exact or same_site or [None])[0]
@@ -43,7 +47,7 @@ def reuse(browser, tab, url):
         tab.load_url(url)
 
 
-def catch_first_navigation(browser, tab):
+def catch_first_navigation(browser, tab, source):
     """A tab from a clicked link starts empty; its URL arrives as its first navigation."""
     from qutebrowser.qt.core import QTimer
 
@@ -53,7 +57,7 @@ def catch_first_navigation(browser, tab):
         if not navigation.is_main_frame:
             return
         page.navigation_request.disconnect(on_request)
-        found = find_tab(browser, navigation.url, tab)
+        found = find_tab(browser, navigation.url, (tab, source))
         if found is None:
             return
         navigation.accepted = False
@@ -69,28 +73,56 @@ def catch_first_navigation(browser, tab):
     page.navigation_request.connect(on_request)
 
 
-# Clicked links (middle/ctrl-click, target=_blank, hints) open related tabs; :open -t and
-# bookmarks open unrelated ones, which are left alone.
+# Clicked links (target=_blank, hints) open related tabs; :open -t and bookmarks open
+# unrelated ones, which are left alone. Background opens (middle-click) always get a new
+# tab: asking for one in the background is asking not to be moved.
 def tabopen(self, url=None, background=None, related=True, idx=None):
-    if related and url is not None and url.isValid():
-        found = find_tab(self, url, None)
+    reusing = related and not background
+    source = self.widget.currentWidget()
+    if reusing and url is not None and url.isValid():
+        found = find_tab(self, url, source)
         if found is not None:
             reuse(*found, url)
             return found[1]
     tab = TabbedBrowser._tabreuse_orig(self, url, background, related, idx)
-    if related and url is None:
-        catch_first_navigation(self, tab)
+    if reusing and url is None:
+        catch_first_navigation(self, tab, source)
     return tab
+
+
+# URLs from outside (xdg-open, e.g. osug watch's notification actions) arrive over IPC
+# through app.open_url, which opens an unrelated tab, so reuse is checked here.
+def open_url(url, target=None, no_raise=False, via_ipc=True):
+    from qutebrowser import app
+    from qutebrowser.mainwindow import mainwindow
+    from qutebrowser.utils import objreg
+
+    try:
+        window = objreg.last_focused_window()
+    except objreg.NoWindow:
+        window = None
+    found = window and url.isValid() and find_tab(window.tabbed_browser, url, ())
+    if not found:
+        return app._tabreuse_open_url(url, target, no_raise, via_ipc)
+    reuse(*found, url)
+    window = found[0].window()
+    if not no_raise:
+        mainwindow.raise_window(window)
+    return window
 
 
 def patch():
     global TabbedBrowser
+    from qutebrowser import app
     from qutebrowser.mainwindow.tabbedbrowser import TabbedBrowser
 
     # :config-source reruns this file, so wrap the original rather than the last wrapper.
     if not hasattr(TabbedBrowser, "_tabreuse_orig"):
         TabbedBrowser._tabreuse_orig = TabbedBrowser.tabopen
     TabbedBrowser.tabopen = tabopen
+    if not hasattr(app, "_tabreuse_open_url"):
+        app._tabreuse_open_url = app.open_url
+    app.open_url = open_url
 
 
 # At startup the module isn't loaded yet, and one first imported while the config is read
