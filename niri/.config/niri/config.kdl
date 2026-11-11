@@ -411,7 +411,7 @@ binds {
     Mod+B hotkey-overlay-title="Capture an Idea" { spawn "backlog" "prompt"; }
     // vim's . for the desktop: replays the last repeatable action (a meme or sound pick, backlog into the same project, a meme/sound save
     // of the clipboard) with no menu (from the nixos flake's repeat package). Took the key from DMS's expel, which Mod+[ / Mod+] cover.
-    Mod+Period hotkey-overlay-title="Repeat the Last Action" { spawn "repeat"; }
+    Mod+Period repeat=false hotkey-overlay-title="Repeat the Last Action" { spawn "repeat"; }
 
     // Kanata's Fn2 a/s/d send F13-F15, which xkb names XF86Tools/Launch5/Launch6. Plain: the focused
     // window's app (from the nixos flake's window-volume package). Shift + them = master volume, a shell bind,
