@@ -2,11 +2,8 @@ binds {
     Ctrl+Alt+BackSpace hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "focusOrToggle"; }
     Ctrl+Print hotkey-overlay-title="Copy the Screen" { spawn "dms" "screenshot" "full" "--no-file"; }
     Ctrl+Shift+Print hotkey-overlay-title="Record the Screen (GIF)" { spawn "dms" "ipc" "call" "quickCapture" "recordToggle" "screen"; }
-    Ctrl+Shift+R hotkey-overlay-title="Rename Workspace" { spawn "dms" "ipc" "call" "workspace-rename" "open"; }
     Ctrl+XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "decrement" "3"; }
     Ctrl+XF86AudioRaiseVolume allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "increment" "3"; }
-    Mod+Alt+L hotkey-overlay-title="Lock Screen" { spawn "dms" "ipc" "call" "lock" "lock"; }
-    Mod+Alt+N hotkey-overlay-title="Do Not Disturb" { spawn "dms" "ipc" "call" "notifications" "toggleDoNotDisturb"; }
     Mod+Alt+Print hotkey-overlay-title="Edit a Window" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "window" "edit"; }
     Mod+Comma hotkey-overlay-title="Settings" { spawn "dms" "ipc" "call" "settings" "focusOrToggle"; }
     Mod+Ctrl+N hotkey-overlay-title="Notepad" { spawn "dms" "ipc" "call" "notepad" "toggle"; }
@@ -15,10 +12,8 @@ binds {
     Mod+Print hotkey-overlay-title="Edit a Region" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
     Mod+Shift+N hotkey-overlay-title="Open last notification" { spawn "dms" "ipc" "call" "notifications" "invokeLast"; }
     Mod+Shift+Slash hotkey-overlay-title="Keybind Cheatsheet" { spawn "dms" "ipc" "call" "keybinds" "toggle" "niri"; }
-    Mod+Shift+W hotkey-overlay-title="Create window rule" { spawn "dms" "ipc" "call" "window-rules" "toggle"; }
     Mod+Space hotkey-overlay-title="Application Launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
     Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
-    Mod+Y hotkey-overlay-title="Browse Wallpapers" { spawn "dms" "ipc" "call" "dankdash" "wallpaper"; }
     Print hotkey-overlay-title="Copy a Region" { spawn "dms" "screenshot" "region" "--no-file" "--no-confirm"; }
     Shift+Print hotkey-overlay-title="Record a Region (GIF)" { spawn "dms" "ipc" "call" "quickCapture" "recordToggle" "region"; }
     Shift+XF86Launch5 allow-when-locked=true hotkey-overlay-title="Mute Master Volume" { spawn "dms" "ipc" "call" "audio" "mute"; }
@@ -64,9 +59,7 @@ binds {
     Mod+BracketRight { consume-or-expel-window-right; }
     Mod+C { center-column; }
     Mod+Ctrl+End { move-column-to-last; }
-    Mod+Ctrl+F { expand-column-to-available-width; }
     Mod+Ctrl+Home { move-column-to-first; }
-    Mod+Ctrl+R { reset-window-height; }
     Mod+Ctrl+Shift+WheelScrollDown { move-column-right; }
     Mod+Ctrl+Shift+WheelScrollUp { move-column-left; }
     Mod+Ctrl+WheelScrollLeft { move-column-left; }
@@ -101,10 +94,8 @@ binds {
     Mod+W { toggle-column-tabbed-display; }
     Mod+WheelScrollLeft { focus-column-left; }
     Mod+WheelScrollRight { focus-column-right; }
-    Mod+Shift+P { power-off-monitors; }
     Ctrl+XF86Launch1 { screenshot-screen; }
     XF86Launch1 { screenshot; }
-    Mod+Shift+E { quit; }
     Mod+Return { spawn "wezterm"; }
     Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
     Mod+Tab repeat=false { toggle-overview; }

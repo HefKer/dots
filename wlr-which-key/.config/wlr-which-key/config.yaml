@@ -34,7 +34,88 @@ menu:
       - key: m
         desc: Maximize the column
         cmd: niri msg action maximize-column
+      - key: f
+        desc: Expand the column to the free width
+        cmd: niri msg action expand-column-to-available-width
+      - key: h
+        desc: Reset the window height
+        cmd: niri msg action reset-window-height
+      - key: r
+        desc: Create a window rule
+        cmd: dms ipc call window-rules toggle
+      - key: n
+        desc: Rename the workspace
+        cmd: dms ipc call workspace-rename open
 
   - key: n
     desc: Notification history
     cmd: dms ipc call notifications toggle
+
+  # Memes and sounds (from the nixos flake's memes package); Quick Capture saves
+  # recordings to ~/Videos/Recordings, its default recordingDirectory.
+  - key: m
+    desc: +memes
+    submenu:
+      - key: a
+        desc: Save the copied meme
+        cmd: meme-add
+      - key: b
+        desc: Browse memes
+        cmd: wezterm start --class yazi -- yazi ~/memes
+      - key: s
+        desc: Play a sound (into the Soundboard mic and to you)
+        cmd: sound-pick
+      - key: S
+        desc: Save the copied sound
+        cmd: sound-add
+      - key: x
+        desc: Stop the sound
+        cmd: sound-stop
+      - key: r
+        desc: Browse recordings
+        cmd: wezterm start --class yazi -- yazi ~/Videos/Recordings
+
+  # Casting points niri's Dynamic Cast Target (pick it once in the screenshare dialog).
+  - key: o
+    desc: +outputs
+    submenu:
+      - key: r
+        desc: Cast the right screen
+        cmd: niri msg action set-dynamic-cast-monitor DP-3
+      - key: o
+        desc: Cast osu
+        cmd: >-
+          niri msg action set-dynamic-cast-window --id "$(niri msg --json windows
+          | jq -r 'map(select(.app_id | test("^osu"; "i"))) | first | .id // empty')"
+      - key: x
+        desc: Stop casting
+        cmd: niri msg action clear-dynamic-cast-target
+      - key: p
+        desc: Turn the monitors off
+        cmd: niri msg action power-off-monitors
+
+  - key: u
+    desc: +ui
+    submenu:
+      - key: n
+        desc: Do Not Disturb
+        cmd: dms ipc call notifications toggleDoNotDisturb
+      - key: w
+        desc: Browse wallpapers
+        cmd: dms ipc call dankdash wallpaper
+
+  - key: q
+    desc: +session
+    submenu:
+      - key: l
+        desc: Lock the screen
+        cmd: dms ipc call lock lock
+      - key: d
+        desc: Restart Vesktop
+        cmd: >-
+          pkill -f 'Vesktop/resources/app.asar';
+          while pgrep -f 'Vesktop/resources/app.asar' >/dev/null; do sleep 0.2; done;
+          vesktop
+      - key: q
+        desc: Quit niri
+        cmd: niri msg action quit

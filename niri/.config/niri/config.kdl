@@ -399,20 +399,8 @@ binds {
     Mod+Ctrl+Space hotkey-overlay-title="Desktop Leader" { spawn "wlr-which-key"; }
     // Lists every open window in fuzzel and focuses the pick (from the nixos flake's window-pick).
     Mod+P hotkey-overlay-title="Pick a Window" { spawn "window-pick"; }
-    // Point niri's "Dynamic Cast Target" (pick it once in the screenshare dialog) at the right screen, at osu, or at nothing.
-    Mod+Alt+C hotkey-overlay-title="Cast the Right Screen" { spawn-sh "niri msg action set-dynamic-cast-monitor DP-3"; }
-    Mod+Alt+Shift+C hotkey-overlay-title="Cast osu" { spawn-sh r#"niri msg action set-dynamic-cast-window --id "$(niri msg --json windows | jq -r 'map(select(.app_id | test("^osu"; "i"))) | first | .id // empty')""#; }
-    Mod+Alt+X hotkey-overlay-title="Stop Casting a Target" { spawn-sh "niri msg action clear-dynamic-cast-target"; }
-    // Searches ~/memes and copies the pick; the second saves the copied link (from the nixos flake's memes package).
+    // Searches ~/memes and copies the pick; adding and sounds are on the desktop leader (from the nixos flake's memes package).
     Mod+G hotkey-overlay-title="Pick a Meme" { spawn "meme-pick"; }
-    Mod+Shift+G hotkey-overlay-title="Save the Copied Meme" { spawn "meme-add"; }
-    Mod+Alt+G hotkey-overlay-title="Browse Memes" { spawn-sh "wezterm start --class yazi -- yazi ~/memes"; }
-    // Quick Capture saves recordings here (its default recordingDirectory).
-    Mod+Shift+Print hotkey-overlay-title="Browse Recordings" { spawn-sh "wezterm start --class yazi -- yazi ~/Videos/Recordings"; }
-    // Plays a pick from ~/memes/sounds into the "Soundboard mic" and to you; saves the copied link's audio; cuts it off.
-    Mod+Ctrl+G hotkey-overlay-title="Play a Sound" { spawn "sound-pick"; }
-    Mod+Ctrl+Shift+G hotkey-overlay-title="Save the Copied Sound" { spawn "sound-add"; }
-    Mod+Ctrl+X hotkey-overlay-title="Stop the Sound" { spawn "sound-stop"; }
     // Type "10m tea" or "7:30 standup" to set a timer or alarm, or pick a pending one to cancel or snooze; synced across hosts (from the nixos flake's alarm package).
     Mod+A hotkey-overlay-title="Set an Alarm" { spawn "alarm" "prompt"; }
 
@@ -427,7 +415,6 @@ binds {
     Mod+Alt+B hotkey-overlay-title="Summon qutebrowser" { spawn "summon" "org.qutebrowser.qutebrowser" "qutebrowser"; }
     Mod+Alt+T hotkey-overlay-title="Summon WezTerm" { spawn "summon" "org.wezfurlong.wezterm" "wezterm"; }
     Mod+Alt+D hotkey-overlay-title="Summon Vesktop" { spawn "summon" "vesktop" "vesktop"; }
-    Mod+Alt+Shift+D hotkey-overlay-title="Restart Vesktop" { spawn "sh" "-c" "pkill -f 'Vesktop/resources/app.asar'; while pgrep -f 'Vesktop/resources/app.asar' >/dev/null; do sleep 0.2; done; vesktop"; }
     Mod+Alt+S hotkey-overlay-title="Summon Spotify" { spawn "summon" "spotify" "spotify"; }
 
     // Past the last column, focus moves on to the next monitor, so one pair of keys walks
