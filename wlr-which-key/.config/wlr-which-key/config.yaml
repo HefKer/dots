@@ -18,6 +18,11 @@ inhibit_compositor_keyboard_shortcuts: true
 auto_kbd_layout: true
 
 menu:
+  # Space: the leader's most-used picker, as LazyVim's <leader><space>.
+  - key: space
+    desc: Search binds (bind palette)
+    cmd: bind-palette
+
   - key: s
     desc: +search
     submenu:

@@ -403,6 +403,8 @@ binds {
     Mod+P hotkey-overlay-title="Pick a Window" { spawn "window-pick"; }
     // Searches ~/memes and copies the pick; adding and sounds are on the desktop leader (from the nixos flake's memes package).
     Mod+G hotkey-overlay-title="Pick a Meme" { spawn "meme-pick"; }
+    // Used often enough for rung 1; Shift is meme-pick's counterpart (sounds beside memes).
+    Mod+Shift+G hotkey-overlay-title="Play a Sound" { spawn "sound-pick"; }
     // Type "10m tea" or "7:30 standup" to set a timer or alarm, or pick a pending one to cancel or snooze; synced across hosts (from the nixos flake's alarm package).
     Mod+A hotkey-overlay-title="Set an Alarm" { spawn "alarm" "prompt"; }
 
@@ -416,6 +418,8 @@ binds {
     // Summon: focus the app's last window, cycle on repeats, launch if absent (from the nixos flake's summon package).
     Mod+Alt+B hotkey-overlay-title="Summon qutebrowser" { spawn "summon" "org.qutebrowser.qutebrowser" "qutebrowser"; }
     Mod+Alt+T hotkey-overlay-title="Summon WezTerm" { spawn "summon" "org.wezfurlong.wezterm" "wezterm"; }
+    // Not a summon: always a new WezTerm window running yazi.
+    Mod+Alt+Y hotkey-overlay-title="Yazi in New WezTerm" { spawn "wezterm" "start" "--class" "yazi" "--" "yazi"; }
     Mod+Alt+D hotkey-overlay-title="Summon Vesktop" { spawn "summon" "vesktop" "vesktop"; }
     Mod+Alt+S hotkey-overlay-title="Summon Spotify" { spawn "summon" "spotify" "spotify"; }
 
