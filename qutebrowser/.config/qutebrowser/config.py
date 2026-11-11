@@ -9,6 +9,8 @@ config.source("spotify.py")
 config.source("printing.py")
 config.source("injectfix.py")
 config.source("tabreuse.py")
+# Last, so every bind above is in the dump.
+config.source("bindsdump.py")
 
 c.auto_save.session = False
 
