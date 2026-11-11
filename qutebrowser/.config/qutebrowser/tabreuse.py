@@ -2,13 +2,15 @@ import sys
 
 from qutebrowser.config import configinit
 
-# Only links to these sites (and their subdomains) reuse an open tab.
-REUSE = ["osugacha.com"]
+# Only links to these sites (and their subdomains) reuse an open tab. A site served on a
+# non-default port is named host:port, so other servers on the same host are left alone.
+REUSE = ["osugacha.com", "127.0.0.1:7271"]  # osug dashboard
 
 
 def site(url):
-    host = url.host().lower()
-    return host.removeprefix("www.")
+    host = url.host().lower().removeprefix("www.")
+    port = url.port()
+    return f"{host}:{port}" if host and port != -1 else host
 
 
 def reusable(host):
