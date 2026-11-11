@@ -6,6 +6,21 @@ use. It isn't in the link set: the NixOS config's kanata services read
 (devices, port) is generated there and `include`s this file. `Fn2+\` live-reloads
 it.
 
+## Wooting settings
+
+The Wooting's analog settings stay in its firmware ([ADR-0005](https://github.com/HefKer/nixos-config/blob/main/docs/adr/0005-remapper-owns-digital-keyboard-features.md))
+but decide when kanata sees a key go down and up, so misfire hunting starts here.
+
+- **Actuation point:** 2.5 mm, so a key goes down later in its travel.
+- **Rapid trigger:** sensitive (lifts register immediately) on every key. Target
+  for the home-row mods `a s d f j k l ;`: 0.3–0.5 mm, so a slight lift mid-hold
+  isn't a release and a new press. Update this line once it's set in Wootility.
+
+Short windows make a key nested inside a mod's hold common, and a lift can
+become a tap; [`tests/lift.sim`](tests/lift.sim) pins what kanata does then.
+`kanata-test --fuzz` reports a `wooting` profile of 30–90 ms holds, a guess
+until the real windows are measured.
+
 ## Worth stealing
 
 - <a id="home-row-mods"></a>**Home-row mods that don't misfire while typing.**
