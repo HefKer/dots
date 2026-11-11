@@ -12,14 +12,15 @@ The Wooting's analog settings stay in its firmware ([ADR-0005](https://github.co
 but decide when kanata sees a key go down and up, so misfire hunting starts here.
 
 - **Actuation point:** 2.5 mm, so a key goes down later in its travel.
-- **Rapid trigger:** sensitive (lifts register immediately) on every key. Target
-  for the home-row mods `a s d f j k l ;`: 0.3–0.5 mm, so a slight lift mid-hold
-  isn't a release and a new press. Update this line once it's set in Wootility.
+- **Rapid trigger:** sensitive (lifts register immediately) on every key; the
+  exact value isn't recorded yet. Target for the home-row mods `a s d f j k l ;`:
+  0.3–0.5 mm, so a slight lift mid-hold isn't a release and a new press. Once
+  it's set in Wootility, write both values here and re-run `kanata-typetest`.
 
 Short windows make a key nested inside a mod's hold common, and a lift can
 become a tap; [`tests/lift.sim`](tests/lift.sim) pins what kanata does then.
-`kanata-test --fuzz` reports a `wooting` profile of 30–90 ms holds, a guess
-until the real windows are measured.
+`kanata-test --fuzz` reports a `wooting` profile beside the laptop's, its hold
+times a guess until the real windows are measured.
 
 ## Worth stealing
 

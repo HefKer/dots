@@ -1,7 +1,8 @@
 # The Wooting's rapid trigger: short down-to-up windows, and a slight lift
 # reads as a release then a new press. These pin current behaviour.
 
-# A key nested inside f's short window (fast "fo") reads as a deliberate Shift.
+# A key nested inside f's short window (fast "fo", the start of "for") reads as
+# a deliberate Shift.
 in: d:f t:40 d:o t:35 u:o t:20 u:f
 out: O
 # f lifted before the 200 ms timeout: a tap, so the re-press holds the letter.
