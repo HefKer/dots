@@ -34,6 +34,11 @@ Commands are autoloaded from [`functions/`](.config/fish/functions/), one per fi
   changelog or release notes for a nixpkgs package at a given version out of its
   source. [`nixlog.fish`](.config/fish/functions/nixlog.fish) ·
   [42088d8](https://github.com/HefKer/dots/commit/42088d8)
+- <a id="nrs"></a>**`nrs` / `nrb`: rebuild from any worktree** of a bare-repo
+  NixOS flake. Builds the worktree you're standing in, else `main`, or the one
+  named (`nrs smart-shot`, `#host` suffix allowed), with names tab-completed from
+  `git worktree list`. Prints the command first; extra args reach `nixos-rebuild`.
+  [`__nixos_rebuild.fish`](.config/fish/functions/__nixos_rebuild.fish)
 - <a id="hmopt"></a>**`hmopt`: search Home Manager options offline**, from the
   Nix store. [`hmopt.fish`](.config/fish/functions/hmopt.fish)
 

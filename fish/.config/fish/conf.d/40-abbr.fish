@@ -74,9 +74,6 @@ abbr -a rg 'rg -i'
 abbr -a ns 'nix search nixpkgs'
 
 # nix
-# nixos-rebuild picks the flake's attribute from the hostname; append #host to target another.
-abbr -a nrs 'sudo nixos-rebuild switch --flake /home/hefker/nixos/main'
-abbr -a nrb 'sudo nixos-rebuild boot --flake /home/hefker/nixos/main'
 abbr -a nsp nix shell
 abbr -a nfu nix flake update
 abbr -a nu nixup --all
