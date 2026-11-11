@@ -49,7 +49,7 @@
         },
         "AccountPanelServerProfile": {
             "enabled": true,
-            "prioritizeServerProfile": false
+            "prioritizeServerProfile": true
         },
         "AlwaysAnimate": {
             "enabled": false
@@ -642,10 +642,6 @@
         "FixDiscordCss": {
             "enabled": true
         },
-        "VcActions": {
-            "enabled": true,
-            "hotkeys": ""
-        },
         "VcPresets": {
             "enabled": true,
             "presets": [
@@ -663,7 +659,7 @@
                 {
                     "name": "osu",
                     "video": {
-                        "windowAppId": "^osu"
+                        "window": "^osu"
                     },
                     "audio": [
                         "osu!"
@@ -672,7 +668,22 @@
                     "frameRate": 60,
                     "contentHint": "motion"
                 }
-            ]
+            ],
+            "niriPath": "niri",
+            "shareCastTargetPath": "share-cast-target"
+        },
+        "VcShrink": {
+            "enabled": true,
+            "limitMb": 0,
+            "preset": "fast",
+            "ffmpegPath": "ffmpeg",
+            "ffprobePath": "ffprobe"
+        },
+        "QuickActions": {
+            "enabled": true,
+            "hotkeys": "# palette, help, mute, messages\nctrl+space space = palette\nctrl+alt+h = help\nctrl+j = messagemode                    # one combo, no leader\n\n# [s]tream\nctrl+space s = +stream\nctrl+space s s = streamtoggle screen\nctrl+space s o = streamtoggle osu\nctrl+space s x = stopstream\nctrl+space s j = preset next\nctrl+space s c = camera\nctrl+space s p = soundpick\n\n# [r]etarget\nctrl+space r = +retarget\nctrl+space r s = retarget screen\nctrl+space r o = retarget osu\nctrl+space r p = presetpick             # streams if not live, retargets if live\n\n# [w]atch\nctrl+space w = +watch\nctrl+space w j = watch next\nctrl+space w k = watch prev\nctrl+space w x = unwatch\nctrl+space w p = popout\n\n# [v]oice\nctrl+space v = +voice\nctrl+space v j = vcjoin General\nctrl+space v b = vcjoin last            # back\nctrl+space v x = vcleave\nctrl+space v g = gotocall\n\n# [g]o: pickers\nctrl+space g = +go\nctrl+space g c = channelpick\nctrl+space g a = channelpick all\nctrl+space g s = serverpick\nctrl+space g v = vcpick\n\n# [f]avorite servers\nctrl+space f = +⭐ favorites\nctrl+space f j = fav next\nctrl+space f k = fav prev\nctrl+space f a = favtoggle              # add/remove\nctrl+space f f = favpick                # double-tap picks, like palette\n# ctrl+space f w = fav <server>\n\n# [c]onfig\nctrl+space c = +config\nctrl+space c c = plugins\nctrl+space c a = pluginsettings QuickActions\nctrl+space c p = pluginsettings VcPresets\nctrl+space c s = pluginsettings VcShrink\n\n# [t]atus\nctrl+space t = +status\nctrl+space t d = status toggle dnd\nctrl+space t o = status online\nctrl+space t i = status idle\nctrl+space t v = status invisible\nctrl+space t c = customstatus clear\n\n# [u]nread\nctrl+space u = +unread\nctrl+space u j = unread next\nctrl+space u k = unread prev\nctrl+space u m = unread mention\nctrl+space u r = markread channel\nctrl+space u s = markread server\nctrl+space u a = markread all\n\n# [n]otifications\nctrl+space n = +notifs\nctrl+space n i = inbox\nctrl+space n n = notifs toggle\nctrl+space n c = notifmute channel\nctrl+space n s = notifmute server\n\n# [m]essages\nctrl+space m = +messages\nctrl+space m m = messagemode\nctrl+space m r = reply last\nctrl+space m e = edit last\nctrl+space m t = react 👍\nctrl+space m l = react 😂\nctrl+space m h = react ❤️\nctrl+space m g = scroll top\nctrl+space m b = scroll bottom\nctrl+space m u = scroll unread\n\n# [p]aste / upload\nctrl+space p = +paste\nctrl+space p u = upload\nctrl+space p c = upload clipboard\n\n# misc\nctrl+space q = search                   # no text: focuses the search bar\nctrl+space . = repeat                   # vim dot",
+            "autoPopout": false,
+            "dndWhileStreaming": false
         }
     },
     "uiElements": {
@@ -689,7 +700,7 @@
         "authenticated": false,
         "url": "https://api.vencord.dev/",
         "settingsSync": false,
-        "settingsSyncVersion": 1794045661091
+        "settingsSyncVersion": 1794271404447
     },
     "windowsMaterial": "none",
     "nativeTitleBar": false
