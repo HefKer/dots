@@ -68,5 +68,13 @@ It's where my Claude Code sessions, shells and editors live. Only
   account-wide limits, read from the newest render the Claude statusline shares.
   With a second account in use, its limits follow as `│ hulio 5h 3% · wk 1%`.
   [`scripts/claude-limits`](../scripts/claude-limits)
+- <a id="resurrect"></a>**Relaunch what panes ran after a restart.** herdr
+  brings panes back as bare shells; [herdr-resurrect](https://github.com/ntindle/herdr-resurrect)
+  snapshots what each one runs and, from the palette's `Resurrect: restore last
+  snapshot` (or its dry run), relaunches the programs on an explicit allowlist,
+  nvim among them. Claude panes are left to herdr's own `resume_agents_on_restore`,
+  so nothing resumes them twice, and restore never runs on its own.
+  [`allowlist.txt`](.config/herdr/plugins/config/ntindle.herdr-resurrect/allowlist.txt),
+  [`settings.json`](.config/herdr/plugins/config/ntindle.herdr-resurrect/settings.json)
 
 The prefix is `Ctrl+Space`.

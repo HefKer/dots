@@ -1,0 +1,23 @@
+# Programs herdr-resurrect relaunches in a pane herdr brought back as a bare shell.
+# Agents aren't listed: herdr's resume_agents_on_restore resumes them.
+
+# editors and pagers
+nvim
+vim
+less
+tail
+
+# dev servers and watchers
+npm
+pnpm
+yarn
+bun
+deno
+vite
+next
+nodemon
+
+# monitors
+btop
+htop
+watch

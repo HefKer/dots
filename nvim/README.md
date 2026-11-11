@@ -107,6 +107,12 @@ Claude Code from Neovim.
   that far. `<leader>ci` on an image link opens the image in a near-fullscreen
   float. `gf` opens it in a buffer, and `gx` opens it in your image viewer.
   [`plugins/snacks.lua`](.config/nvim/lua/plugins/snacks.lua)
+- <a id="session-restore"></a>**`nvim` picks up where you left off.** Started
+  with no file arguments in a directory with a saved session, nvim restores it:
+  tabs, splits and buffers. With a file, piped input or `+Man!` as a pager, it
+  opens as usual. LazyVim's persistence.nvim still saves on exit, so a pane
+  [herdr-resurrect](../herdr/README.md#resurrect) relaunches comes back as it was.
+  [`plugins/persistence.lua`](.config/nvim/lua/plugins/persistence.lua)
 
 ## Using it yourself
 
