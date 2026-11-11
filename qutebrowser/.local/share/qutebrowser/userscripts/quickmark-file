@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""Save the current page as a quickmark, with its group already typed.
+
+Usage:
+    :spawn --userscript quickmark-file
+
+Quickmark names here start with a group word (`csa calendar`, `gh stars`), which
+is what makes them completable. This asks Jev, TypeSafe's decision model, which
+existing group the page belongs to, then opens a fuzzel prompt holding that
+group for the rest of the name to be typed. A page that fits no group, or any
+failure to reach Jev, leaves the prompt empty.
+
+Jev is sent the page's title and its URL without the query string, plus each
+group's name with a few of its marks' names and hosts.
+"""
+
+import json
+import os
+import shutil
+import subprocess
+from collections import defaultdict
+from pathlib import Path
+from urllib.parse import urlsplit
+
+MIN_MARKS = 2  # marks sharing a first word before it counts as a group
+EXAMPLES = 4  # marks described per group
+MIN_PROBABILITY = 0.5  # below this the group isn't prefilled
+NONE = "none"
+
+
+def command(text):
+    with open(os.environ["QUTE_FIFO"], "a") as fifo:
+        fifo.write(text + "\n")
+
+
+def msg(level, text):
+    command(f"message-{level} {json.dumps('quickmark-file: ' + text)}")
+
+
+def bare(url):
+    """The URL without its query and fragment, which can hold tokens."""
+    parts = urlsplit(url)
+    return f"{parts.scheme}://{parts.netloc}{parts.path}"
+
+
+def groups(path):
+    """{group: description} for every first word that several quickmark names share."""
+    marks = defaultdict(list)
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return {}
+    for line in lines:
+        name, _, url = line.rpartition(" ")
+        if name and " " in name:
+            marks[name.split()[0].lower()].append((name, urlsplit(url).hostname or ""))
+    described = {}
+    for group, members in sorted(marks.items()):
+        if len(members) >= MIN_MARKS and group != NONE:
+            shown = ", ".join(f"{name} ({host})" for name, host in members[:EXAMPLES])
+            described[group] = f"Marks in this group: {shown}"
+    return described
+
+
+def guess(url, title, options):
+    """The group Jev picks for the page, or None."""
+    if not options:
+        return None
+    request = {
+        "state": {"url": bare(url), "title": title},
+        "questions": {
+            "group": {
+                "type": "choice",
+                "instructions": "Which of the user's bookmark groups does this page belong in?",
+                # Last, since Jev leans toward the first option.
+                "criteria": {**options, NONE: "It fits none of the groups"},
+            }
+        },
+    }
+    jev = shutil.which("jev") or os.path.expanduser("~/dots/scripts/jev")
+    try:
+        done = subprocess.run(
+            [jev, "ask"], input=json.dumps(request), capture_output=True, text=True, check=False
+        )
+        answer = json.loads(done.stdout)["answers"]["group"]
+    except (OSError, ValueError, KeyError):
+        reason = done.stderr.strip() if "done" in locals() else "jev not found"
+        msg("warning", f"no group suggested ({reason or 'no answer'})")
+        return None
+    group = answer["choice"]
+    if group == NONE or answer["probabilities"].get(group, 0) < MIN_PROBABILITY:
+        return None
+    return group
+
+
+def main():
+    url, title = os.environ["QUTE_URL"], os.environ.get("QUTE_TITLE", "")
+    group = guess(url, title, groups(Path(os.environ["QUTE_CONFIG_DIR"]) / "quickmarks"))
+    done = subprocess.run(
+        ["fuzzel", "--dmenu", "--prompt-only", "quickmark: ", "--search", f"{group} " if group else ""],
+        capture_output=True, text=True, check=False,
+    )
+    name = " ".join(done.stdout.split())
+    if done.returncode or not name:
+        return  # dismissed
+    quoted = name.replace("\\", "\\\\").replace('"', '\\"')
+    command(f'quickmark-add {url} "{quoted}"')
+    msg("info", f"saved as {name}")
+
+
+if __name__ == "__main__":
+    main()

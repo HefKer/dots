@@ -76,6 +76,13 @@ file as it is now and to the commit that added it, which explains why.
   any other row overrides it.
   [`download-file`](.local/share/qutebrowser/userscripts/download-file),
   [`scripts/jev`](../scripts/jev)
+- <a id="quickmark-file"></a>**Quickmarks filed into their group.** Quickmark
+  names start with a group word (`csa calendar`, `gh stars`). `m` asks
+  [Jev](https://docs.typesafe.ai/llms.txt), a decision model, which existing
+  group the page fits, and opens the name prompt with that group typed. A page
+  that fits none gets an empty prompt.
+  [`quickmark-file`](.local/share/qutebrowser/userscripts/quickmark-file),
+  [`scripts/jev`](../scripts/jev)
 - <a id="file-picker"></a>**yazi as the file picker.** Upload dialogs open yazi
   in a terminal instead of Qt's picker.
   [`filepicker.py`](.config/qutebrowser/filepicker.py)

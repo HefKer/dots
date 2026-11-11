@@ -66,6 +66,9 @@ config.bind("cs", "config-source")
 config.bind("cc", "config-source --clear")  # --clear so deleted binds drop
 config.bind("cb", "bookmarks-reload")
 config.bind("cm", "quickmarks-reload")
+# Replaces the default quickmark-save: the same name prompt, opened with the group
+# Jev picks for the page already typed
+config.bind("m", "spawn --userscript quickmark-file")
 config.bind("cg", "greasemonkey-reload")
 # refresh the adblock lists and regenerate the uBO scriptlets qutebrowser's adblock skips;
 # the userscript runs :adblock-update itself, after mirroring the lists qutebrowser can't fetch
