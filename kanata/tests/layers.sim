@@ -25,3 +25,19 @@ out: <f13><f14><f15>
 # Caps+c: mic mute, evdev 248, which the simulator names after keyberon's code for it.
 in: d:caps t:250 d:c t:30 u:c t:30 u:caps
 out: <mediamute>
+
+# Space tap: Space. Space hold: Fn1, like Caps.
+in: d:a t:30 u:a t:300 d:spc t:50 u:spc t:30 d:b t:30 u:b
+out: a b
+in: d:spc t:250 d:h t:30 u:h t:30 u:spc
+out: <home>
+# Space overlapping a letter mid-word stays Space.
+in: d:a t:50 u:a t:30 d:spc t:40 d:h t:30 u:h t:30 u:spc
+out: a h
+# Tap then hold: Space again (the OS repeats it), not Fn1.
+in: d:a t:30 u:a t:300 d:spc t:50 u:spc t:50 d:spc t:600 u:spc t:30 d:b t:30 u:b
+out: a  b
+
+# Space+f: Esc, without the pinky.
+in: d:spc t:250 d:f t:30 u:f t:30 u:spc
+out: <escape>

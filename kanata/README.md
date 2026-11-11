@@ -23,6 +23,10 @@ it.
   an old misfire. [9335bd4](https://github.com/HefKer/dots/commit/9335bd4)
 - <a id="caps"></a>**Caps Lock as Esc on tap and a function layer on hold.**
   [d608f70](https://github.com/HefKer/dots/commit/d608f70)
+- <a id="space-layer"></a>**Space as the same function layer on hold, with Esc
+  on `f`.** This keeps the pinky on the home row, since it no longer reaches
+  for Caps. Space pressed mid-word stays Space, and tapping it then holding it
+  repeats Space. [`keymap.kbd`](keymap.kbd)
 - <a id="passthrough"></a>**A passthrough layer for games.** It drops the
   tap-hold delays so key timing is exact. A watcher switches to it
   automatically, and both shifts + Esc toggle it by hand.
