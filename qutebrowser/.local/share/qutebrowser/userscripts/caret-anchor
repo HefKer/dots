@@ -57,7 +57,7 @@ JS="jseval --world main (function(){try{var dec=function(s){return decodeURIComp
 
 # ③ 折叠掉那个用于"骗过 setInitialCursor 判据"的单字符选区:
 #    进 caret 后 setInitialCursor 已执行完, 此刻折叠不触发 positionCaret, 光标留段首且高亮消失。
-JS_COLLAPSE="jseval --world main (function(){try{var s=window.getSelection();if(!s.focusNode)return 'NOCUR';var n=s.focusNode,o=s.focusOffset;s.removeAllRanges();var r=document.createRange();r.setStart(n,o);r.collapse(true);s.addRange(r);return 'COLLAPSED';}catch(e){return 'ERR:'+e;}})()"
+JS_COLLAPSE="jseval -q --world main (function(){try{var s=window.getSelection();if(!s.focusNode)return 'NOCUR';var n=s.focusNode,o=s.focusOffset;s.removeAllRanges();var r=document.createRange();r.setStart(n,o);r.collapse(true);s.addRange(r);return 'COLLAPSED';}catch(e){return 'ERR:'+e;}})()"
 
 # ④ 折叠后 caret 重新评估选区又把 state 置回 NORMAL, 故 toggle 轮转回 NONE
 { printf '%s\n' "$JS"; printf '%s\n' "mode-enter caret"; printf '%s\n' "$JS_COLLAPSE"; printf '%s\n' "selection-toggle"; } > "$FIFO" 2> /dev/null
