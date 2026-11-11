@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""Move the newest download into the directory it belongs in.
+
+Usage:
+    :spawn --userscript download-file
+
+Takes the newest file directly in ~/Downloads and asks Jev, TypeSafe's decision
+model, which directory it belongs in: one of ~/Downloads' subdirectories or of
+EXTRA below. A fuzzel menu then lists the directories, likeliest first with
+Jev's probability, so Enter accepts the guess and any other row overrides it.
+When Jev can't answer the menu is alphabetical. Nothing is ever overwritten.
+
+Jev is sent the file's name, the current page's title and its URL without the
+query string, plus each directory's name and a few of the file names in it.
+"""
+
+import json
+import os
+import shutil
+import subprocess
+from pathlib import Path
+from urllib.parse import urlsplit
+
+DOWNLOADS = Path.home() / "Downloads"
+EXTRA = [Path.home() / name for name in ("Documents", "Pictures", "Videos", "Music")]
+EXAMPLES = 6  # file names described per directory
+STAY = "stay"
+
+
+def command(text):
+    with open(os.environ["QUTE_FIFO"], "a") as fifo:
+        fifo.write(text + "\n")
+
+
+def msg(level, text):
+    command(f"message-{level} {json.dumps('download-file: ' + text)}")
+
+
+def visible(directory):
+    try:
+        return sorted(p for p in directory.iterdir() if not p.name.startswith("."))
+    except OSError:
+        return []
+
+
+def newest():
+    files = [p for p in visible(DOWNLOADS) if p.is_file()]
+    return max(files, key=lambda p: p.stat().st_mtime, default=None)
+
+
+def targets():
+    """{label: directory}; a Downloads subdirectory is labelled by its name alone."""
+    found = {p.name: p for p in visible(DOWNLOADS) if p.is_dir() and p.name != STAY}
+    for directory in EXTRA:
+        if directory.is_dir():
+            found.setdefault(f"~/{directory.name}", directory)
+    return found
+
+
+def describe(directory):
+    names = [p.name for p in visible(directory)][:EXAMPLES]
+    return f"Holds: {', '.join(names)}" if names else None
+
+
+def probabilities(file, dirs):
+    """Jev's probability for each label and for STAY, or None."""
+    parts = urlsplit(os.environ.get("QUTE_URL", ""))
+    request = {
+        "state": {
+            "file": file.name,
+            "downloaded_while_on": {
+                "url": f"{parts.scheme}://{parts.netloc}{parts.path}",
+                "title": os.environ.get("QUTE_TITLE", ""),
+            },
+        },
+        "questions": {
+            "directory": {
+                "type": "choice",
+                "instructions": "Which directory should this downloaded file be moved into?",
+                # Last, since Jev leans toward the first option.
+                "criteria": {
+                    **{label: describe(directory) for label, directory in dirs.items()},
+                    STAY: "None of the directories fits it",
+                },
+            }
+        },
+    }
+    jev = shutil.which("jev") or os.path.expanduser("~/dots/scripts/jev")
+    try:
+        done = subprocess.run(
+            [jev, "ask"], input=json.dumps(request), capture_output=True, text=True, check=False
+        )
+        return json.loads(done.stdout)["answers"]["directory"]["probabilities"]
+    except (OSError, ValueError, KeyError):
+        reason = done.stderr.strip() if "done" in locals() else "jev not found"
+        msg("warning", f"no directory suggested ({reason or 'no answer'})")
+        return None
+
+
+def pick(file, dirs, odds):
+    """The label chosen in the menu, or None for staying put or dismissing it."""
+    labels = [*dirs, STAY]
+    if odds:
+        labels.sort(key=lambda label: odds.get(label, 0), reverse=True)
+    rows = [
+        ("leave in Downloads" if label == STAY else label)
+        + (f"  {odds.get(label, 0):.0%}" if odds else "")
+        for label in labels
+    ]
+    done = subprocess.run(
+        ["fuzzel", "--dmenu", "--index", "--prompt", f"move {file.name} to: "],
+        input="\n".join(rows), capture_output=True, text=True, check=False,
+    )
+    if done.returncode or not done.stdout.strip().lstrip("-").isdigit():
+        return None
+    index = int(done.stdout)
+    return labels[index] if 0 <= index < len(labels) and labels[index] != STAY else None
+
+
+def main():
+    file = newest()
+    if file is None:
+        return msg("error", f"no files in {DOWNLOADS}")
+    dirs = targets()
+    label = pick(file, dirs, probabilities(file, dirs))
+    if label is None:
+        return None
+    destination = dirs[label] / file.name
+    if destination.exists():
+        return msg("error", f"{label} already has a {file.name}")
+    shutil.move(file, destination)
+    msg("info", f"{file.name} moved to {label}")
+
+
+if __name__ == "__main__":
+    main()

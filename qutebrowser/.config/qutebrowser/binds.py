@@ -175,6 +175,8 @@ config.bind("eM", "hint images spawn --detach meme-add {hint-url}")
 # [d]ownloads — act on the most recent download of this session
 config.bind("edo", "download-open")
 config.bind("edz", "download-open zathura {}")
+# [f]ile the newest download into the directory Jev picks for it, confirmed in a menu
+config.bind("edf", "spawn --userscript download-file")
 
 # [y]outube [w]atch later — [a]dd, hinted [f], [c]lean downloaded, [r]emove hinted
 config.bind("eywc", "spawn --userscript wl-clean")

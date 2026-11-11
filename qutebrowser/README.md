@@ -68,6 +68,14 @@ file as it is now and to the commit that added it, which explains why.
   input, including the hidden ones behind drag-and-drop zones, and opens the
   picker with a real click. [`js/hint-upload.js`](.config/qutebrowser/js/hint-upload.js) ·
   [9fe8f48](https://github.com/HefKer/dots/commit/9fe8f48)
+- <a id="download-file"></a>**Downloads filed by a decision model.** `edf`
+  takes the newest file in `~/Downloads` and asks
+  [Jev](https://docs.typesafe.ai/llms.txt) which directory it belongs in, going
+  by its name, the page it came from and what each directory already holds. A
+  menu lists the directories likeliest first, so Enter accepts the guess and
+  any other row overrides it.
+  [`download-file`](.local/share/qutebrowser/userscripts/download-file),
+  [`scripts/jev`](../scripts/jev)
 - <a id="file-picker"></a>**yazi as the file picker.** Upload dialogs open yazi
   in a terminal instead of Qt's picker.
   [`filepicker.py`](.config/qutebrowser/filepicker.py)
