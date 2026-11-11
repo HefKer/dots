@@ -82,7 +82,8 @@ _Avoid_: global leader, universal leader
 A bind whose action belongs to the desktop shell (launcher, clipboard,
 notifications, media, volume, lock) rather than to the window manager. Owned
 and edited by the shell; window-manager binds and personal binds are owned by
-the user's own config.
+the user's own config. The command shell's binds are not shell binds: they
+belong to the `fish` scope.
 _Avoid_: DMS bind, system bind
 
 **Summon**:
