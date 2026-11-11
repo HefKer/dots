@@ -25,6 +25,7 @@ and greasemonkey scripts for the things qutebrowser doesn't do on its own.
 | [`printing.py`](.config/qutebrowser/printing.py) | Print-to-PDF fixes |
 | [`spotify.py`](.config/qutebrowser/spotify.py) | Hand Spotify links to the desktop app |
 | [`injectfix.py`](.config/qutebrowser/injectfix.py) | Workaround for page scripts dying after cross-site navigation |
+| [`devtoolssave.py`](.config/qutebrowser/devtoolssave.py) | Lets DevTools save files (Export HAR, Save as) through the download prompt |
 | [`tabreuse.py`](.config/qutebrowser/tabreuse.py) | Links to an already open site reuse its tab |
 | [`js/`](.config/qutebrowser/js/) | Small scripts the binds run through `jseval` |
 | [`greasemonkey/`](.config/qutebrowser/greasemonkey/) | Per-site userscripts |
@@ -142,6 +143,12 @@ file as it is now and to the commit that added it, which explains why.
   profile's script collection instead.
   [a2be125](https://github.com/HefKer/dots/commit/a2be125)
   ([qutebrowser#8925](https://github.com/qutebrowser/qutebrowser/issues/8925))
+- <a id="devtools-save"></a>**DevTools file saving.** QtWebEngine compiles
+  DevTools' saving out, so Export HAR and Save as do nothing.
+  [`devtoolssave.py`](.config/qutebrowser/devtoolssave.py) adds
+  [`js/devtools-save.js`](.config/qutebrowser/js/devtools-save.js) to every
+  profile, which turns those saves into downloads, so they land on the normal
+  download prompt.
 - <a id="printing"></a>**Printing to a named PDF.** On Wayland, Qt's print dialog
   offers no filename and saves a low-resolution image of the page.
   [`printing.py`](.config/qutebrowser/printing.py) prints to a PDF through a
@@ -150,9 +157,11 @@ file as it is now and to the commit that added it, which explains why.
   [220f237](https://github.com/HefKer/dots/commit/220f237),
   [54f484d](https://github.com/HefKer/dots/commit/54f484d)
 - <a id="tabreuse"></a>**Links reuse an open site's tab.** A link that would open
-  a new tab (middle-click, `target=_blank`, tab hints) switches to a tab already
-  on that site instead, navigating it when the path differs. Sites in
-  `EXCEPTIONS` (YouTube) still get new tabs.
+  a new foreground tab (`target=_blank`, tab hints) or a URL arriving from
+  outside (`xdg-open`, e.g. a notification's action) switches to a tab already
+  on that site instead, navigating it when the path differs. Only sites in
+  `REUSE` are affected; middle-click and other background opens always get a
+  new tab, and a link never reuses the tab it was clicked in.
   [`tabreuse.py`](.config/qutebrowser/tabreuse.py)
 - <a id="spotify"></a>**Spotify links open the app.** Track, album, playlist and
   similar links go to the Spotify desktop app instead of the web player.

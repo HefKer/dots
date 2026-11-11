@@ -8,6 +8,7 @@ config.source("search_engines.py")
 config.source("spotify.py")
 config.source("printing.py")
 config.source("injectfix.py")
+config.source("devtoolssave.py")
 config.source("tabreuse.py")
 # Last, so every bind above is in the dump.
 config.source("bindsdump.py")
