@@ -44,7 +44,7 @@ file as it is now and to the commit that added it, which explains why.
   [470fcdb](https://github.com/HefKer/dots/commit/470fcdb)
 - <a id="dark-mode"></a>**Dark mode that doesn't wreck dark sites.** It asks
   sites for their native dark theme, skips backgrounds that are already dark, and
-  inverts logos but not photos. `,tw` toggles dark mode for the whole host and
+  inverts logos but not photos. `,uw` toggles dark mode for the whole host and
   works on the first press. [`appearance.py`](.config/qutebrowser/appearance.py) ·
   [5180c1e](https://github.com/HefKer/dots/commit/5180c1e)
 - <a id="escape-dialogs"></a>**Escape stubborn dialogs.** `;o` hints overlays,
@@ -74,14 +74,14 @@ file as it is now and to the commit that added it, which explains why.
 ### Sessions
 
 - <a id="session-append"></a>**Park a tab in a saved session without loading
-  it.** `,sa` picks a session with fuzzel, appends the current tab and closes it.
-  `,sA` does the same for a hinted link.
+  it.** `,qa` picks a session with fuzzel, appends the current tab and closes it.
+  `,qA` does the same for a hinted link.
   [`session-append`](.local/share/qutebrowser/userscripts/session-append) ·
   [1c89fbc](https://github.com/HefKer/dots/commit/1c89fbc),
   [a410f06](https://github.com/HefKer/dots/commit/a410f06)
-- <a id="session-take"></a>**Pull one tab back out of a session.** `,st` picks a
+- <a id="session-take"></a>**Pull one tab back out of a session.** `,qt` picks a
   session and then one of its tabs with fuzzel and opens it, removing it from the
-  session. `,sT` keeps it there.
+  session. `,qT` keeps it there.
   [`session-take`](.local/share/qutebrowser/userscripts/session-take) ·
   [8cd8721](https://github.com/HefKer/dots/commit/8cd8721)
 

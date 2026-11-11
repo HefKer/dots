@@ -374,7 +374,9 @@ include optional=true "~/.config/niri-host.kdl"
 // volume, brightness, lock, screenshots, cheatsheet) live only in dms/binds.kdl, included
 // first, and are edited through DMS's rebinder (`dms keybinds set`). A bind here wins over
 // DMS's for the same key, so only redeclare one on purpose, with a comment saying why;
-// `dms keybinds show niri` lists every such conflict.
+// `dms keybinds show niri` lists every such conflict. DMS's own window-manager defaults
+// that disagree with the grammar here are removed from its file (`dms keybinds remove`),
+// not shadowed. Grammar: ~/dots/docs/agents/binds.md.
 binds {
     // Keys consist of modifiers separated by + signs, followed by an XKB key name
     // in the end. To find an XKB name for a particular key, you may use a program
@@ -416,7 +418,7 @@ binds {
 
     // Kanata's Fn2 a/s/d send F13-F15, which xkb names XF86Tools/Launch5/Launch6. Plain: the focused
     // window's app (from the nixos flake's window-volume package). Shift + them = master volume, a shell bind,
-    // so it lives in dms/binds.kdl (ADR-0008).
+    // so it lives in dms/binds.kdl (docs/adr/0003).
     XF86Tools   hotkey-overlay-title="Focused App: Volume Down" { spawn "window-volume" "down"; }
     XF86Launch5 hotkey-overlay-title="Focused App: Mute" { spawn "window-volume" "mute"; }
     XF86Launch6 hotkey-overlay-title="Focused App: Volume Up" { spawn "window-volume" "up"; }
@@ -428,20 +430,15 @@ binds {
     Mod+Alt+Shift+D hotkey-overlay-title="Restart Vesktop" { spawn "sh" "-c" "pkill -f 'Vesktop/resources/app.asar'; while pgrep -f 'Vesktop/resources/app.asar' >/dev/null; do sleep 0.2; done; vesktop"; }
     Mod+Alt+S hotkey-overlay-title="Summon Spotify" { spawn "summon" "spotify" "spotify"; }
 
-    // Open/close the Overview: a zoomed-out view of workspaces and windows.
-    // You can also move the mouse into the top-left hot corner,
-    // or do a four-finger swipe up on a touchpad.
-    Mod+O repeat=false { toggle-overview; }
-
-    // Deliberate override of DMS's focus-column-*: past the last column, focus moves on to
-    // the next monitor, so one pair of keys walks both screens.
+    // Past the last column, focus moves on to the next monitor, so one pair of keys walks
+    // both screens. DMS's plain focus-column-* defaults are removed from its file.
     Mod+Left  { focus-column-or-monitor-left; }
     Mod+Right { focus-column-or-monitor-right; }
     Mod+H     { focus-column-or-monitor-left; }
     Mod+L     { focus-column-or-monitor-right; }
 
-    // Deliberate override of DMS's Mod+Ctrl (focus monitor, column to workspace): Mod+Ctrl
-    // moves the focused column or window, the direction keys' Mod-only partner.
+    // Mod+Ctrl moves the focused column or window, the direction keys' Mod-only partner.
+    // DMS's defaults (Mod+Ctrl focuses a monitor) are removed from its file.
     Mod+Ctrl+Left  { move-column-left; }
     Mod+Ctrl+Down  { move-window-down; }
     Mod+Ctrl+Up    { move-window-up; }
@@ -458,8 +455,8 @@ binds {
     // Mod+Ctrl+J     { move-window-down-or-to-workspace-down; }
     // Mod+Ctrl+K     { move-window-up-or-to-workspace-up; }
 
-    // Deliberate override of DMS's Mod+Shift (move), which Mod+Ctrl took over: Mod+Shift
-    // focuses a monitor.
+    // Mod+Shift focuses a monitor: the wider target. DMS's defaults (Mod+Shift moves) are
+    // removed from its file.
     Mod+Shift+Left  { focus-monitor-left; }
     Mod+Shift+Down  { focus-monitor-down; }
     Mod+Shift+Up    { focus-monitor-up; }
@@ -495,9 +492,9 @@ binds {
     // Mod+TouchpadScrollDown { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.02+"; }
     // Mod+TouchpadScrollUp   { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.02-"; }
 
-    // Workspace 10, and moving a column by number with Mod+Ctrl, beside DMS's Mod+1-9 and
-    // Mod+Shift+1-9. Indices are best effort: niri's workspaces are dynamic, so an index past
-    // the last workspace refers to the bottom (empty) one.
+    // Workspace 10, and moving a column by number with Mod+Ctrl, beside DMS's Mod+1-9.
+    // Indices are best effort: niri's workspaces are dynamic, so an index past the last
+    // workspace refers to the bottom (empty) one.
     Mod+0 { focus-workspace 10; }
     Mod+Ctrl+1 { move-column-to-workspace 1; }
     Mod+Ctrl+2 { move-column-to-workspace 2; }

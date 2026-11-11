@@ -91,13 +91,13 @@ config.bind(
     "config-cycle statusbar.show always in-mode ;; config-cycle tabs.show always switching",
 )  # cycle showing statusbar and tabs
 config.bind(
-    ",tt",
+    ",ut",
     "config-cycle tabs.show always switching",
 )  # cycle showing tabs only
 
 # --- Darkmode ---
 config.bind(
-    ",td", "config-cycle colors.webpage.darkmode.enabled true false ;; reload"
+    ",ud", "config-cycle colors.webpage.darkmode.enabled true false ;; reload"
 )  # Toggle dark mode and reload the page automatically
 
 # --- Spawn configs in nvim ---
@@ -108,29 +108,28 @@ config.bind("ce", "config-edit")
 # false comes first: a host with no override reads as unset, and config-cycle
 # then picks the first value, so true-first made the first press a no-op.
 config.bind(
-    ",tw",
+    ",uw",
     "config-cycle -u *://{url:host}/* colors.webpage.darkmode.enabled false true ;; reload",
 )
 
 
 # --- Sessions ---
 # Open cmd with quotes pre-filled, cursor moved inside via rl-backward-char
-config.bind(",sL", 'cmd-set-text :session-load "" ;; rl-backward-char')
+config.bind(",qL", 'cmd-set-text :session-load "" ;; rl-backward-char')
 config.bind(
-    ",sl", 'cmd-set-text :session-load --delete "" ;; rl-backward-char'
+    ",ql", 'cmd-set-text :session-load --delete "" ;; rl-backward-char'
 )  # --delete deletes saved session once loaded
 config.bind(
-    ",ss", 'cmd-set-text :session-save --only-active-window "" ;; rl-backward-char'
+    ",qs", 'cmd-set-text :session-save --only-active-window "" ;; rl-backward-char'
 )
-config.bind(",sd", 'cmd-set-text :session-delete "" ;; rl-backward-char')
 # Move a tab into a saved session without loading it (fuzzel picks the session):
 # append it, then close it
-config.bind(",sa", "spawn --userscript session-append --close")
-config.bind(",sA", "hint links userscript session-append")  # a hinted link instead
+config.bind(",qa", "spawn --userscript session-append --close")
+config.bind(",qA", "hint links userscript session-append")  # a hinted link instead
 # Open a tab from a saved session in a new tab (fuzzel picks session, then tab);
-# like ,sl/,sL, lowercase removes it from the session and uppercase keeps it
-config.bind(",st", "spawn --userscript session-take")
-config.bind(",sT", "spawn --userscript session-take --keep")
+# like ,ql/,qL, lowercase removes it from the session and uppercase keeps it
+config.bind(",qt", "spawn --userscript session-take")
+config.bind(",qT", "spawn --userscript session-take --keep")
 
 # --- [E]xternal Spawn Commands ---
 # [b]rowsers
@@ -204,17 +203,18 @@ config.bind("<Alt-/>", video("speed", 0))
 config.bind("<Alt-k>", video("volume", 0.05))
 config.bind("<Alt-j>", video("volume", -0.05))
 
-## qutewarden
-config.bind(",qf", "spawn --userscript qutewarden fill")
-config.bind(",qt", "spawn --userscript qutewarden totp")
-config.bind(",qg", "spawn --userscript qutewarden generate")
-config.bind(",qv", "spawn --userscript qutewarden vault --vault-allow-copy")
-config.bind(",qc", "spawn --userscript qutewarden card")
-config.bind(",qi", "spawn --userscript qutewarden identity")
-config.bind(",qu", "spawn --userscript qutewarden unlock")
-config.bind(",ql", "spawn --userscript qutewarden lock")
-config.bind(",qs", "spawn --userscript qutewarden sync")
-config.bind(",qS", "spawn --userscript qutewarden status")
+## qutewarden ([p]asswords)
+# Rare actions are aliases, so `:` completion finds them instead of a bind
+c.aliases["vault-sync"] = "spawn --userscript qutewarden sync"
+c.aliases["vault-status"] = "spawn --userscript qutewarden status"
+config.bind(",pf", "spawn --userscript qutewarden fill")
+config.bind(",pt", "spawn --userscript qutewarden totp")
+config.bind(",pg", "spawn --userscript qutewarden generate")
+config.bind(",pv", "spawn --userscript qutewarden vault --vault-allow-copy")
+config.bind(",pc", "spawn --userscript qutewarden card")
+config.bind(",pi", "spawn --userscript qutewarden identity")
+config.bind(",pu", "spawn --userscript qutewarden unlock")
+config.bind(",pl", "spawn --userscript qutewarden lock")
 
 # Mute linter warnings
 # ruff: noqa: F821

@@ -37,16 +37,20 @@ down to make room.
 
 **Sequences are group-first** (ADR 0002): the first letter names a domain, and
 what follows names the target within it (`e b h`: external → browser →
-helium). LazyVim's leader groups are the dictionary (`f` find, `g` git, `s`
+helium). Under a leader, LazyVim's leader groups are the dictionary (`f` find, `g` git, `s`
 search, `q` session, `b` buffer, `u` UI, `x` diagnostics). Other scopes use the
 same letter for the same domain, and claim a new letter only for a domain
-LazyVim lacks (`e` external).
+LazyVim lacks (`e` external, `m` memes and sounds, `o` outputs). A bare prefix,
+with no leader before it, follows the app's own convention (qutebrowser's `g`
+go, `;` hint, `c` config) plus `e` external.
 
 **Each modifier carries one meaning per scope.** In the window manager:
 
 - `Mod`: go to, or do
 - `+Ctrl`: move the thing
-- `+Shift`: a wider target (monitor rather than column, all rather than one)
+- `+Shift`: the other target or axis: a wider one (monitor rather than column,
+  all rather than one, fullscreen rather than maximized) or its counterpart
+  (window height beside column width, floating beside tiling)
 - `+Alt`: apps (summon)
 
 A different action, such as *add* beside *pick*, gets its own key or a leader
