@@ -412,6 +412,9 @@ binds {
     // vim's . for the desktop: replays the last repeatable action (a meme or sound pick, backlog into the same project, a meme/sound save
     // of the clipboard) with no menu (from the nixos flake's repeat package). Took the key from DMS's expel, which Mod+[ / Mod+] cover.
     Mod+Period repeat=false hotkey-overlay-title="Repeat the Last Action" { spawn "repeat"; }
+    // Click a table, image or similar and Jev's Box crops the screenshot to it (from the nixos flake's smart-shot package).
+    // Beside DMS's Print family, but ours, so it lives here. Records no repeat: a replay would still wait for a click.
+    Shift+Print repeat=false hotkey-overlay-title="Copy an Object" { spawn "smart-shot"; }
 
     // Kanata's Fn2 a/s/d send F13-F15, which xkb names XF86Tools/Launch5/Launch6. Plain: the focused
     // window's app (from the nixos flake's window-volume package). Shift + them = master volume, a shell bind,
