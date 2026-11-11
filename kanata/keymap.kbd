@@ -54,8 +54,8 @@
 
 (defalias
   cap (tap-hold-release 200 200 esc (layer-while-held fn1))
-  ;; Fn1 under the thumb. Tap then hold within 200 ms repeats Space; mid-word (within 150 ms of a keypress) it stays Space.
-  spc (tap-hold-release 200 200 spc (layer-while-held fn1) (require-prior-idle 150))
+  ;; Nav under the thumb. Tap then hold within 200 ms repeats Space; mid-word (within 150 ms of a keypress) it stays Space.
+  spc (tap-hold-release 200 200 spc (layer-while-held nav) (require-prior-idle 150))
   ;; Both physical Shifts + Esc toggles passthrough, independent of the game focus watcher; HRM's f+j shifts don't count.
   esc (switch
         ((and (input real lsft) (input real rsft) (base-layer passthrough))) (layer-switch $home) break
@@ -76,9 +76,34 @@
 (deflayermap (fn1)
   esc grv  1 f1  2 f2  3 f3  4 f4  5 f5  6 f6  7 f7  8 f8  9 f9  0 f10  - f11  = f12  bspc del
   tab @fn2  q pgdn  w up  e pgup  r caps  \ ins  p bspc
-  caps @cap  a left  s down  d rght  f esc  h home  j down  k up  l end  ' ins
+  caps @cap  a left  s down  d rght  h home  j down  k up  l end  ' ins
   z ret  x prnt  c micmute  v mrgt
   / /  ralt ralt  rmet menu  menu menu  rctl rctl)
+
+;; Nav's edit macros: vim's lowercase, or with Nav's f (Shift) held, its capital with Shift released.
+;; Plain keystrokes, so they act on whatever the app takes Home, Ctrl+Right etc. to mean.
+(defalias
+  ;; o / O: open a line below / above.
+  nva (switch ((input real f)) (multi (release-key lsft) (macro home ret up)) break
+              () (macro end ret) break)
+  ;; dd / D: delete the line / to its end.
+  nvx (switch ((input real f)) (multi (release-key lsft) (macro S-end del)) break
+              () (macro home S-end del del) break)
+  ;; ciw / C: change the word / to the line's end (no insert mode, so delete).
+  nve (switch ((input real f)) (multi (release-key lsft) (macro S-end del)) break
+              () (macro C-rght C-left C-S-rght del) break)
+  ;; yy: copy the line.
+  nvy (macro home S-end C-c rght))
+
+;; Hold Space. Navigation and editing for apps without vim's: hjkl arrows, d/f plain Ctrl/Shift
+;; (word motions, selection), vim-lettered macros on the left, hard-to-reach keys on the right.
+(deflayermap (nav)
+  w C-rght  e @nve  r C-S-z
+  a @nva  d lctl  f lsft  g C-home
+  z C-z  x @nvx  c C-c  b C-left
+  y @nvy  u home  i pgup  o end  p C-v
+  h left  j down  k up  l rght  ; ret
+  n bspc  m pgdn  , del)
 
 ;; Hold Tab inside Fn1.
 (deflayermap (fn2)

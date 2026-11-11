@@ -1,0 +1,44 @@
+# Nav (hold Space): vim-shaped navigation and edit macros for apps without them.
+
+# Right hand: hjkl arrows, u/o Home/End, i/m PgUp/PgDn.
+in: d:spc t:250 d:h t:20 u:h d:j t:20 u:j d:k t:20 u:k d:l t:20 u:l t:30 u:spc
+out: <left><down><up><right>
+in: d:spc t:250 d:u t:20 u:u d:o t:20 u:o d:i t:20 u:i d:m t:20 u:m t:30 u:spc
+out: <home><end><pgup><pgdown>
+# Hard-to-reach keys: n Backspace, , Delete, ; Enter.
+in: d:spc t:250 d:n t:20 u:n d:, t:20 u:, d:; t:20 u:; t:30 u:spc
+out: <bspace><delete><enter>
+
+# f holds Shift: a motion selects.
+in: d:spc t:250 d:f t:30 d:l t:20 u:l t:20 u:f t:30 u:spc
+out: <S-right>
+# d holds Ctrl: word motion, word delete, top/bottom.
+in: d:spc t:250 d:d t:30 d:h t:20 u:h d:n t:20 u:n d:o t:20 u:o t:20 u:d t:30 u:spc
+out: <C-left><C-bspace><C-end>
+
+# Word motions and top of document, one key each; f selects with them.
+in: d:spc t:250 d:w t:20 u:w d:b t:20 u:b d:g t:20 u:g t:30 u:spc
+out: <C-right><C-left><C-home>
+in: d:spc t:250 d:f t:30 d:w t:20 u:w t:20 u:f t:30 u:spc
+out: <C-S-right>
+
+# Undo, redo, copy, paste.
+in: d:spc t:250 d:z t:20 u:z d:r t:20 u:r d:c t:20 u:c d:p t:20 u:p t:30 u:spc
+out: <C-z><C-S-z><C-c><C-v>
+
+# Edit macros: a opens a line below, x deletes the line, e changes the word, y yanks the line.
+in: d:spc t:250 d:a t:20 u:a t:30 u:spc
+out: <end><enter>
+in: d:spc t:250 d:x t:20 u:x t:30 u:spc
+out: <home><S-end><delete><delete>
+in: d:spc t:250 d:e t:20 u:e t:30 u:spc
+out: <C-right><C-left><C-S-right><delete>
+in: d:spc t:250 d:y t:20 u:y t:30 u:spc
+out: <home><S-end><C-c><right>
+# With f, the vim capital: Shift (the lone <S>) is released first. O, D, C.
+in: d:spc t:250 d:f t:30 d:a t:20 u:a t:20 u:f t:30 u:spc
+out: <S><home><enter><up>
+in: d:spc t:250 d:f t:30 d:x t:20 u:x t:20 u:f t:30 u:spc
+out: <S><S-end><delete>
+in: d:spc t:250 d:f t:30 d:e t:20 u:e t:20 u:f t:30 u:spc
+out: <S><S-end><delete>

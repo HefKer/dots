@@ -12,7 +12,11 @@ parse_config:
     "@hr;": {t: ";", h: Gui}
     "@esc": {t: Esc, s: "⇧+⇧: passthru"}
     "@fnl": {t: Fn Lock}
-    "@spc": {t: Space, h: Fn1}
+    "@spc": {t: Space, h: Nav}
+    "@nva": {t: "o", s: "⇧: O"}
+    "@nvx": {t: "dd", s: "⇧: D"}
+    "@nve": {t: "ciw", s: "⇧: C"}
+    "@nvy": {t: "yy"}
     f13: {t: Win Vol-}
     f14: {t: Win Mute}
     f15: {t: Win Vol+}
