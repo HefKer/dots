@@ -6,5 +6,5 @@ if status is-interactive
     set -g fish_transient_prompt 1
 end
 
-set -gx MANPAGER 'bat -l man -p'
+set -gx MANPAGER 'nvim +Man!'
 fish_add_path /home/hefker/.lmstudio/bin
