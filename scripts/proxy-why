@@ -2,7 +2,8 @@
 # Why did HOST[:PORT] fail through the browser proxy? Retests it through the Proton
 # SOCKS hop and directly, prints the reason, and when it's blocked on the exit sends a
 # notification whose "Go direct" action adds the host to the direct list. Hosts on the
-# direct list, or checked in the last hour, are skipped. proxy-watch calls this.
+# direct list, or checked in the last hour, are skipped, and nothing is judged while
+# the tunnel itself is down. proxy-watch calls this.
 set -euo pipefail
 
 usage() { echo "usage: proxy-why HOST[:PORT]   (port defaults to 443)" >&2; exit 2; }
@@ -46,11 +47,17 @@ fi
 socks=$(awk '$1 == "forward-socks5t" { print $3; exit }' "$conf")
 [[ -n $socks ]] || { echo "proxy-why: no forward-socks5t line in $conf" >&2; exit 1; }
 
-reach() { timeout 15 nc -z -w 10 "$@" "$host" "$port" >/dev/null 2>&1; }
+# reach HOST PORT [nc options]
+reach() { timeout 15 nc -z -w 10 "${@:3}" "$1" "$2" >/dev/null 2>&1; }
+proton() { reach "$@" -X 5 -x "$socks"; }
 
-if reach -X 5 -x "$socks"; then
+if proton "$host" "$port"; then
   echo "$target: works through Proton on the retest, a passing blip"
-elif ! reach; then
+elif ! proton one.one.one.one 443; then
+  # A dead tunnel fails every host with the same reply as a blocked one; retest once it's back.
+  rm -f "$mark"
+  echo "$target: the Proton tunnel is down, not judged"
+elif ! reach "$host" "$port"; then
   echo "$target: fails through Proton and direct, the site is down"
 else
   echo "$target: blocked on the Proton exit; works direct"
