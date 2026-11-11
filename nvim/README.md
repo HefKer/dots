@@ -48,6 +48,8 @@ Claude Code from Neovim.
     for a selection, to the draft, relative to Claude's directory. It opens the
     prompt pane first if there isn't one, and focuses it to keep writing.
   - `/skill` and `@file` complete as they do in Claude's own input.
+  - `/clear` alone on the first line runs before the rest: the lines after it
+    go to the fresh session once Claude has switched to it.
   - `<leader>ah` picks from every prompt sent before, newest first with its
     directory, and `<leader>at` from the templates in
     [`prompts/`](.config/nvim/prompts/), which put the cursor at their `$0`.

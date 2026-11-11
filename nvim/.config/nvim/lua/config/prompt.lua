@@ -946,6 +946,21 @@ local function send()
   local text_sent = text -- whole, before a leading /skill is split off
   local agent, err = M.find_agent()
   if agent then
+    -- A /clear on its own first line runs by itself, and the rest of the prompt (blank
+    -- lines between dropped) goes to the fresh session once Claude has switched to it,
+    -- which its session record shows; sent anyway after 5s.
+    local after_clear = text:match("^/clear[ \t]*\n%s*(.+)$")
+    if after_clear and agent.agent_status ~= "blocked" then
+      local cleared = vim.system({ "herdr", "agent", "prompt", agent.pane_id, "/clear" }, { text = true }):wait()
+      if cleared.code ~= 0 then
+        return notify_error(herdr_error(cleared))
+      end
+      local before = agent.session
+      vim.wait(5000, function()
+        return claude_session(agent) ~= before
+      end, 100)
+      text = after_clear
+    end
     -- Claude only runs a leading /skill outside a long paste, which it reads as plain
     -- text, so that word goes in as its own paste. Bracketed by hand, since `agent prompt`
     -- is the only paste herdr offers and it submits. A blocked agent would be left with
