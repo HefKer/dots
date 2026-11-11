@@ -30,6 +30,14 @@ METADATA_PREFIXES = (
 SYNC_CONFLICT = re.compile(r"\.sync-conflict-[^./]*")
 # Earlier transcript searches quote the query; they found it, they aren't about it.
 TRANSCRIPT_SEARCH = re.compile(r"session-find|\.claude[^\s\"']*/projects")
+RANK_POOL = 60  # newest hits --rank scores: one request, well inside Jev's 64k tokens
+RANK_SNIPPETS = 3  # snippets kept per transcript for --rank to judge
+RANK_LEVELS = [
+    "Unrelated: the search words appear by coincidence, such as inside another word, a hash or a name",
+    "Mentions the topic in passing while working on something else",
+    "Discusses the topic, among other things",
+    "Is mainly about the topic",
+]
 
 
 def projects_root():
@@ -121,7 +129,7 @@ def scan(path, query=None, token=None, include_all=False):
     """
     found = {
         "path": path, "last": None, "cwds": {}, "ai_title": None, "custom_title": None,
-        "relocated": None, "matches": 0, "exact": 0, "snippet": None,
+        "relocated": None, "matches": 0, "exact": 0, "snippet": None, "snippets": [],
     }
     best = (-1, -1)
     words = query.split() if query else []
@@ -176,9 +184,12 @@ def scan(path, query=None, token=None, include_all=False):
                     offset = near[0]
                 else:
                     continue
+                snippet = snippet_at(text, offset, len(query))
+                if len(found["snippets"]) < RANK_SNIPPETS and snippet not in found["snippets"]:
+                    found["snippets"].append(snippet)
                 if (bool(exact), rank) > best:
                     best = (bool(exact), rank)
-                    found["snippet"] = snippet_at(text, offset, len(query))
+                    found["snippet"] = snippet
 
     found["last"] = found["last"].decode("ascii", "replace") if found["last"] else None
     found["cwds"] = [decode_cwd(raw) for raw in found["cwds"]]
@@ -303,6 +314,48 @@ def drop_conflict_copies(rows):
     return list(by_real_path.values())
 
 
+def rank(hits, intent, root):
+    """Order hits by how relevant Jev scores each to the intent, most relevant first.
+
+    Every hit is one Score question in a single request. Hits come back with a
+    "relevance" from 0 to len(RANK_LEVELS) - 1; on failure they come back as given.
+    """
+    questions = {}
+    for index, hit in enumerate(hits):
+        questions[f"hit{index}"] = {
+            "type": "score",
+            "instructions": {
+                "task": "How relevant is this past coding-agent session to what the user is looking for?",
+                "session": {
+                    "title": hit["custom_title"] or hit["ai_title"],
+                    "project": os.path.relpath(hit["path"], root).split(os.sep)[0],
+                    "excerpts": hit["snippets"],
+                },
+            },
+            "criteria": RANK_LEVELS,
+        }
+    # jev sits beside this script in the repo; installed, both are on PATH.
+    beside = os.path.join(os.path.dirname(os.path.realpath(__file__)), "jev")
+    jev = beside if os.access(beside, os.X_OK) else "jev"
+    try:
+        done = subprocess.run(
+            [jev, "ask"], capture_output=True, text=True, check=False,
+            input=json.dumps({"state": {"looking_for": intent}, "questions": questions}),
+        )
+        answers = json.loads(done.stdout)["answers"] if done.returncode == 0 else None
+    except (OSError, ValueError, KeyError):
+        answers = None
+    if not isinstance(answers, dict):
+        reason = (done.stderr.strip() or "no answer") if "done" in locals() else "jev not found"
+        print(f"session-find: not ranked, newest first instead ({reason})", file=sys.stderr)
+        return hits
+    for index, hit in enumerate(hits):
+        answer = answers.get(f"hit{index}")
+        hit["relevance"] = answer.get("score") if isinstance(answer, dict) else None
+    # Stable: equally relevant hits stay newest first.
+    return sorted(hits, key=lambda h: h["relevance"] if h["relevance"] is not None else -1, reverse=True)
+
+
 @functools.lru_cache(maxsize=None)
 def directory_for(project_dir):
     """Walk the filesystem for the directory an encoded project name stands for."""
@@ -353,6 +406,7 @@ def describe(root, found):
         "kind": "session", "session_id": stem, "parent_session_id": None, "agent_id": None,
         "last_activity": found["last"], "cwd": None, "worktree": None, "title": title,
         "matches": found["matches"], "near": not found["exact"], "snippet": found["snippet"], "resume": None,
+        "relevance": found.get("relevance"),
         "transcript": path,
     }
     moment = local_time(found["last"]) or datetime.fromtimestamp(os.path.getmtime(path)).astimezone()
@@ -392,6 +446,8 @@ def print_row(row):
     if row["worktree"]:
         head.append(f"(worktree {row['worktree']})")
     head.append(f"{row['matches']} {'near ' if row['near'] else ''}match{plural}")
+    if row["relevance"] is not None:
+        head.append(f"relevance {row['relevance']:.1f}/{len(RANK_LEVELS) - 1}")
     if row["title"]:
         head.append(json.dumps(row["title"], ensure_ascii=False))
     print("  ".join(head))
@@ -432,6 +488,11 @@ def parse_args():
     parser.add_argument("--subagents-only", action="store_true", help="only subagent transcripts")
     parser.add_argument("--json", action="store_true", help="print a JSON array")
     parser.add_argument("--all", action="store_true", help="also search tool results, skill bodies and past transcript searches")
+    parser.add_argument(
+        "--rank", metavar="INTENT",
+        help="order by relevance to INTENT, a sentence on what you are looking for, instead of "
+        f"newest first. Jev scores the {RANK_POOL} newest hits, so their titles and excerpts go to TypeSafe's API",
+    )
     args = parser.parse_args()
     if not args.text.strip():
         parser.error("text must not be empty")
@@ -457,6 +518,8 @@ def main():
             if (moment := local_time(h["last"])) is None or moment.date() >= args.since
         ]
     hits.sort(key=lambda h: h["last"] or "", reverse=True)
+    if args.rank and hits:
+        hits[:RANK_POOL] = rank(hits[:RANK_POOL], args.rank, root)
     rows = [describe(root, h) for h in hits[: args.limit]]
 
     if args.json:
