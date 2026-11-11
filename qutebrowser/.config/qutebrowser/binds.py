@@ -56,6 +56,11 @@ c.hints.selectors["para"] = [
     "figcaption",
 ]
 config.bind("v", "hint para userscript caret-anchor")
+# caret.js's inline <style> is refused under a strict CSP (GitHub); caret-anchor adopts the
+# same rules as a constructed stylesheet, so the refusal is noise.
+c.content.javascript.log_message.excludes["userscript:_qute_js"] = [
+    "*Refused to apply inline style because it violates the following Content Security Policy directive: *"
+]
 config.bind("<Ctrl-h>", "history")
 config.bind("cs", "config-source")
 config.bind("cc", "config-source --clear")  # --clear so deleted binds drop
