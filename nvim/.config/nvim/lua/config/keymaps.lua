@@ -51,3 +51,8 @@ end, { desc = "Add File to Claude Prompt" })
 vim.keymap.set("x", "<leader>ap", function()
   require("config.prompt_ref").add_selection()
 end, { desc = "Add Lines to Claude Prompt" })
+
+-- The outline in a picker rather than a loclist split (config/outline.lua).
+vim.keymap.set("n", "gO", function()
+  require("config.outline").open()
+end, { desc = "Outline" })

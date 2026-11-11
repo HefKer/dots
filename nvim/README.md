@@ -14,6 +14,11 @@ Claude Code from Neovim.
 
 ## Worth stealing
 
+- <a id="outline"></a>**`gO` in a picker.** Neovim's `gO` outline opens a
+  location-list split; here it opens a snacks picker instead: help, man,
+  markdown and checkhealth buffers list their headings (even with an LSP
+  attached, so markdown gets headings rather than marksman's symbols), and
+  other buffers their LSP symbols. [`outline.lua`](.config/nvim/lua/config/outline.lua)
 - <a id="prompt-pane"></a>**Prompt pane for Claude Code.** In
   [herdr](../herdr/), `prefix+a` opens an nvim scratch buffer zoomed over the
   Claude pane and moves Claude's unsent prompt into it. `<leader>as` sends the
