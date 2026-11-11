@@ -46,10 +46,51 @@ menu:
       - key: n
         desc: Rename the workspace
         cmd: dms ipc call workspace-rename open
+      - key: t
+        desc: Float or tile the window
+        cmd: niri msg action toggle-window-floating
+      - key: v
+        desc: Focus between floating and tiling
+        cmd: niri msg action switch-focus-between-floating-and-tiling
+      # keep_open: press again to keep moving
+      - key: u
+        desc: Move the workspace down
+        cmd: niri msg action move-workspace-down
+        keep_open: true
+      - key: i
+        desc: Move the workspace up
+        cmd: niri msg action move-workspace-up
+        keep_open: true
 
   - key: n
-    desc: Notification history
-    cmd: dms ipc call notifications toggle
+    desc: +notes
+    submenu:
+      - key: n
+        desc: Notification history
+        cmd: dms ipc call notifications toggle
+      - key: p
+        desc: Notepad
+        cmd: dms ipc call notepad toggle
+
+  # Print: the rare captures; Print (copy a region) and Mod+Print (edit one) stay combos.
+  - key: p
+    desc: +print
+    submenu:
+      - key: w
+        desc: Edit a window screenshot
+        cmd: dms ipc call quickCapture screenshot window edit
+      - key: s
+        desc: Edit a screen screenshot
+        cmd: dms ipc call quickCapture screenshot full edit
+      - key: r
+        desc: Record a region (GIF)
+        cmd: dms ipc call quickCapture recordToggle region
+      - key: R
+        desc: Record the screen (GIF)
+        cmd: dms ipc call quickCapture recordToggle screen
+      - key: c
+        desc: Pick a color
+        cmd: dms ipc call color-picker toggle
 
   # Memes and sounds (from the nixos flake's memes package); Quick Capture saves
   # recordings to ~/Videos/Recordings, its default recordingDirectory.
@@ -75,21 +116,28 @@ menu:
         desc: Browse recordings
         cmd: wezterm start --class yazi -- yazi ~/Videos/Recordings
 
-  # Casting points niri's Dynamic Cast Target (pick it once in the screenshare dialog).
+  # Casting points niri's Dynamic Cast Target (pick it once in the screenshare dialog),
+  # so it shows nothing unless a cast is live; each entry says what it did.
   - key: o
     desc: +outputs
     submenu:
       - key: r
         desc: Cast the right screen
-        cmd: niri msg action set-dynamic-cast-monitor DP-3
+        cmd: >-
+          niri msg action set-dynamic-cast-monitor DP-3
+          && notify-send -a niri "Casting: right screen"
       - key: o
         desc: Cast osu
         cmd: >-
-          niri msg action set-dynamic-cast-window --id "$(niri msg --json windows
-          | jq -r 'map(select(.app_id | test("^osu"; "i"))) | first | .id // empty')"
+          id="$(niri msg --json windows
+          | jq -r 'map(select(.app_id | test("^osu"; "i"))) | first | .id // empty')";
+          if [ -n "$id" ]; then niri msg action set-dynamic-cast-window --id "$id"
+          && notify-send -a niri "Casting: osu"; else notify-send -a niri "osu isn't open"; fi
       - key: x
         desc: Stop casting
-        cmd: niri msg action clear-dynamic-cast-target
+        cmd: >-
+          niri msg action clear-dynamic-cast-target
+          && notify-send -a niri "Casting: nothing"
       - key: p
         desc: Turn the monitors off
         cmd: niri msg action power-off-monitors
@@ -103,6 +151,21 @@ menu:
       - key: w
         desc: Browse wallpapers
         cmd: dms ipc call dankdash wallpaper
+      - key: l
+        desc: Night light
+        cmd: dms ipc call night toggle
+      - key: i
+        desc: Keep awake
+        cmd: dms ipc call inhibit toggle
+      - key: b
+        desc: Hide or show the bar
+        cmd: dms ipc call bar toggle index 0
+      - key: t
+        desc: Light or dark theme
+        cmd: dms ipc call theme toggle
+      - key: p
+        desc: Power profile
+        cmd: dms ipc call powerprofile toggle
 
   - key: q
     desc: +session

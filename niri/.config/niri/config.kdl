@@ -390,6 +390,8 @@ binds {
 
     // Toggles the kanata keymap, every layer (from the nixos flake's kanata-keymap module).
     Mod+Slash hotkey-overlay-title="Show the Keymap" { spawn "kanata-keymap"; }
+    // ? for help: search every scope's binds, in place of DMS's cheatsheet (from the nixos flake's bind-palette).
+    Mod+Shift+Slash hotkey-overlay-title="Search Binds" { spawn "bind-palette"; }
     // Records a kanata misfire in ~/dots/kanata/misfires.md (from the nixos flake's kanata-misfires package).
     Mod+Shift+Period hotkey-overlay-title="Flag a Keymap Misfire" { spawn "kanata-flag"; }
     // (Re)starts both kanata services, e.g. after killing a hung one (from the nixos flake's kanata-restart).

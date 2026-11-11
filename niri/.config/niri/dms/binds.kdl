@@ -1,21 +1,15 @@
 binds {
     Ctrl+Alt+BackSpace hotkey-overlay-title="Task Manager" { spawn "dms" "ipc" "call" "processlist" "focusOrToggle"; }
     Ctrl+Print hotkey-overlay-title="Copy the Screen" { spawn "dms" "screenshot" "full" "--no-file"; }
-    Ctrl+Shift+Print hotkey-overlay-title="Record the Screen (GIF)" { spawn "dms" "ipc" "call" "quickCapture" "recordToggle" "screen"; }
     Ctrl+XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "decrement" "3"; }
     Ctrl+XF86AudioRaiseVolume allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "increment" "3"; }
-    Mod+Alt+Print hotkey-overlay-title="Edit a Window" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "window" "edit"; }
     Mod+Comma hotkey-overlay-title="Settings" { spawn "dms" "ipc" "call" "settings" "focusOrToggle"; }
-    Mod+Ctrl+N hotkey-overlay-title="Notepad" { spawn "dms" "ipc" "call" "notepad" "toggle"; }
-    Mod+Ctrl+Print hotkey-overlay-title="Edit the Screen" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "full" "edit"; }
     Mod+N hotkey-overlay-title="Notification Center" { spawn "dms" "ipc" "call" "notifications" "toggle"; }
     Mod+Print hotkey-overlay-title="Edit a Region" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
     Mod+Shift+N hotkey-overlay-title="Open last notification" { spawn "dms" "ipc" "call" "notifications" "invokeLast"; }
-    Mod+Shift+Slash hotkey-overlay-title="Keybind Cheatsheet" { spawn "dms" "ipc" "call" "keybinds" "toggle" "niri"; }
     Mod+Space hotkey-overlay-title="Application Launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
     Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
     Print hotkey-overlay-title="Copy a Region" { spawn "dms" "screenshot" "region" "--no-file" "--no-confirm"; }
-    Shift+Print hotkey-overlay-title="Record a Region (GIF)" { spawn "dms" "ipc" "call" "quickCapture" "recordToggle" "region"; }
     Shift+XF86Launch5 allow-when-locked=true hotkey-overlay-title="Mute Master Volume" { spawn "dms" "ipc" "call" "audio" "mute"; }
     Shift+XF86Launch6 allow-when-locked=true hotkey-overlay-title="Master Volume Up" { spawn "dms" "ipc" "call" "audio" "increment" "5"; }
     Shift+XF86Tools allow-when-locked=true hotkey-overlay-title="Master Volume Down" { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
@@ -40,10 +34,6 @@ binds {
     Mod+8 { focus-workspace 8; }
     Mod+9 { focus-workspace 9; }
     Mod+Ctrl+I { move-column-to-workspace-up; }
-    Mod+Ctrl+Shift+I { move-workspace-up; }
-    Mod+Ctrl+Shift+Page_Down { move-workspace-down; }
-    Mod+Ctrl+Shift+Page_Up { move-workspace-up; }
-    Mod+Ctrl+Shift+U { move-workspace-down; }
     Mod+Ctrl+U { move-column-to-workspace-down; }
     Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
     Mod+Ctrl+WheelScrollUp cooldown-ms=150 { move-column-to-workspace-up; }
@@ -86,8 +76,6 @@ binds {
     Mod+Shift+F { fullscreen-window; }
     Mod+Shift+Minus { set-window-height "-10%"; }
     Mod+Shift+R { switch-preset-window-height; }
-    Mod+Shift+T { toggle-window-floating; }
-    Mod+Shift+V { switch-focus-between-floating-and-tiling; }
     Mod+Shift+WheelScrollDown { focus-column-right; }
     Mod+Shift+WheelScrollUp { focus-column-left; }
     Mod+Up { focus-window-up; }
