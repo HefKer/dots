@@ -30,6 +30,22 @@ menu:
         desc: Keymaps (bind palette)
         cmd: bind-palette
 
+  # The copied path (a file:// URI or ~ works too), e.g. one an agent printed.
+  - key: f
+    desc: +file
+    submenu:
+      - key: o
+        desc: Open the copied path
+        cmd: >-
+          p="$(wl-paste -n | sed "s|^file://||; s|^~|$HOME|")";
+          if [ -e "$p" ]; then xdg-open "$p"; else notify-send -a files "Not a path" "$p"; fi
+      - key: e
+        desc: Reveal the copied path in yazi
+        cmd: >-
+          p="$(wl-paste -n | sed "s|^file://||; s|^~|$HOME|")";
+          if [ -e "$p" ]; then wezterm start --class yazi -- yazi "$p";
+          else notify-send -a files "Not a path" "$p"; fi
+
   - key: w
     desc: +windows
     submenu:
