@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+"""Ask Jev, TypeSafe AI's decision model, a typed question about some text.
+
+Jev doesn't generate text: it judges a `state` and answers with probabilities.
+The state comes from --state or stdin.
+
+    jev noul "Is this about billing?" < mail.txt         # prints 0.98; exit 1 below --threshold
+    jev choice "Which tone?" calm angry "excited=eager or enthusiastic" -s "..."
+    jev score "How urgent?" "can wait" "this week" "today" -s "..."
+    jev ask < request.json                                # any questions, raw response
+    jev models
+
+Exit status: 0 on an answer (for noul: a yes), 1 for a noul below the threshold,
+2 on any failure. API reference: https://docs.typesafe.ai/llms.txt
+"""
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+
+BASE_URL = os.environ.get("TYPESAFE_BASE_URL", "https://api.typesafe.ai")
+# Pinned: the jev-latest alias can move to a model that answers differently, which
+# shifts every threshold tuned against this one.
+MODEL = os.environ.get("TYPESAFE_DEFAULT_MODEL", "jev-1.14.0")
+SECRET_FILE = "/run/secrets/jev-key"
+SOPS_FILE = os.path.expanduser("~/nixos/main/secrets/shared.yaml")
+TIMEOUT = 20
+RETRIES = 2  # on 429 (rate limit) and 529 (overloaded)
+
+
+class Failure(Exception):
+    pass
+
+
+def api_key():
+    if key := os.environ.get("TYPESAFE_API_KEY"):
+        return key
+    try:
+        with open(SECRET_FILE, encoding="utf-8") as handle:
+            return handle.read().strip()
+    except OSError:
+        pass
+    # Not deployed as a secret on this host: decrypt it, with the age key from Bitwarden
+    # unless the caller set another source. rbw asks for the vault password if locked.
+    env = dict(os.environ)
+    if not any(name in env for name in ("SOPS_AGE_KEY", "SOPS_AGE_KEY_FILE", "SOPS_AGE_KEY_CMD")):
+        env["SOPS_AGE_KEY_CMD"] = "rbw get sops-age-key"
+    try:
+        done = subprocess.run(
+            ["sops", "decrypt", "--extract", '["jev-key"]', SOPS_FILE],
+            capture_output=True, text=True, env=env, check=False,
+        )
+    except OSError as error:
+        raise Failure(f"no API key: set TYPESAFE_API_KEY ({error})") from None
+    if done.returncode or not done.stdout.strip():
+        reason = (done.stderr.strip().splitlines() or ["sops printed nothing"])[0]
+        raise Failure(f"no API key: set TYPESAFE_API_KEY, or fix sops ({reason})")
+    return done.stdout.strip()
+
+
+def explain(body):
+    """The message in an error body, whose `detail` is a string, an object or a list."""
+    try:
+        detail = json.loads(body).get("detail")
+    except (ValueError, AttributeError):
+        return body.strip()[:300]
+    if isinstance(detail, list):  # 422: one entry per invalid field
+        return "; ".join(
+            f"{'.'.join(map(str, item.get('loc', [])))}: {item.get('msg')}"
+            for item in detail if isinstance(item, dict)
+        )
+    return detail if isinstance(detail, str) else json.dumps(detail)
+
+
+def call(path, body=None):
+    request = urllib.request.Request(
+        BASE_URL + path,
+        data=json.dumps(body).encode() if body is not None else None,
+        headers={
+            "Authorization": f"Bearer {api_key()}",
+            "Content-Type": "application/json",
+            "User-Agent": "jev-cli",
+        },
+    )
+    for attempt in range(RETRIES + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as error:
+            if error.code in (429, 529) and attempt < RETRIES:
+                try:
+                    wait = float(error.headers.get("retry-after", ""))
+                except ValueError:
+                    wait = 2**attempt
+                time.sleep(min(wait, 10))
+                continue
+            text = error.read().decode("utf-8", "replace")
+            raise Failure(f"HTTP {error.code}: {explain(text)}") from None
+        except (urllib.error.URLError, TimeoutError, ValueError) as error:
+            raise Failure(f"request failed: {getattr(error, 'reason', error)}") from None
+
+
+def ask(state, questions, model=None):
+    """The `answers` of one request: {name: {"type": ..., "noul"|"choice"|"score": ..., ...}}."""
+    reply = call("/v1/systemone", {"model": model or MODEL, "state": state, "questions": questions})
+    return reply["answers"]
+
+
+def state_from(args):
+    if args.state is not None:
+        return args.state
+    if sys.stdin.isatty():
+        raise Failure("no state: pass --state or pipe the text in")
+    return sys.stdin.read()
+
+
+def options(pairs):
+    """`name` or `name=description` arguments as Choice criteria."""
+    criteria = {}
+    for pair in pairs:
+        name, _, description = pair.partition("=")
+        criteria[name] = description or None  # null: judged by its name alone
+    return criteria
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        prog="jev", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("-s", "--state", help="the text to judge (default: stdin)")
+    common.add_argument("--model", help=f"model ID or alias (default: {MODEL})")
+    common.add_argument("--json", action="store_true", help="print the whole answer as JSON")
+    commands = parser.add_subparsers(dest="command", required=True)
+
+    noul = commands.add_parser("noul", parents=[common], help="yes/no: prints the probability of yes")
+    noul.add_argument("question")
+    noul.add_argument("-t", "--threshold", type=float, default=0.5, help="exit 1 below this (default 0.5)")
+
+    choice = commands.add_parser("choice", parents=[common], help="one of the options: prints its name")
+    choice.add_argument("question")
+    choice.add_argument("options", nargs="+", metavar="option[=description]")
+
+    score = commands.add_parser("score", parents=[common], help="a rubric: prints the expected level, from 0")
+    score.add_argument("question")
+    score.add_argument("levels", nargs="+", metavar="level", help="descriptions, lowest first (at most 10)")
+
+    raw = commands.add_parser("ask", help="request JSON on stdin (model optional), response JSON out")
+    raw.add_argument("--model", help=f"model when the request names none (default: {MODEL})")
+    commands.add_parser("models", help="list the models")
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    if args.command == "models":
+        print(json.dumps(call("/v1/models"), indent=2))
+        return 0
+    if args.command == "ask":
+        try:
+            request = json.load(sys.stdin)
+        except ValueError as error:
+            raise Failure(f"stdin is not JSON: {error}") from None
+        request.setdefault("model", args.model or MODEL)
+        print(json.dumps(call("/v1/systemone", request), indent=2, ensure_ascii=False))
+        return 0
+
+    question = {"type": args.command, "instructions": args.question}
+    if args.command == "choice":
+        question["criteria"] = options(args.options)
+    elif args.command == "score":
+        question["criteria"] = args.levels
+    answer = ask(state_from(args), {"q": question}, args.model)["q"]
+    print(json.dumps(answer, ensure_ascii=False) if args.json else answer[args.command])
+    if args.command == "noul":
+        return 0 if answer["noul"] >= args.threshold else 1
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Failure as failure:
+        print(f"jev: {failure}", file=sys.stderr)
+        sys.exit(2)
+    except KeyboardInterrupt:
+        sys.exit(130)
