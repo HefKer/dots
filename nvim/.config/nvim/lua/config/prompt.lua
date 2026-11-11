@@ -33,7 +33,7 @@ local state = {
 -- The viewer window's look while it shows the reply; a file shown there gets the
 -- global values back. Set with vim.wo[win][0], like :setlocal, so other windows keep them.
 local viewer_opts =
-  { number = false, relativenumber = false, signcolumn = "no", spell = false, wrap = true, linebreak = true }
+  { number = true, relativenumber = true, signcolumn = "no", spell = false, wrap = true, linebreak = true }
 
 -- herdr prints errors as JSON on stderr; fall back to the raw text for anything else.
 local function herdr_error(result)
