@@ -7,7 +7,7 @@ The state comes from --state or stdin; for box, it is the image, named `image`.
     jev noul "Is this about billing?" < mail.txt         # prints 0.98; exit 1 below --threshold
     jev choice "Which tone?" calm angry "excited=eager or enthusiastic" -s "..."
     jev score "How urgent?" "can wait" "this week" "today" -s "..."
-    jev box shot.png "the table in `image`" --noul "Is there a table in `image`?"
+    jev box shot.png 'the table in `image`' --noul 'Is there a table in `image`?'
                                   # prints "left top right bottom confidence" (0-1 fractions),
                                   # then the noul's probability; exit 1 below --threshold
     jev ask < request.json                                # any questions, raw response
@@ -239,14 +239,14 @@ def parse_args():
     score.add_argument("question")
     score.add_argument("levels", nargs="+", metavar="level", help="descriptions, lowest first (at most 10)")
 
-    find = commands.add_parser("box", help="locate something in an image: prints its edges as 0-1 fractions")
-    find.add_argument("image", help="PNG or JPEG, each side 280-1568 px; named `image` in the questions")
-    find.add_argument("instructions", help="what to find, e.g. \"the table in `image`\"")
-    find.add_argument("--noul", metavar="QUESTION", help="also ask this yes/no in the same request (a box always answers)")
-    find.add_argument("-t", "--threshold", type=float, default=0.5, help="exit 1 when the noul is below this (default 0.5)")
-    find.add_argument("--model", help=f"model ID or alias (default: {MODEL}; images need jev-1.14 or later)")
-    find.add_argument("--json", action="store_true", help="print the answers as JSON")
-    find.add_argument("--save-request", metavar="FILE", help="write the request JSON (without the image bytes) here")
+    locate = commands.add_parser("box", help="locate something in an image: prints its edges as 0-1 fractions")
+    locate.add_argument("image", help="PNG or JPEG, each side 280-1568 px; named `image` in the questions")
+    locate.add_argument("instructions", help="what to find, e.g. 'the table in `image`'")
+    locate.add_argument("--noul", metavar="QUESTION", help="also ask this yes/no in the same request (a box always answers)")
+    locate.add_argument("-t", "--threshold", type=float, default=0.5, help="exit 1 when the noul is below this (default 0.5)")
+    locate.add_argument("--model", help=f"model ID or alias (default: {MODEL}; images need jev-1.14 or later)")
+    locate.add_argument("--json", action="store_true", help="print the answers as JSON")
+    locate.add_argument("--save-request", metavar="FILE", help="write the request JSON (without the image bytes) here")
 
     raw = commands.add_parser("ask", help="request JSON on stdin (model optional), response JSON out")
     raw.add_argument("--model", help=f"model when the request names none (default: {MODEL})")
