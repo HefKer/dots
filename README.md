@@ -81,6 +81,7 @@ stealing list][nixos-worth-stealing].
 | [fuzzel](fuzzel/) | App launcher and picker for the qutebrowser session scripts | |
 | [hunk](hunk/) | Diff viewer used for reviewing agent changes | |
 | [mpv](mpv/) | Video player | |
+| [yt-dlp](yt-dlp/) | Video downloader: no AV1, metadata on; [`scripts/ytdl`](scripts/ytdl) wraps it with subtitles for qutebrowser's `emd` binds | |
 | [lazygit](lazygit/) | Git TUI in the DMS accent: detailed graph, flat file list, g/G, edit in a herdr split | [README](lazygit/README.md) |
 | [swayimg](swayimg/) | Image viewer behind the keymap viewer (Mod+/): vim keys, page-like scrolling | |
 | [vesktop](vesktop/) | Discord client: Vesktop and Vencord settings and Quick CSS; the theme comes from DankMaterialShell | [README](vesktop/README.md) |

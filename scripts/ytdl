@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mkdir -p "$HOME/.local/share/ytdl"
+echo "$@" >> "$HOME/.local/share/ytdl/downloaded.txt"
+
+yt-dlp \
+    --write-subs \
+    --write-auto-subs \
+    --embed-subs \
+    --convert-subs srt \
+    --embed-metadata \
+    --merge-output-format mkv \
+    -o "$HOME/Videos/%(title)s.%(ext)s" \
+    "$@"
+
+find "$HOME/Videos" -maxdepth 1 -name "*.srt" -delete

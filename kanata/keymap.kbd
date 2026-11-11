@@ -124,3 +124,10 @@
 (deflayermap (game)
   esc @esc  caps (layer-while-held fn1)
   / up  ralt left  rmet down  menu down  rctl rght)
+
+;; Stardew Valley: the game layer, with Space as the animation cancel (Right Shift + Delete + R at once).
+(defalias acn (multi rsft del r))
+(deflayermap (stardew)
+  esc @esc  caps (layer-while-held fn1)
+  / up  ralt left  rmet down  menu down  rctl rght
+  spc @acn)

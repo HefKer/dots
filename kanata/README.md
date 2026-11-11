@@ -40,6 +40,10 @@ it.
   Ctrl, for games that want both WASD and arrows. The same watcher switches to
   it while a Steam game has focus, and passthrough stays for osu.
   [`keymap.kbd`](keymap.kbd)
+- <a id="stardew-layer"></a>**A per-game layer: Stardew Valley's animation
+  cancel on Space.** The game layer, with Space pressing Right Shift, Delete
+  and R together, so one tool does all remapping instead of xremap beside
+  kanata. The watcher picks it by the game's app id. [`keymap.kbd`](keymap.kbd)
 - <a id="viewer"></a>**An on-screen keymap viewer.** `Mod+/` in niri toggles a
   [keymap-drawer](https://github.com/caksoylar/keymap-drawer) render of the layers.
   [`keymap-drawer.yaml`](keymap-drawer.yaml) supplies legends for the aliases its

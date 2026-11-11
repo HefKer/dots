@@ -21,3 +21,4 @@ parse_config:
     f14: {t: Win Mute}
     f15: {t: Win Vol+}
     micmute: {t: Mic Mute}
+    "@acn": {t: Anim Cancel, s: "⇧ Del R"}
