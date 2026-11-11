@@ -11,6 +11,7 @@ The state comes from --state or stdin; for box, it is the image, named `image`.
                                   # prints "left top right bottom confidence" (0-1 fractions),
                                   # then the noul's probability; exit 1 below --threshold
     jev ask < request.json                                # any questions, raw response
+    jev ask --image shot=shot.png < request.json          # ... with an asset {"part": "shot"}
     jev models
 
 Exit status: 0 on an answer (for noul: a yes), 1 for a noul below the threshold,
@@ -249,6 +250,10 @@ def parse_args():
     locate.add_argument("--save-request", metavar="FILE", help="write the request JSON (without the image bytes) here")
 
     raw = commands.add_parser("ask", help="request JSON on stdin (model optional), response JSON out")
+    raw.add_argument(
+        "--image", action="append", default=[], metavar="PART=FILE",
+        help="attach FILE as multipart part PART, for an asset naming it with \"part\" (repeatable)",
+    )
     raw.add_argument("--model", help=f"model when the request names none (default: {MODEL})")
     commands.add_parser("models", help="list the models")
     return parser.parse_args()
@@ -267,7 +272,13 @@ def main():
         except ValueError as error:
             raise Failure(f"stdin is not JSON: {error}") from None
         request.setdefault("model", args.model or MODEL)
-        print(json.dumps(call("/v1/systemone", request), indent=2, ensure_ascii=False))
+        images = {}
+        for pair in args.image:
+            part, sep, path = pair.partition("=")
+            if not sep or not part or part == "request":
+                raise Failure(f"--image wants PART=FILE, PART not 'request': {pair}")
+            images[part] = load_image(path)
+        print(json.dumps(call("/v1/systemone", request, images), indent=2, ensure_ascii=False))
         return 0
 
     question = {"type": args.command, "instructions": args.question}
