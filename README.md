@@ -144,7 +144,7 @@ reading their config) rather than loudly.
 |-----|-----|--------|-------|
 | [`fish`](fish/) | fish shell | `~/.config/fish/` | Vi keys, zoxide-shadowed `cd`, FZF widgets, custom `yt_chat` / `yt_summarize` functions wrapping the `claude` CLI. |
 | [`niri`](niri/) | [niri](https://github.com/YaLTeR/niri) Wayland compositor | `~/.config/niri/`, plus `~/.config/niri-host.kdl` | `config.kdl` `include`s split files under `dms/` (binds, outputs, windowrules, …). Driven by DMS. Each host gets its own `host/<host>.kdl` (layout, touchpad) at the canonical name `niri-host.kdl`. |
-| [`DankMaterialShell`](DankMaterialShell/) | [DMS](https://github.com/AvengeMedia/DankMaterialShell) niri shell | `~/.config/DankMaterialShell/`, and `~/.config/Dux Shell/` for the nvim colorscheme | Settings, themes, plugin metadata. |
+| [`DankMaterialShell`](DankMaterialShell/) | [DMS](https://github.com/AvengeMedia/DankMaterialShell) niri shell | `~/.config/DankMaterialShell/` (the nvim colorscheme reads it via DMS's own `~/.config/dms` symlink) | Settings, themes, plugin metadata. |
 | [`nvim`](nvim/) | Neovim | `~/.config/nvim/` | [LazyVim](https://www.lazyvim.org/) base. User plugins in `lua/plugins/`, config in `lua/config/`. |
 | [`wezterm`](wezterm/) | [WezTerm](https://wezterm.org/) | `~/.config/wezterm/` | `wezterm.lua` loads `keys.lua` and sets `color_scheme = "dank-theme"` from `colors/dank-theme.toml`. |
 | [`herdr`](herdr/) | [herdr](https://herdr.dev) agent multiplexer | `config.toml`, the hunk-diff plugin config, and `~/.config/herdr-auto-title/config.env` | See note below; auto-title's directory also holds its state, so only `config.env` is linked. |
