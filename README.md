@@ -77,6 +77,7 @@ stealing list][nixos-worth-stealing].
 | [btop](btop/) | Resource monitor, Everforest soft | |
 | [atuin](atuin/) | Shell history search | |
 | [tealdeer](tealdeer/) | tldr pages, refreshing themselves; fish's Alt+T shows one for the command being typed | |
+| [backlog](backlog/) | Projects the `backlog` quick capture (Mod+B) files ideas into, one GitHub tracker each | |
 | [fuzzel](fuzzel/) | App launcher and picker for the qutebrowser session scripts | |
 | [hunk](hunk/) | Diff viewer used for reviewing agent changes | |
 | [mpv](mpv/) | Video player | |

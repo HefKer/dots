@@ -1,0 +1,17 @@
+# Projects `backlog` (from the nixos flake) files ideas into; edits apply at the next capture, no rebuild.
+# Per project: name, repo, match (words looked for in the focused window's title and app id, or the cwd;
+# the name always matches), labels (default [needs-triage, capture]), public_ok (default false: a public
+# repo is refused). After adding a repo or a label, run `backlog setup` once.
+projects:
+  - name: nixos
+    repo: HefKer/nixos-issues
+    match: [homelab, nixos-config]
+  - name: dots
+    repo: hefker/dots-issues
+    match: [dotfiles]
+  - name: osugacha
+    repo: HefKer/osugacha
+    match: [osu! gacha]
+  - name: discord
+    repo: HefKer/vc-issues
+    match: [vesktop, vencord, vc-actions, vc-presets, vc-shrink]
