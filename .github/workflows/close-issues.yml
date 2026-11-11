@@ -1,7 +1,7 @@
 # Closes hefker/dots-issues issues named by a closing keyword in commits pushed
 # to main, since GitHub's own keywords don't reach the private tracker.
-# Needs DOTS_ISSUES_TOKEN: a fine-grained PAT with Issues read/write on
-# hefker/dots-issues only.
+# Needs ISSUE_TRACKER_TOKEN: a fine-grained PAT with Issues read/write on the
+# private trackers (one token shared by every code repo).
 name: close-issues
 
 on:
@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Close issues named in pushed commits
         env:
-          GH_TOKEN: ${{ secrets.DOTS_ISSUES_TOKEN }}
+          GH_TOKEN: ${{ secrets.ISSUE_TRACKER_TOKEN }}
           REPO: hefker/dots-issues
         run: |
           set -euo pipefail

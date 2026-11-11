@@ -7,8 +7,12 @@ vim
 less
 tail
 
-# dev servers and watchers
+# dev servers and watchers; npm retitles itself, so its scripts match by title
 npm
+npm run dev
+npm start
+npm run start
+npm run serve
 pnpm
 yarn
 bun

@@ -149,7 +149,7 @@ reading their config) rather than loudly.
 | [`DankMaterialShell`](DankMaterialShell/) | [DMS](https://github.com/AvengeMedia/DankMaterialShell) niri shell | `~/.config/DankMaterialShell/` (the nvim colorscheme reads it via DMS's own `~/.config/dms` symlink) | Settings, themes, plugin metadata. |
 | [`nvim`](nvim/) | Neovim | `~/.config/nvim/` | [LazyVim](https://www.lazyvim.org/) base. User plugins in `lua/plugins/`, config in `lua/config/`. |
 | [`wezterm`](wezterm/) | [WezTerm](https://wezterm.org/) | `~/.config/wezterm/` | `wezterm.lua` loads `keys.lua` and sets `color_scheme = "dank-theme"` from `colors/dank-theme.toml`. |
-| [`herdr`](herdr/) | [herdr](https://herdr.dev) agent multiplexer | `config.toml`, the hunk-diff plugin config, and `~/.config/herdr-auto-title/config.env` | See note below; auto-title's directory also holds its state, so only `config.env` is linked. |
+| [`herdr`](herdr/) | [herdr](https://herdr.dev) agent multiplexer | `config.toml`, the hunk-diff and herdr-resurrect plugin configs, and `~/.config/herdr-auto-title/config.env` | See note below; auto-title's directory also holds its state, so only `config.env` is linked. |
 | [`git`](git/) | git | `config` and `ignore` only | The directory takes git's runtime state (credential store, gitk), so the two files are linked alone. |
 | [`qutebrowser`](qutebrowser/) | [qutebrowser](https://qutebrowser.org/) | `~/.config/qutebrowser/`, plus `userscripts/` | Multi-file config split across `appearance`, `privacy`, `filepicker`, `binds`, `search_engines`. Themes under `themes/`. Only `userscripts/` is linked under `~/.local/share/qutebrowser`, whose history and caches stay out of here. See deps below. |
 | [`mpv`](mpv/) | [mpv](https://mpv.io/) | `~/.config/mpv/` | `mpv.conf` + `input.conf`. |
@@ -169,7 +169,7 @@ destroys a file-level link.
 - [`docs/`](docs/) — Written for agents working in this repo, not symlinked anywhere. [`agents/`](docs/agents/) says where issues live and how the triage labels and domain docs are read; [`adr/`](docs/adr/) records decisions that are hard to reverse.
 - [`.claude/`](.claude/) — Repo-specific Claude Code skills, one per package. The global ignore drops `/.claude` wholesale, so `.gitignore` re-includes `skills/` on its own.
 - [`.githooks/`](.githooks/) — Pre-commit syntax/format checks for staged configs (stylua, `fish -n`, `niri validate`, …). Enable once per clone with `git config core.hooksPath .githooks`.
-- [`.github/`](.github/) — `close-issues.yml` closes issues in the private tracker named by `Closes hefker/dots-issues#N` in commits pushed to `main`, since GitHub's closing keywords don't cross repositories. Needs the `DOTS_ISSUES_TOKEN` secret.
+- [`.github/`](.github/) — `close-issues.yml` closes issues in the private tracker named by `Closes hefker/dots-issues#N` in commits pushed to `main`, since GitHub's closing keywords don't cross repositories. Needs the `ISSUE_TRACKER_TOKEN` secret.
 
 ### Application-written state
 

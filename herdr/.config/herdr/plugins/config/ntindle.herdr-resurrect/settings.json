@@ -1,7 +1,4 @@
 {
   "autoRestore": false,
-  "autoRestoreSettleMs": 2500,
-  "agentResume": false,
-  "agentResumeCommands": {},
-  "notify": { "onSave": false, "onAutoSave": false, "onRestore": false }
+  "agentResume": false
 }

@@ -74,6 +74,8 @@ It's where my Claude Code sessions, shells and editors live. Only
   snapshot` (or its dry run), relaunches the programs on an explicit allowlist,
   nvim among them. Claude panes are left to herdr's own `resume_agents_on_restore`,
   so nothing resumes them twice, and restore never runs on its own.
+  Snapshots follow pane and workspace events; for a timed one too, open its
+  `resurrect autosave` pane and leave it running.
   [`allowlist.txt`](.config/herdr/plugins/config/ntindle.herdr-resurrect/allowlist.txt),
   [`settings.json`](.config/herdr/plugins/config/ntindle.herdr-resurrect/settings.json)
 
