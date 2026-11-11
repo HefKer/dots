@@ -8,8 +8,9 @@ fi
 
 IDS=()
 while IFS= read -r url; do
-    id=$(echo "$url" | grep -oP '(?<=v=)[^&]+')
-    [[ -n "$id" ]] && IDS+=("\"$id\"")
+    # Only the YouTube ID charset: the IDs end up in JS run on youtube.com.
+    id=$(grep -oP '[?&]v=\K[A-Za-z0-9_-]{11}(?![A-Za-z0-9_-])' <<< "$url" | head -n1)
+    [[ -n "$id" ]] && IDS+=("$id")
 done < "$DOWNLOADED"
 
 if [[ ${#IDS[@]} -eq 0 ]]; then
@@ -19,7 +20,7 @@ fi
 
 printf 'message-info "wl-clean: removing %d video(s)"\n' "${#IDS[@]}" >> "$QUTE_FIFO"
 
-IDS_JSON="[$(IFS=,; echo "${IDS[*]}")]"
+IDS_JSON=$(printf '%s\n' "${IDS[@]}" | jq -Rsc 'split("\n")[:-1]')
 
 TMPJS=$(mktemp /tmp/wl-clean-XXXXXX.js)
 cat > "$TMPJS" << JSEOF
