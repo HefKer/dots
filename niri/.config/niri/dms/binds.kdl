@@ -60,7 +60,6 @@ binds {
     Mod+F { maximize-column; }
     Mod+Home { focus-column-first; }
     Mod+Minus { set-column-width "-10%"; }
-    Mod+Period { expel-window-from-column; }
     Mod+Q repeat=false { close-window; }
     Mod+R { switch-preset-column-width; }
     Mod+Shift+C { center-visible-columns; }
