@@ -2,7 +2,11 @@
 set -euo pipefail
 
 mkdir -p "$HOME/.local/share/ytdl"
-echo "$@" >> "$HOME/.local/share/ytdl/downloaded.txt"
+# Log only valid video IDs, normalized to a watch URL: wl-clean puts them in JS on youtube.com.
+for arg in "$@"; do
+    grep -oP '(?:[?&]v=|youtu\.be/|/(?:shorts|embed|live)/)\K[A-Za-z0-9_-]{11}(?![A-Za-z0-9_-])' <<< "$arg" | head -n1 \
+        | sed 's|^|https://www.youtube.com/watch?v=|' >> "$HOME/.local/share/ytdl/downloaded.txt" || true
+done
 
 yt-dlp \
     --write-subs \
