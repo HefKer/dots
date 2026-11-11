@@ -41,6 +41,32 @@ local function herdr_error(result)
   return ok and vim.tbl_get(decoded, "error", "message") or vim.trim(result.stderr)
 end
 
+-- The pane's session, from Claude's own record (<config dir>/sessions/<pid>.json) of
+-- the process running in it. herdr's agent_session can go stale: a fresh Claude
+-- started in a pane whose last one had none (csend's fallback, prefix+u on an empty
+-- session) is never picked up by herdr, which keeps the old id, so the reply never
+-- updates. herdr's id is the fallback, for a Claude without the record.
+---@param agent table a pane from `herdr pane list`
+local function claude_session(agent)
+  local found, started = nil, -1
+  for _, file in ipairs(vim.fn.glob("~/.claude*/sessions/*.json", false, true)) do
+    local fh = io.open("/proc/" .. vim.fn.fnamemodify(file, ":t:r") .. "/environ", "rb")
+    local env = fh and fh:read("*a")
+    if fh then
+      fh:close()
+    end
+    if env and ("\0" .. env):find("\0HERDR_PANE_ID=" .. agent.pane_id .. "\0", 1, true) then
+      local ok, record = pcall(function()
+        return vim.json.decode(table.concat(vim.fn.readfile(file), "\n"))
+      end)
+      if ok and type(record) == "table" and record.sessionId and (record.startedAt or 0) > started then
+        found, started = record.sessionId, record.startedAt or 0
+      end
+    end
+  end
+  return found or vim.tbl_get(agent, "agent_session", "value")
+end
+
 local function notify_error(msg)
   vim.notify(msg, vim.log.levels.ERROR, { title = "Claude prompt" })
 end
@@ -56,6 +82,7 @@ local function pick_agent(listed)
   if #agents ~= 1 then
     return nil, ("Expected one Claude pane in this tab, found %d"):format(#agents)
   end
+  agents[1].session = claude_session(agents[1])
   return agents[1]
 end
 
@@ -71,7 +98,7 @@ end
 ---@return string? path of the agent's session transcript
 ---@return string? err
 local function session_path(agent, err)
-  local session = agent and vim.tbl_get(agent, "agent_session", "value")
+  local session = agent and agent.session
   if not session then
     return nil, err or "Claude has no session yet"
   end
@@ -295,7 +322,7 @@ end
 -- Re-read on every poll; a missing file (a Claude without the shared statusline)
 -- just leaves those parts out.
 local function read_statusline(agent)
-  local session = agent and vim.tbl_get(agent, "agent_session", "value")
+  local session = agent and agent.session
   local path = session and ("%s/claude-statusline/%s.json"):format(vim.env.XDG_RUNTIME_DIR or "/tmp", session)
   local ok, info = pcall(function()
     -- luanil: a fresh session's nulls (used_percentage) become nil, not truthy vim.NIL.
@@ -1053,7 +1080,7 @@ function M.open()
   state.prompt = { buf = buf, win = win }
   vim.wo[win][0].winfixheight = true
   local agent = M.find_agent()
-  state.session = agent and vim.tbl_get(agent, "agent_session", "value")
+  state.session = agent and agent.session
   restore_draft(buf)
 
   local map = function(mode, lhs, rhs, desc)
