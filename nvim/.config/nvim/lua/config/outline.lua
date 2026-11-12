@@ -4,6 +4,11 @@
 -- <leader>ss shows them.
 local M = {}
 
+-- Jump in the window gO was pressed in, not snacks' least-recently-used "main"
+-- one: the outline is always the source buffer's, and the prompt pane's two
+-- windows would otherwise trade buffers.
+local MAIN = { current = true }
+
 -- The runtime ftplugins' gO bodies, each of which fills the loclist and lopens it.
 local toc = {
   help = function()
@@ -48,6 +53,7 @@ local function headings(fill)
       return { { item.text } }
     end,
     preview = "file",
+    main = MAIN,
     sort = { fields = { "score:desc", "idx" } },
   })
 end
@@ -57,7 +63,7 @@ function M.open()
   if fill then
     return headings(fill)
   end
-  Snacks.picker.lsp_symbols({ filter = LazyVim.config.kind_filter })
+  Snacks.picker.lsp_symbols({ filter = LazyVim.config.kind_filter, main = MAIN })
 end
 
 -- Runtime ftplugins set a buffer-local gO, which beats a global one; drop it.
