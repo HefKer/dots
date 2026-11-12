@@ -6,6 +6,7 @@
 - herdr plugins are registered by `~/nixos/main/homes/modules/herdr-plugins.nix`, whose sync writes `plugins.json` at rebuild: a plugin kept here (`herdr/plugins/<name>/`) goes in its `localPlugins` list and stays editable without a rebuild; a third-party one is packaged under `~/nixos/main/pkgs/`. Use `herdr plugin link` only to try a plugin out: it lives in this machine's `plugins.json` alone.
 - The repo is public, and features are shared by linking their **Worth stealing** entry in the package's `README.md`. A commit that adds something reusable adds its entry in the same commit, in the existing entries' format with the anchor, linking only the file, since the commit has no hash yet.
 - Before taking a screenshot, read `README.md`'s Screenshots section: it keeps browsing history, bookmarks and sessions out of the image.
+- Where new software goes (loose script here, flake package in `~/nixos/`, or its own project in `~/dev/`) is decided by `~/nixos/main/docs/adr/0010-where-new-software-goes.md`; a script here stays one file with no dependencies beyond what is installed and no tests.
 - Commit directly to `main`; create a branch only when asked.
 - Binds: before proposing, adding or changing a bind in any scope, read `docs/agents/binds.md`.
 - `reference/` holds clones of other people's dotfiles, kept to read for ideas. Gitignored, never linked — don't edit anything under it.
