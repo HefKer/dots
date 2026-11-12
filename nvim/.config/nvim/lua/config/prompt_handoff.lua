@@ -8,12 +8,16 @@ local M = {}
 -- resume = what to do once back, abandon = what to do if you leave it }.
 local trip = nil
 local timer = nil
--- What Claude's pane shows, given by config.prompt at open: fun(cb(screen?, agent?, err?)).
+-- What Claude's pane shows, given by config.prompt at open: fun(cb(screen?, agent?, err?, text?)).
 local read_screen = nil
+-- Whether the prompt pane answers the dialog on a blocked screen itself, given its text.
+local answerable = nil
 
----@param reader fun(cb: fun(screen?: "idle"|"working"|"blocked"|"dialog", agent?: table, err?: string))
-function M.setup(reader)
+---@param reader fun(cb: fun(screen?: "idle"|"working"|"blocked"|"dialog", agent?: table, err?: string, text?: string))
+---@param can_answer? fun(text: string): boolean
+function M.setup(reader, can_answer)
   read_screen = reader
+  answerable = can_answer
 end
 
 -- Whether a dialog is up in Claude's pane, in place of its input box.
@@ -21,12 +25,14 @@ local function dialog_up(screen)
   return screen == "blocked" or screen == "dialog"
 end
 
--- Whether this dialog sends you to Claude's pane. Every one does, for now; the place
--- to narrow it to the dialogs the prompt pane can't answer itself. Only for going:
--- coming back waits for any dialog to close.
+-- Whether this dialog sends you to Claude's pane: any but one the prompt pane answers
+-- itself, a permission prompt or question about a tool call, its options read off the
+-- screen (config.prompt_pending). /model's picker, or options that couldn't be read,
+-- still go. Only for going: coming back waits for any dialog to close.
 ---@param screen "idle"|"working"|"blocked"|"dialog"
-function M.wants(screen)
-  return dialog_up(screen)
+---@param text? string Claude's screen
+function M.wants(screen, text)
+  return dialog_up(screen) and not (screen == "blocked" and text and answerable and answerable(text))
 end
 
 function M.active()

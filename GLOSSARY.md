@@ -113,6 +113,10 @@ the next, ahead of the prose that follows them. A command directly followed by
 text takes that text as its arguments.
 _Avoid_: message queue
 
+**Pending call**:
+The tool call Claude is blocked on, asking your permission or an answer. The
+prompt pane shows it in place of the reply and answers its dialog.
+
 **Hand-off**:
 The prompt pane giving focus to Claude's own pane for a dialog only it answers,
 and taking it back once the dialog is answered. A command queue pauses for it.

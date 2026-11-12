@@ -68,13 +68,26 @@ Claude Code from Neovim.
     queue runs in the background with its progress in the reply's bar, and
     pauses at a dialog or permission prompt (below), going on once it's
     answered. [`config/prompt_queue.lua`](.config/nvim/lua/config/prompt_queue.lua)
-  - <a id="hand-off"></a>When Claude opens a dialog only its own pane answers
-    (a permission prompt, a question, `/model`'s picker), the prompt pane hands
-    off: Claude's pane comes up zoomed and focused, and once the dialog is
-    answered the prompt pane is zoomed and focused again, the queue picking up
-    where it paused. A send Claude refuses while blocked hands off too, and is
-    sent once you're back. `<leader>ac` (or `:ClaudePane`) hands off on
-    purpose, coming back once a dialog you open there closes. Only from a
+  - <a id="pending-call"></a>While Claude is blocked on a tool call, the reply
+    gives way to the call: Bash's command, an edit's diff, the questions with
+    their numbered options, or the plan to approve, then the dialog's own
+    options. `<leader>ay` answers yes, `<leader>aY` yes and don't ask again,
+    `<leader>an` no (Esc), `<leader>a1`..`<leader>a9` an option, each checked
+    against the options on Claude's screen first, so a dialog laid out
+    differently only notifies. Once answered, the reply is back. Claude can hold
+    a call back from its transcript until it's answered; the dialog as its
+    screen shows it stands in, diff and plan included. A send refused while
+    blocked points at the binds; a queue reaching such a dialog waits for the
+    answer. Free-text answers ("Type something", "Tell Claude what to change")
+    are left to Claude's pane, through `<leader>ac`.
+    [`config/prompt_pending.lua`](.config/nvim/lua/config/prompt_pending.lua)
+  - <a id="hand-off"></a>When Claude opens a dialog the prompt pane can't answer
+    (`/model`'s picker, or one whose options can't be read off the screen), the
+    prompt pane hands off: Claude's pane comes up zoomed and focused, and once
+    the dialog is answered the prompt pane is zoomed and focused again, the
+    queue picking up where it paused. A send Claude refuses at such a dialog
+    hands off too, and is sent once you're back. `<leader>ac` (or
+    `:ClaudePane`) hands off on purpose, coming back once a dialog you open there closes. Only from a
     focused prompt pane; going elsewhere, or back by hand with the dialog still
     up, abandons the hand-off and puts the paused queue back in the draft.
     [`config/prompt_handoff.lua`](.config/nvim/lua/config/prompt_handoff.lua)
@@ -101,6 +114,7 @@ Claude Code from Neovim.
   [`config/prompt_table.lua`](.config/nvim/lua/config/prompt_table.lua),
   [`config/prompt_stash.lua`](.config/nvim/lua/config/prompt_stash.lua),
   [`config/prompt_handoff.lua`](.config/nvim/lua/config/prompt_handoff.lua),
+  [`config/prompt_pending.lua`](.config/nvim/lua/config/prompt_pending.lua),
   [`prompts/`](.config/nvim/prompts/),
   [`plugins/img-clip.lua`](.config/nvim/lua/plugins/img-clip.lua),
   [`scripts/claude-prompt`](../scripts/claude-prompt) ·
