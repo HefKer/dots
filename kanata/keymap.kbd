@@ -68,6 +68,13 @@
         () (layer-switch fn1) break)
 )
 
+;; f+j together: Esc without leaving the home row. Both are Shift under HRM, so the chord has no
+;; other use, and fj/jf is rare in English. Needs the defcfg's concurrent-tap-hold; its
+;; chords-v2-min-idle skips the chord (and its delay) for keys typed mid-word.
+;; Off where f and j aren't letters: Nav (Shift, Down), Fn1/Fn2, and the stock game layers.
+(defchordsv2
+  (f j) esc 40 first-release (nav fn1 fn2 passthrough game stardew))
+
 ;; Stock keys except Caps; unmapped keys fall through to defsrc.
 (deflayermap (base)
   esc @esc  caps @cap  spc @spc)
