@@ -18,8 +18,9 @@ Claude Code from Neovim.
   location-list split; here it opens a snacks picker instead: help, man,
   markdown and checkhealth buffers list their headings (even with an LSP
   attached, so markdown gets headings rather than marksman's symbols), and
-  other buffers their LSP symbols. A pick jumps in the window `gO` was pressed
-  in, not the one snacks would choose, so split layouts stay put.
+  other buffers their LSP symbols. `<leader>o` opens it too. A pick jumps in
+  the window it was opened from, not the one snacks would choose, so split
+  layouts stay put.
   [`outline.lua`](.config/nvim/lua/config/outline.lua)
 - <a id="prompt-pane"></a>**Prompt pane for Claude Code.** In
   [herdr](../herdr/), `prefix+a` opens an nvim scratch buffer zoomed over the

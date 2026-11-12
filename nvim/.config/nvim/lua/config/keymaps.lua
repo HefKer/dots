@@ -53,6 +53,9 @@ vim.keymap.set("x", "<leader>ap", function()
 end, { desc = "Add Lines to Claude Prompt" })
 
 -- The outline in a picker rather than a loclist split (config/outline.lua).
-vim.keymap.set("n", "gO", function()
-  require("config.outline").open()
-end, { desc = "Outline" })
+-- <leader>o is the short way; gO stays on the picker so the runtime's split never returns.
+for _, lhs in ipairs({ "<leader>o", "gO" }) do
+  vim.keymap.set("n", lhs, function()
+    require("config.outline").open()
+  end, { desc = "Outline" })
+end
