@@ -46,10 +46,6 @@ times a guess until the real windows are measured.
   `f` held each gives its capital (`O`, `D`, `C`). Backspace, Delete and Enter
   sit under the right hand. Space pressed mid-word stays Space, and tapping it
   then holding it repeats Space. [`keymap.kbd`](keymap.kbd)
-- <a id="fj-esc"></a>**`f`+`j` together for Esc, without leaving the home
-  row.** Both are Shift under home-row mods, so the chord has no other use, and
-  fj/jf is rare in English. A key typed within 150 ms of another skips the chord
-  and its delay, so typing mid-word stays as fast as before. [`keymap.kbd`](keymap.kbd)
 - <a id="passthrough"></a>**A passthrough layer for games.** It drops the
   tap-hold delays so key timing is exact. A watcher switches to it
   automatically, and both shifts + Esc toggle it by hand.

@@ -1,11 +1,10 @@
 # The Wooting's rapid trigger: short down-to-up windows, and a slight lift
 # reads as a release then a new press. These pin current behaviour.
 
-# A key nested inside f's short window (fast "fo", the start of "for") types
-# both letters: concurrent-tap-hold (which the f+j chord needs) settles it as a
-# tap. Without it this read as a deliberate Shift.
+# A key nested inside f's short window (fast "fo", the start of "for") reads as
+# a deliberate Shift.
 in: d:f t:40 d:o t:35 u:o t:20 u:f
-out: fo
+out: O
 # f lifted before the 200 ms timeout: a tap, so the re-press holds the letter.
 in: d:f t:120 u:f t:15 d:f t:200 d:j t:30 u:j t:30 u:f
 out: ffj
