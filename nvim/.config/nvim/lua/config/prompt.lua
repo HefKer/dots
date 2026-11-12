@@ -5,6 +5,7 @@
 local M = {}
 
 local tables = require("config.prompt_table")
+local queue = require("config.prompt_queue")
 
 local ns = vim.api.nvim_create_namespace("claude_prompt_quote")
 local ns_table = vim.api.nvim_create_namespace("claude_prompt_table")
@@ -28,6 +29,7 @@ local state = {
   watcher = nil,
   timer = nil,
   unseen = false, -- a reply arrived while a file covered the viewer
+  queue = nil, -- the command queue being sent: { n, total, label }
 }
 
 -- The viewer window's look while it shows the reply; a file shown there gets the
@@ -345,6 +347,14 @@ local function set_winbars()
       or "Claude · no reply yet"
     if state.view ~= "tasks" and tasks then
       title = title .. " · " .. tasks
+    end
+    if state.queue then
+      title = title
+        .. ("%%#DiagnosticWarn# · %s %d/%d%%#WinBar#"):format(
+          (state.queue.label:gsub("%%", "%%%%")),
+          state.queue.n,
+          state.queue.total
+        )
     end
     vim.wo[state.viewer.win][0].winbar = "%#WinBar# 󰚩 " .. title .. status_line() .. "%=%#Comment#<leader>ak tasks "
   end
@@ -934,6 +944,196 @@ end
 ------------------------------------------------------------------------------
 -- Sending
 
+-- `agent prompt` rather than `pane send-text`: it pastes, so newlines don't submit
+-- early and Claude's vim mode can't run the text, and it refuses a blocked agent.
+-- Claude only runs a command outside a long paste, which it reads as plain text, so a
+-- command with arguments goes in as its own paste first. Bracketed by hand, since
+-- `agent prompt` is the only paste herdr offers and it submits.
+---@param item prompt.Item
+---@param cb fun(err?: string)
+local function send_item(agent, item, cb)
+  local function prompt(text)
+    vim.system(
+      { "herdr", "agent", "prompt", agent.pane_id, text },
+      { text = true },
+      vim.schedule_wrap(function(sent)
+        cb(sent.code ~= 0 and herdr_error(sent) or nil)
+      end)
+    )
+  end
+  if not (item.name and item.args) then
+    return prompt(item.name or item.args)
+  end
+  vim.system(
+    { "herdr", "pane", "send-text", agent.pane_id, "\27[200~" .. item.name .. " \27[201~" },
+    { text = true },
+    vim.schedule_wrap(function(pasted)
+      if pasted.code ~= 0 then
+        return cb(herdr_error(pasted))
+      end
+      prompt(item.args)
+    end)
+  )
+end
+
+local function lookup_agent(cb)
+  vim.system(
+    list_panes(),
+    { text = true },
+    vim.schedule_wrap(function(listed)
+      cb(pick_agent(listed))
+    end)
+  )
+end
+
+-- Whether Claude's input box is on screen: a `❯` line under a `─` rule. A dialog such
+-- as /model's picker, or a permission prompt, takes its place.
+local function input_box(screen)
+  local above
+  for _, line in ipairs(vim.split(screen, "\n", { plain = true })) do
+    if vim.trim(line) ~= "" then
+      if line:find("^❯") and above and above:find("^─") then
+        return true
+      end
+      above = line
+    end
+  end
+  return false
+end
+
+-- What Claude's pane shows now. herdr's agent_status alone misses a dialog: it keeps
+-- the last state behind /model's picker, so the screen is read for the input box too.
+---@param cb fun(screen?: "idle"|"working"|"blocked"|"dialog", agent?: table, err?: string)
+local function read_screen(cb)
+  lookup_agent(function(agent, err)
+    if not agent then
+      return cb(nil, nil, err)
+    end
+    vim.system(
+      { "herdr", "pane", "read", agent.pane_id, "--source", "visible" },
+      { text = true },
+      vim.schedule_wrap(function(read)
+        if read.code ~= 0 then
+          return cb(nil, agent, herdr_error(read))
+        end
+        local screen = agent.agent_status == "blocked" and "blocked"
+          or not input_box(read.stdout) and "dialog"
+          or agent.agent_status == "working" and "working"
+          or "idle"
+        cb(screen, agent)
+      end)
+    )
+  end)
+end
+
+local waiting_msg = "Claude is waiting on you (a dialog or permission prompt)"
+
+-- Waits for a command to finish: /clear until Claude's session record names a new
+-- session, anything else until Claude's input box is back. A command too quick to be
+-- seen working counts as done once it has been idle for a second. Gives up after 10s,
+-- so the next item goes anyway; calls back with why when a prompt or dialog opens, or
+-- the input box stays gone for over a second.
+---@param item prompt.Item
+---@param before? string the session the command was sent in
+---@param cb fun(why?: string)
+local function await_item(item, before, cb)
+  local start, busy, stuck = vim.uv.now(), false, nil
+  local function poll()
+    read_screen(function(screen, agent)
+      local now = vim.uv.now()
+      local elapsed = now - start
+      if screen == "blocked" then
+        return cb(waiting_msg)
+      end
+      busy = busy or screen == "working"
+      if screen == "dialog" then
+        stuck = stuck or now
+        if now - stuck >= 1000 then
+          return cb(waiting_msg)
+        end
+      else
+        stuck = nil
+      end
+      local done = screen == "idle"
+        and (item.name == "/clear" and agent.session ~= before or item.name ~= "/clear" and (busy or elapsed >= 1000))
+      if done or elapsed >= 10000 then
+        return cb()
+      end
+      vim.defer_fn(poll, 250)
+    end)
+  end
+  vim.defer_fn(poll, 250)
+end
+
+-- Puts items the queue didn't send back in the draft, above anything typed since.
+---@param items prompt.Item[]
+local function put_back(items)
+  local buf = state.prompt.buf
+  if #items == 0 or not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    return
+  end
+  local lines = vim.split(
+    table.concat(
+      vim.tbl_map(function(item)
+        return item.source
+      end, items),
+      "\n\n"
+    ),
+    "\n"
+  )
+  local current = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  if vim.trim(table.concat(current, "\n")) ~= "" then
+    table.insert(lines, "")
+    vim.list_extend(lines, current)
+  end
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  save_draft()
+end
+
+-- Steps through the command queue in the background, each item once the one before
+-- has finished, with its progress in the viewer's winbar. A blocked agent or a refused
+-- send stops it, and what's left goes back in the draft.
+---@param items prompt.Item[]
+local function run_queue(items)
+  local function stop(from, why)
+    state.queue = nil
+    set_winbars()
+    put_back(vim.list_slice(items, from))
+    notify_error(why .. (from <= #items and "; the rest is back in the draft" or ""))
+  end
+  local function step(i)
+    if i > #items then
+      state.queue = nil
+      set_winbars()
+      -- The session may have changed (/clear, a restarted Claude); follow it.
+      return M.transcript_async(attach_to)
+    end
+    state.queue = { n = i, total = #items, label = queue.label(items[i]) }
+    set_winbars()
+    read_screen(function(screen, agent, err)
+      if not screen then
+        return stop(i, err)
+      elseif screen == "blocked" or screen == "dialog" then
+        return stop(i, waiting_msg)
+      end
+      send_item(agent, items[i], function(send_err)
+        if send_err then
+          return stop(i, send_err)
+        elseif i == #items then
+          return step(i + 1)
+        end
+        await_item(items[i], agent.session, function(why)
+          if why then
+            return stop(i + 1, why)
+          end
+          step(i + 1)
+        end)
+      end)
+    end)
+  end
+  step(1)
+end
+
 local function send()
   local buf = state.prompt.buf
   if not (buf and vim.api.nvim_buf_is_valid(buf)) then
@@ -943,42 +1143,28 @@ local function send()
   if text == "" then
     return
   end
-  local text_sent = text -- whole, before a leading /skill is split off
+  if state.queue then
+    return notify_error("Still sending the last command queue")
+  end
+  local items = queue.parse(text)
   local agent, err = M.find_agent()
+  if agent and items[1].name then
+    if agent.agent_status == "blocked" then
+      return notify_error(waiting_msg)
+    end
+    record(text)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+    save_draft()
+    return run_queue(items)
+  end
   if agent then
-    -- A /clear on its own first line runs by itself, and the rest of the prompt (blank
-    -- lines between dropped) goes to the fresh session once Claude has switched to it,
-    -- which its session record shows; sent anyway after 5s.
-    local after_clear = text:match("^/clear[ \t]*\n%s*(.+)$")
-    if after_clear and agent.agent_status ~= "blocked" then
-      local cleared = vim.system({ "herdr", "agent", "prompt", agent.pane_id, "/clear" }, { text = true }):wait()
-      if cleared.code ~= 0 then
-        return notify_error(herdr_error(cleared))
-      end
-      local before = agent.session
-      vim.wait(5000, function()
-        return claude_session(agent) ~= before
-      end, 100)
-      text = after_clear
-    end
-    -- Claude only runs a leading /skill outside a long paste, which it reads as plain
-    -- text, so that word goes in as its own paste. Bracketed by hand, since `agent prompt`
-    -- is the only paste herdr offers and it submits. A blocked agent would be left with
-    -- the word in its input, so that case falls through for `agent prompt` to refuse.
-    local skill, rest = text:match("^(/[%w:_-]+)%s+(.+)$")
-    if skill and agent.agent_status ~= "blocked" then
-      vim.system({ "herdr", "pane", "send-text", agent.pane_id, "\27[200~" .. skill .. " \27[201~" }):wait()
-      text = rest
-    end
-    -- `agent prompt` rather than `pane send-text`: it pastes, so newlines don't submit
-    -- early and Claude's vim mode can't run the text, and it refuses a blocked agent.
     local sent = vim.system({ "herdr", "agent", "prompt", agent.pane_id, text }, { text = true }):wait()
     err = sent.code ~= 0 and herdr_error(sent) or nil
   end
   if err then
     return notify_error(err)
   end
-  record(text_sent)
+  record(text)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
   save_draft()
   -- The session may have changed since open (a restarted Claude); follow it.

@@ -1,7 +1,8 @@
 # Dotfiles
 
 The content of the user's app configs. This glossary fixes the vocabulary for
-binds: what triggers them, which scope owns them, and what earns one.
+binds (what triggers them, which scope owns them, and what earns one) and for
+writing to a Claude agent from nvim.
 
 ## Language
 
@@ -91,3 +92,23 @@ Bringing a specific app to focus from anywhere: its most recently focused
 window on the first press, the next of its windows on each repeat, a new one
 if none is open. Distinct from spawning, which always opens a new window.
 _Avoid_: launch, focus-or-spawn
+
+### Prompt pane
+
+**Prompt pane**:
+An nvim pane, opened over a Claude agent's pane, for writing to that agent while
+reading its replies.
+_Avoid_: prompt editor, nvim-claude
+
+**Draft**:
+The unsent text in the prompt pane, kept across crashes until it is sent.
+_Avoid_: prompt (for the unsent text)
+
+**Reply**:
+What Claude wrote between two of your prompts, shown above the draft.
+
+**Command queue**:
+The slash commands leading a draft, each sent on its own and finished before
+the next, ahead of the prose that follows them. A command directly followed by
+text takes that text as its arguments.
+_Avoid_: message queue

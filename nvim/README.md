@@ -55,8 +55,13 @@ Claude Code from Neovim.
     for a selection, to the draft, relative to Claude's directory. It opens the
     prompt pane first if there isn't one, and focuses it to keep writing.
   - `/skill` and `@file` complete as they do in Claude's own input.
-  - `/clear` alone on the first line runs before the rest: the lines after it
-    go to the fresh session once Claude has switched to it.
+  - Slash commands leading the draft are a command queue: each is sent on its
+    own, once the one before has finished (`/clear` once Claude is on the new
+    session), and then the prose. `/clear`, `/model opus`, then a question, in
+    one send. A command directly followed by text takes it as arguments. The
+    queue runs in the background with its progress in the reply's bar, and
+    stops at a dialog or permission prompt, putting what's left back in the
+    draft. [`config/prompt_queue.lua`](.config/nvim/lua/config/prompt_queue.lua)
   - `<leader>ah` picks from every prompt sent before, newest first with its
     directory, and `<leader>at` from the templates in
     [`prompts/`](.config/nvim/prompts/), which put the cursor at their `$0`.
