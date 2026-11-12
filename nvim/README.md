@@ -66,8 +66,18 @@ Claude Code from Neovim.
     session), and then the prose. `/clear`, `/model opus`, then a question, in
     one send. A command directly followed by text takes it as arguments. The
     queue runs in the background with its progress in the reply's bar, and
-    stops at a dialog or permission prompt, putting what's left back in the
-    draft. [`config/prompt_queue.lua`](.config/nvim/lua/config/prompt_queue.lua)
+    pauses at a dialog or permission prompt (below), going on once it's
+    answered. [`config/prompt_queue.lua`](.config/nvim/lua/config/prompt_queue.lua)
+  - <a id="hand-off"></a>When Claude opens a dialog only its own pane answers
+    (a permission prompt, a question, `/model`'s picker), the prompt pane hands
+    off: Claude's pane comes up zoomed and focused, and once the dialog is
+    answered the prompt pane is zoomed and focused again, the queue picking up
+    where it paused. A send Claude refuses while blocked hands off too, and is
+    sent once you're back. `<leader>ac` (or `:ClaudePane`) hands off on
+    purpose, coming back once a dialog you open there closes. Only from a
+    focused prompt pane; going elsewhere, or back by hand with the dialog still
+    up, abandons the hand-off and puts the paused queue back in the draft.
+    [`config/prompt_handoff.lua`](.config/nvim/lua/config/prompt_handoff.lua)
   - `<leader>ah` picks from every prompt sent before, newest first with its
     directory, and `<leader>at` from the templates in
     [`prompts/`](.config/nvim/prompts/), which put the cursor at their `$0`.
@@ -90,6 +100,7 @@ Claude Code from Neovim.
   [`config/prompt_source.lua`](.config/nvim/lua/config/prompt_source.lua),
   [`config/prompt_table.lua`](.config/nvim/lua/config/prompt_table.lua),
   [`config/prompt_stash.lua`](.config/nvim/lua/config/prompt_stash.lua),
+  [`config/prompt_handoff.lua`](.config/nvim/lua/config/prompt_handoff.lua),
   [`prompts/`](.config/nvim/prompts/),
   [`plugins/img-clip.lua`](.config/nvim/lua/plugins/img-clip.lua),
   [`scripts/claude-prompt`](../scripts/claude-prompt) ·
