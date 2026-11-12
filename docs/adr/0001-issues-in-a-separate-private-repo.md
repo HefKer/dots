@@ -34,8 +34,9 @@ The mechanics live in `docs/agents/issue-tracker.md`; this ADR records why.
 tracker command carries `--repo hefker/dots-issues`. `GH_REPO` does not help: each shell
 command runs fresh, so the variable is gone by the next call.
 
-Closing keywords do not cross repository boundaries. `Fixes #12` in a `dots` commit closes
-nothing; tracker issues are closed explicitly, quoting the SHA. A bare `hefker/dots-issues#12`
+Closing keywords cross repository boundaries only when fully qualified. `Fixes #12` in a
+`dots` commit closes nothing; `Fixes hefker/dots-issues#12` closes it once the commit lands
+on `main`. A bare `hefker/dots-issues#12`
 in a public commit message still leaves a backlink in the issue timeline, and renders as a
 dead reference to anyone without access — so a public commit can carry an issue number
 without leaking its contents.
