@@ -194,6 +194,11 @@ menu:
       - key: l
         desc: Lock the screen
         cmd: dms ipc call lock lock
+      # The sleep lets the lock screen come up and the key release pass, so it
+      # doesn't wake the monitors straight back.
+      - key: L
+        desc: Lock the screen and turn the monitors off
+        cmd: dms ipc call lock lock; sleep 1; niri msg action power-off-monitors
       - key: d
         desc: Restart Vesktop
         cmd: >-
