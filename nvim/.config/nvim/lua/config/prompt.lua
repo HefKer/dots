@@ -37,6 +37,8 @@ local state = {
   timer = nil,
   unseen = false, -- a reply arrived while a file covered the viewer
   queue = nil, -- the command queue being sent: { n, total, label }
+  stop_queue = nil, -- stops it, putting back what isn't sent yet: fun(why: string)
+  interrupted = false, -- shown in the viewer's bar for a moment after an interrupt
   cwd = nil, -- Claude's working directory, and its git branch
   branch = nil,
 }
@@ -378,6 +380,9 @@ local function set_winbars()
       or "Claude · no reply yet"
     if state.view ~= "tasks" and tasks then
       title = title .. " · " .. tasks
+    end
+    if state.interrupted then
+      title = title .. "%#DiagnosticWarn# · interrupted%#WinBar#"
     end
     if state.queue then
       title = title
@@ -1221,10 +1226,17 @@ local waiting_msg = "Claude is waiting on you (a dialog or permission prompt)"
 ---@param item prompt.Item
 ---@param before? string the session the command was sent in
 ---@param cb fun(screen?: "blocked"|"dialog", text?: string)
-local function await_item(item, before, cb)
+---@param alive fun(): boolean false once the queue is stopped, which ends the wait unanswered
+local function await_item(item, before, cb, alive)
   local start, busy, stuck = vim.uv.now(), false, nil
   local function poll()
+    if not alive() then
+      return
+    end
     read_screen(function(screen, agent, _, text)
+      if not alive() then
+        return
+      end
       local now = vim.uv.now()
       local elapsed = now - start
       if screen == "blocked" then
@@ -1290,11 +1302,17 @@ end
 
 -- Waits for an answerable dialog to close, answered from here or in Claude's pane.
 ---@param cb fun()
-local function wait_answered(cb)
+---@param alive fun(): boolean false once the queue is stopped, which ends the wait
+local function wait_answered(cb, alive)
+  if not alive() then
+    return
+  end
   read_screen(function(screen)
-    if screen == "blocked" or screen == "dialog" then
+    if not alive() then
+      return
+    elseif screen == "blocked" or screen == "dialog" then
       return vim.defer_fn(function()
-        wait_answered(cb)
+        wait_answered(cb, alive)
       end, 500)
     end
     cb()
@@ -1330,15 +1348,26 @@ end
 -- has finished, with its progress in the viewer's winbar. A dialog asking about a tool
 -- call is answered from here, and one the prompt pane can't answer hands off to Claude's
 -- pane (config.prompt_handoff); either holds the rest until it closes. A trip not taken
--- or abandoned, or a refused send, stops it, and what's left goes back in the draft.
+-- or abandoned, a refused send, or an interrupt (state.stop_queue) stops it, and what
+-- isn't sent yet goes back in the draft. Every wait checks it's still running first.
 ---@param items prompt.Item[]
 local function run_queue(items)
   local step
+  local running, unsent = true, 1
+  local function alive()
+    return running
+  end
   local function stop(from, why)
-    state.queue = nil
+    if not running then
+      return
+    end
+    running, state.queue, state.stop_queue = false, nil, nil
     set_winbars()
     put_back(vim.list_slice(items, from))
     notify_error(why .. (from <= #items and "; the rest is back in the draft" or ""))
+  end
+  state.stop_queue = function(why)
+    stop(unsent, why)
   end
   -- Pauses at item `from` for a dialog, or stops there if no trip is taken.
   local function pause(agent, from, screen, text)
@@ -1349,7 +1378,7 @@ local function run_queue(items)
       vim.notify("Claude is waiting on you: " .. answer_hint, vim.log.levels.WARN, { title = "Claude prompt" })
       return wait_answered(function()
         step(from)
-      end)
+      end, alive)
     end
     handoff.go(agent, {
       armed = true,
@@ -1360,7 +1389,9 @@ local function run_queue(items)
         stop(from, waiting_msg)
       end,
     }, function(went)
-      if went then
+      if not running then
+        return
+      elseif went then
         state.queue.label = state.queue.label .. " · in Claude's pane"
         set_winbars()
       else
@@ -1369,8 +1400,12 @@ local function run_queue(items)
     end)
   end
   step = function(i)
+    if not running then
+      return
+    end
+    unsent = i
     if i > #items then
-      state.queue = nil
+      running, state.queue, state.stop_queue = false, nil, nil
       set_winbars()
       -- The session may have changed (/clear, a restarted Claude); follow it.
       return M.transcript_async(attach_to)
@@ -1378,15 +1413,21 @@ local function run_queue(items)
     state.queue = { n = i, total = #items, label = queue.label(items[i]) }
     set_winbars()
     read_screen(function(screen, agent, err, text)
-      if not screen then
+      if not running then
+        return
+      elseif not screen then
         return stop(i, err)
       elseif screen == "blocked" or screen == "dialog" then
         return pause(agent, i, screen, text)
       end
       send_item(agent, items[i], function(send_err)
-        if send_err then
+        if not running then
+          return
+        elseif send_err then
           return stop(i, send_err)
-        elseif i == #items and not items[i].name then
+        end
+        unsent = i + 1
+        if i == #items and not items[i].name then
           return step(i + 1)
         end
         -- A last command is awaited too, for the dialog it may open (/model).
@@ -1395,7 +1436,7 @@ local function run_queue(items)
             return pause(agent, i + 1, opened, text)
           end
           step(i + 1)
-        end)
+        end, alive)
       end)
     end)
   end
@@ -1450,6 +1491,45 @@ local function send()
   save_draft()
   -- The session may have changed since open (a restarted Claude); follow it.
   attach()
+end
+
+-- Interrupts Claude's turn, as Esc in its pane does, without leaving this one. A running
+-- queue stops first, whatever it's waiting on, and what isn't sent yet goes back in the
+-- draft; Claude is sent Esc only while it's working or has a dialog up. In vim mode an
+-- Esc in insert mode only leaves it, so Claude's input mode, from the statusline it
+-- shares, decides between one and two. The pending call clears once the interrupt
+-- reaches the transcript.
+local function interrupt()
+  local had_queue = state.stop_queue ~= nil
+  if had_queue then
+    state.stop_queue("Interrupted")
+  end
+  read_screen(function(screen, agent, err)
+    if not screen then
+      return notify_error(err)
+    elseif screen == "idle" then
+      if not had_queue then
+        vim.notify("Claude isn't working", vim.log.levels.INFO, { title = "Claude prompt" })
+      end
+      return
+    end
+    read_statusline(agent)
+    local mode = vim.tbl_get(state.statusline or {}, "vim", "mode")
+    local keys = { "herdr", "pane", "send-keys", agent.pane_id, "esc" }
+    if type(mode) == "string" and mode:upper() ~= "NORMAL" then
+      table.insert(keys, "esc")
+    end
+    local sent = vim.system(keys, { text = true }):wait()
+    if sent.code ~= 0 then
+      return notify_error(herdr_error(sent))
+    end
+    state.interrupted = true
+    set_winbars()
+    vim.defer_fn(function()
+      state.interrupted = false
+      set_winbars()
+    end, 3000)
+  end)
 end
 
 -- The hand-off on purpose: back on its own once Claude has opened a dialog and closed it.
@@ -1554,6 +1634,7 @@ local function open_viewer(prompt_win)
   map("n", "<leader>ak", toggle_tasks, "Claude's Tasks")
   map("n", "<leader>as", send, "Send Prompt to Claude")
   map("n", "<leader>ac", to_claude, "Claude's Pane")
+  map("n", "<leader>ai", interrupt, "Interrupt Claude")
   map_answers(buf)
   -- The reply can't be edited, so insert keys move to the prompt and run there.
   for _, key in ipairs({ "i", "a", "I", "A", "o", "O" }) do
@@ -1656,6 +1737,9 @@ function M.open()
   end, "Stash Session and Close")
   map("n", "<leader>aH", pick_sessions, "Claude Sessions")
   map("n", "<leader>ac", to_claude, "Claude's Pane")
+  map("n", "<leader>ai", interrupt, "Interrupt Claude")
+  -- Beside the Alt scroll keys: interrupting is wanted mid-sentence, without leaving insert.
+  map({ "n", "i" }, "<M-c>", interrupt, "Interrupt Claude")
   map_answers(buf)
   vim.api.nvim_create_user_command(
     "ClaudePane",
