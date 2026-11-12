@@ -112,3 +112,9 @@ The slash commands leading a draft, each sent on its own and finished before
 the next, ahead of the prose that follows them. A command directly followed by
 text takes that text as its arguments.
 _Avoid_: message queue
+
+**Stash**:
+The Claude sessions set aside to come back to, each with an optional note and
+its draft, kept per machine. Stashing marks a session, or marks it and closes
+its agent; resuming one takes it off the stash.
+_Avoid_: bookmark, saved session
