@@ -44,7 +44,7 @@ Claude Code from Neovim.
     an empty line under it to answer on. Quotes in the prompt are dimmed.
   - `<leader>aq` quotes the whole reply, and `<leader>aQ` strips the quoted
     lines again, leaving only what you wrote.
-  - The reply's bar shows whether Claude is working, idle or blocked, with the
+  - The reply's bar shows the model and effort level (`Opus 5.5 medium`), whether Claude is working, idle or blocked, with the
     tool call it's on while working (`working Edit prompt.lua`), its context in
     tokens, and 5-hour and weekly usage with the time to each reset,
     which the Claude statusline the pane covers shares in

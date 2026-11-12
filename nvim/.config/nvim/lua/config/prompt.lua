@@ -306,6 +306,16 @@ local function status_line()
   if (state.statusline or {}).account == "hulio" then
     table.insert(parts, "%#DiagnosticHint#hulio")
   end
+  -- So is the model, and its effort level.
+  local model = vim.tbl_get(state.statusline or {}, "model", "display_name")
+  if type(model) == "string" then
+    local effort = vim.tbl_get(state.statusline, "effort", "level")
+    local text = "%#Special#" .. model:gsub("%%", "%%%%")
+    if type(effort) == "string" then
+      text = text .. "%#Comment# " .. effort:gsub("%%", "%%%%")
+    end
+    table.insert(parts, text)
+  end
   if state.status then
     local activity = state.status == "working" and state.activity
     table.insert(
