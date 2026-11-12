@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Feeds crafted result titles to qute-sandbox's parse_chunk, the code that reads
+# what a page published through document.title. Run: scripts/tests/qute-sandbox
+set -uo pipefail
+
+# shellcheck source=scripts/qute-sandbox
+source "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../qute-sandbox"
+set +e
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+pwned=$tmp/pwned
+fails=0
+
+# parse_chunk dies, so each case runs in a subshell; length and status start
+# empty unless the case continues a result.
+# shellcheck disable=SC2034 # length and status are parse_chunk's
+parses() {
+	local title=$1 index=${2:-0} length=${3-} status=${4-}
+	(parse_chunk "$title" m "$index") 2>"$tmp/err"
+}
+
+accept() {
+	if ! parses "$@"; then
+		echo "FAIL: rejected $1: $(<"$tmp/err")"
+		fails=$((fails + 1))
+	fi
+}
+
+# reject <title> <field the error must name> [index [length [status]]]
+reject() {
+	local title=$1 field=$2
+	shift 2
+	if parses "$title" "$@"; then
+		echo "FAIL: accepted $title"
+		fails=$((fails + 1))
+	elif [[ $(<"$tmp/err") != *"$field"* ]]; then
+		echo "FAIL: $title: error doesn't name $field: $(<"$tmp/err")"
+		fails=$((fails + 1))
+	fi
+	if [[ -e $pwned ]]; then
+		echo "FAIL: $title ran a command"
+		fails=$((fails + 1))
+		rm -f "$pwned"
+	fi
+}
+
+# The payload runs where the old parser put count, even under set -u as long as
+# the array is set, so its absence below means something.
+count="BASH_VERSINFO[\$(touch $pwned)]"
+((0 < count))
+[[ -e $pwned ]] || {
+	echo "FAIL: payload doesn't run under (( )), the test proves nothing"
+	exit 1
+}
+rm -f "$pwned"
+
+big=$(printf 'A%.0s' {1..3000})
+accept "m:0:8:ok:aGVsbG8="
+accept "m:0:0:ok:"
+accept "m:0:4:error:ZXJy"
+accept "m:0:08:ok:aGVsbG8=" # a leading zero is decimal, not an octal error
+accept "m:0:3004:ok:$big"
+accept "m:1:3004:ok:AAAA" 1 3004 ok
+
+reject "m:0:a[\$(touch $pwned)]:ok:aGVsbG8=" length
+reject "m:0:BASH_VERSINFO[\$(touch $pwned)]:ok:aGVsbG8=" length
+reject "m:0:\$(touch $pwned):ok:aGVsbG8=" length
+reject "m:0:1+1:ok:aGVsbG8=" length
+reject "m:0:-1:ok:aGVsbG8=" length
+reject "m:0::ok:aGVsbG8=" length
+reject "m:0:99999999999999999999:ok:aGVsbG8=" length
+reject "m:0:$((max_length + 1)):ok:aGVsbG8=" length # max_length: qute-sandbox's
+reject "m:0:8:maybe:aGVsbG8=" status
+reject "m:0:8:\$(touch $pwned):aGVsbG8=" status
+reject "m:0:8:ok:aGVs\$(touch $pwned)" "not base64"
+reject "m:0:8:ok:aGVs bG8" "not base64"
+reject "m:0:8:ok:aGVsbG8=:x" "not base64"
+reject "m:0:9:ok:aGVsbG8=" "expected 9"
+reject "m:0:3004:ok:AAAA" "expected 3000"
+reject "x:0:8:ok:aGVsbG8=" mark
+reject "m:1:8:ok:aGVsbG8=" index
+reject "m:\$(touch $pwned):8:ok:aGVsbG8=" index
+reject "m:1:3004:ok:AAAA" index 2 3004 ok
+reject "m:1:3008:ok:AAAA" "changed mid-result" 1 3004 ok
+reject "m:1:3004:error:AAAA" "changed mid-result" 1 3004 ok
+reject "m:0:8:ok" malformed
+
+((fails == 0)) && echo "ok: parse_chunk"
+((fails == 0))

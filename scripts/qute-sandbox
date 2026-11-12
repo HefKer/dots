@@ -102,9 +102,48 @@ read_title() {
 # :jseval output never reaches the shell, so the page publishes the value through
 # document.title and a userscript reads it from $QUTE_TITLE. Titles have their
 # whitespace collapsed and are capped near 4096 characters, so the value travels
-# as base64 in chunks: mark:index:count:status:chunk. $2 is how long to poll.
+# as base64 in chunks of chunk_size: mark:index:length:status:chunk, length being
+# the whole base64 text's.
+#
+# The code runs in the page's main world, so the page can rewrite the title or
+# the globals the code uses: every field is validated before use, and the chunk
+# count comes from length here rather than from the page. A hostile page gets a
+# garbled result or none, never a command run.
+chunk_size=3000
+max_length=$((8 * 1024 * 1024))
+
+# Checks result title $1 for chunk $3 of the run marked $2 and sets length,
+# status and chunk from it; length and status must match what an earlier chunk
+# set. Dies naming the first field that doesn't fit.
+parse_chunk() {
+	local title=$1 mark=$2 index=$3 f count want
+	[[ $title =~ ^([^:]*):([^:]*):([^:]*):([^:]*):(.*)$ ]] ||
+		die "malformed result: not mark:index:length:status:chunk"
+	f=("${BASH_REMATCH[@]}")
+	[[ ${f[1]} == "$mark" ]] || die "bad result mark"
+	[[ ${f[2]} == "$index" ]] || die "bad result index: expected $index"
+	# Digits only before any arithmetic, which would expand a[$(cmd)]; 10# so
+	# a leading zero isn't octal.
+	if ! [[ ${f[3]} =~ ^[0-9]{1,9}$ ]] || ((10#${f[3]} > max_length)); then
+		die "bad result length: not an integer up to $max_length"
+	fi
+	[[ -z $length || $((10#${f[3]})) == "$length" ]] || die "bad result length: changed mid-result"
+	length=$((10#${f[3]}))
+	[[ ${f[4]} == ok || ${f[4]} == error ]] || die "bad result status: not ok or error"
+	[[ -z $status || ${f[4]} == "$status" ]] || die "bad result status: changed mid-result"
+	status=${f[4]}
+	[[ ${f[5]} =~ ^[A-Za-z0-9+/=]*$ ]] || die "bad result chunk $index: not base64"
+	chunk=${f[5]}
+	count=$(((length + chunk_size - 1) / chunk_size))
+	((count > 0)) || count=1
+	((index < count)) || die "bad result index: $index past the last chunk"
+	want=$((index < count - 1 ? chunk_size : length - index * chunk_size))
+	((${#chunk} == want)) || die "bad result chunk $index: ${#chunk} characters, expected $want"
+}
+
+# $2 is how long to poll.
 eval_js() {
-	local mark=qute-sandbox-$RANDOM$RANDOM i=1 count status title out
+	local mark=qute-sandbox-$RANDOM$RANDOM i count length='' status='' chunk title out
 	{
 		cat <<EOF
 (() => {
@@ -113,9 +152,8 @@ eval_js() {
 	const publish = (status, text) => {
 		const bytes = new TextEncoder().encode(text);
 		const b64 = btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join(""));
-		const size = 3000;
-		const count = Math.max(1, Math.ceil(b64.length / size));
-		const chunk = (i) => mark + ":" + i + ":" + count + ":" + status + ":" +
+		const size = $chunk_size;
+		const chunk = (i) => mark + ":" + i + ":" + b64.length + ":" + status + ":" +
 			b64.slice(i * size, (i + 1) * size);
 		window.__quteSandbox = { save, chunk };
 		document.title = chunk(0);
@@ -135,12 +173,14 @@ EOF
 
 	title=$(read_title "$mark:0:" "${2:-15}") ||
 		die "no result (syntax error in the JS, or a page that keeps rewriting its title?)"
-	IFS=: read -r _ _ count status out <<<"$title"
-	while ((i < count)); do
+	parse_chunk "$title" "$mark" 0
+	out=$chunk
+	count=$(((length + chunk_size - 1) / chunk_size))
+	for ((i = 1; i < count; i++)); do
 		send ":jseval --quiet --world=main document.title=window.__quteSandbox.chunk($i)"
 		title=$(read_title "$mark:$i:" 15) || die "lost the result at chunk $i of $count"
-		out+=${title##*:}
-		i=$((i + 1))
+		parse_chunk "$title" "$mark" "$i"
+		out+=$chunk
 	done
 	send ":jseval --quiet --world=main document.title=window.__quteSandbox.save"
 
@@ -256,7 +296,7 @@ mem_rows() {
 	local p type rss
 	for p in $(pgrep -g "$(<"$B/pid")"); do
 		rss=$(awk '/^VmRSS/{print int($2/1024)}' "/proc/$p/status" 2>/dev/null) || continue
-		type=$(tr '\0 ' '\n\n' <"/proc/$p/cmdline" 2>/dev/null | sed -n 's/^--type=//p')
+		type=$(tr '\0 ' '[\n*]' <"/proc/$p/cmdline" 2>/dev/null | sed -n 's/^--type=//p')
 		printf '%s %s %s\n' "$p" "${type:-browser}" "${rss:-0}"
 	done
 }
@@ -292,6 +332,9 @@ cmd_stop() {
 	fi
 	rm -rf "$B"
 }
+
+# Sourced, as by the tests: definitions only.
+[[ ${BASH_SOURCE[0]} == "$0" ]] || return 0
 
 case ${1-} in
 start)
