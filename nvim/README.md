@@ -32,12 +32,13 @@ Claude Code from Neovim.
     mode, and `[r`/`]r` step through earlier replies. Replies Claude ends
     several turns with, with no prompt of yours between (a background task
     finishing, say), join the one shown under a rule, keeping your place in it,
-    so none is skipped behind the newest.
+    so none is skipped behind the newest. So does the recap Claude writes when
+    you come back after being away (`awaySummaryEnabled`).
   - The prompt is saved as you type, synced to disk, to
     `~/.local/state/nvim/claude-drafts/<session-id>.md`, and deleted once sent.
     A crash, reboot or power cut doesn't take it: the next `prefix+a` in the tab
     herdr resumes brings it back. `<leader>ad` picks from every other saved
-    draft, for a pane that's gone.
+    draft, for a pane that's gone, named by the project its session ran in.
   - Tables in the reply are redrawn as box grids whose cells wrap to fit the
     pane, so a wide table never breaks mid-row; quoting one quotes its markdown.
   - `<CR>` in the reply quotes the list item, code block, table or paragraph
@@ -61,12 +62,16 @@ Claude Code from Neovim.
     them: writing to the agent in the wrong repo is easy with several tabs open.
   - `<leader>ak` swaps the reply for Claude's task list, rebuilt from its task
     tools in the transcript and updated as it works; the bar counts done tasks.
+  - Each bar ends with its binds, most-used first, as many as fit on one line.
   - `<leader>ap` in any other nvim in the tab adds `@file`, or `@file#L10-20`
     for a selection, to the draft, relative to Claude's directory. It opens the
     prompt pane first if there isn't one, and focuses it to keep writing.
   - `/skill` and `@file` complete as they do in Claude's own input. Every line
     of the leading command block also completes the built-in, custom and plugin
-    commands, with their descriptions.
+    commands, with their descriptions. Both look up Claude's directory without
+    waiting on herdr, so typing never stalls.
+  - A draft starting with `!` runs in Claude's bash mode, as typing `!` in its
+    input does.
   - Slash commands leading the draft are a command queue: each is sent on its
     own, once the one before has finished (`/clear` once Claude is on the new
     session), and then the prose. `/clear`, `/model opus`, then a question, in

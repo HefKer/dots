@@ -38,7 +38,7 @@ local function account(config)
 end
 
 -- The cwd a session was started in: the first one its transcript records.
-local function cwd_of(transcript)
+function M.cwd_of(transcript)
   local out = vim.system({ "rg", "--no-config", "-m1", "-o", [["cwd":"(?:[^"\\]|\\.)*"]], transcript }):wait()
   local ok, decoded = pcall(vim.json.decode, "{" .. vim.trim(out.stdout or "") .. "}")
   return ok and decoded.cwd or nil
@@ -59,7 +59,7 @@ function M.add(session, transcript, draft, cb)
     all[session] = {
       session = session,
       config = config_of(transcript),
-      cwd = cwd_of(transcript),
+      cwd = M.cwd_of(transcript),
       note = vim.trim(note),
       draft = vim.trim(draft) ~= "" and draft or nil,
       time = os.time(),

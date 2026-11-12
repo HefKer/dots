@@ -29,7 +29,7 @@ end
 ---@param to? integer
 local function reference(agent, from, to)
   local path = vim.api.nvim_buf_get_name(0)
-  local cwd = agent.foreground_cwd or agent.cwd
+  local cwd = prompt.workdir(agent)
   if cwd and vim.startswith(path, cwd .. "/") then
     path = path:sub(#cwd + 2)
   end

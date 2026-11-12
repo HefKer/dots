@@ -109,6 +109,18 @@ function M.find_agent()
   return pick_agent(vim.system(list_panes(), { text = true }):wait())
 end
 
+-- The directory Claude's @ paths are relative to, by one rule for the bar, @ completion
+-- and config.prompt_ref: its foreground process's, else its pane's.
+---@param agent? table a pane from `herdr pane list`
+---@return string?
+function M.workdir(agent)
+  for _, cwd in ipairs({ agent and agent.foreground_cwd, agent and agent.cwd }) do
+    if type(cwd) == "string" then
+      return cwd
+    end
+  end
+end
+
 ---@return string? path of the agent's session transcript
 ---@return string? err
 local function session_path(agent, err)
@@ -245,6 +257,21 @@ local function read_new()
   text = last_nl and text:sub(1, last_nl) or ""
 
   local before, last_id, joined = #state.replies, state.last_id, false
+  -- A message's content blocks arrive as separate entries; join them.
+  local function add(body, id)
+    local last = state.replies[#state.replies]
+    if id and id == last_id then
+      state.replies[#state.replies] = last .. "\n" .. body
+      joined = joined or #state.replies == before
+    elseif last and not state.prompted then
+      state.replies[#state.replies] = last .. "\n\n---\n\n" .. body
+      joined = joined or #state.replies == before
+    else
+      table.insert(state.replies, body)
+    end
+    last_id = id
+    state.prompted = false
+  end
   for line in text:gmatch("[^\n]+") do
     if line:find('"type":"user"', 1, true) and not line:find('"tool_use_id"', 1, true) then
       local ok, entry = pcall(vim.json.decode, line)
@@ -290,23 +317,19 @@ local function read_new()
           end
         end
         if #texts > 0 then
-          local body = table.concat(texts, "\n")
-          -- A message's content blocks arrive as separate entries; join them.
-          local last = state.replies[#state.replies]
-          if entry.message.id and entry.message.id == last_id then
-            state.replies[#state.replies] = last .. "\n" .. body
-            joined = joined or #state.replies == before
-          elseif last and not state.prompted then
-            state.replies[#state.replies] = last .. "\n\n---\n\n" .. body
-            joined = joined or #state.replies == before
-          else
-            table.insert(state.replies, body)
-          end
-          last_id = entry.message.id
-          state.prompted = false
+          add(table.concat(texts, "\n"), entry.message.id)
           state.activity = nil
           state.calls = {}
         end
+      end
+    end
+    -- The recap Claude writes when you come back after being away (awaySummaryEnabled),
+    -- shown as it is under Claude's input box: with the last reply, unless you've
+    -- prompted since.
+    if line:find('"subtype":"away_summary"', 1, true) then
+      local ok, entry = pcall(vim.json.decode, line)
+      if ok and type(entry) == "table" and entry.type == "system" and type(entry.content) == "string" then
+        add("_Recap:_ " .. entry.content:gsub("%s*%(disable recaps in /config%)$", ""))
       end
     end
   end
@@ -387,6 +410,71 @@ local function read_statusline(agent)
   state.statusline = ok and info or nil
 end
 
+-- Each bar's binds, most-used first: as many as fit on its one line are shown, those
+-- under <leader>a after that prefix, once.
+local viewer_hints = {
+  { "<CR>", "quote" },
+  { "s", "send" },
+  { "i", "interrupt" },
+  { "[r ]r", "replies" },
+  { "k", "tasks" },
+  { "c", "pane" },
+  { "m", "mode" },
+}
+local pending_hints = {
+  { "y", "yes" },
+  { "Y", "always" },
+  { "n", "no" },
+  { "1-9", "option" },
+  { "c", "pane" },
+  { "i", "interrupt" },
+}
+local prompt_hints = {
+  { "s", "send" },
+  { "<M-c>", "interrupt" },
+  { "q", "quote" },
+  { "[r ]r", "replies" },
+  { "h", "history" },
+  { "d", "drafts" },
+  { "t", "template" },
+  { "Q", "unquote" },
+  { "c", "pane" },
+  { "m", "mode" },
+  { "l", "stash" },
+  { "H", "sessions" },
+  { "k", "tasks" },
+}
+
+local function render_hints(hints)
+  local plain, leader = {}, {}
+  for _, hint in ipairs(hints) do
+    -- A key starting with a letter or digit is under <leader>a; <CR> or [r isn't.
+    table.insert(hint[1]:match("^%w") and leader or plain, hint[1] .. " " .. hint[2])
+  end
+  if #leader > 0 then
+    table.insert(plain, "<leader>a " .. table.concat(leader, " · "))
+  end
+  return table.concat(plain, " · ")
+end
+
+---@param win integer
+---@param bar string the bar's left side, as a statusline string
+---@param hints string[][] { key, what } pairs, most-used first
+local function fit_hints(win, bar, hints)
+  local room = vim.api.nvim_win_get_width(win)
+    - vim.api.nvim_eval_statusline(bar, { winid = win, use_winbar = true }).width
+    - 3
+  local shown = {}
+  for _, hint in ipairs(hints) do
+    local try = vim.list_extend(vim.list_slice(shown), { hint })
+    if vim.fn.strdisplaywidth(render_hints(try)) > room then
+      break
+    end
+    shown = try
+  end
+  return "%=%#Comment#" .. render_hints(shown):gsub("%%", "%%%%") .. " "
+end
+
 local function set_winbars()
   if viewer_valid() then
     local done = #vim.tbl_filter(function(task)
@@ -411,9 +499,9 @@ local function set_winbars()
           state.queue.total
         )
     end
-    local hints = state.view == "pending" and "<leader>ay yes · aY always · an no · a1-9 option "
-      or "<leader>ak tasks "
-    vim.wo[state.viewer.win][0].winbar = "%#WinBar# 󰚩 " .. title .. status_line() .. "%=%#Comment#" .. hints
+    local bar = "%#WinBar# 󰚩 " .. title .. status_line()
+    vim.wo[state.viewer.win][0].winbar = bar
+      .. fit_hints(state.viewer.win, bar, state.view == "pending" and pending_hints or viewer_hints)
   end
   if state.prompt.win and vim.api.nvim_win_is_valid(state.prompt.win) then
     local where = ""
@@ -422,17 +510,16 @@ local function set_winbars()
       local branch = state.branch and ("%#Comment# on %#DiagnosticHint# " .. state.branch:gsub("%%", "%%%%")) or ""
       where = "%#Comment# · %#Directory# " .. dir .. branch
     end
-    vim.wo[state.prompt.win][0].winbar = "%#WinBar# 󰏫 Prompt"
-      .. where
-      .. "%=%#Comment#<leader>ah history · <leader>at template · <leader>ad drafts · <leader>al stash · <leader>aH sessions "
+    local bar = "%#WinBar# 󰏫 Prompt" .. where
+    vim.wo[state.prompt.win][0].winbar = bar .. fit_hints(state.prompt.win, bar, prompt_hints)
   end
 end
 
 -- Where Claude is working, for the prompt's bar: its pane's directory, and the git
 -- branch there, looked up again only when the directory changes.
 local function locate(agent)
-  local cwd = agent and (agent.foreground_cwd or agent.cwd)
-  if not cwd or cwd == vim.NIL or cwd == state.cwd then
+  local cwd = M.workdir(agent)
+  if not cwd or cwd == state.cwd then
     return
   end
   state.cwd, state.branch = cwd, nil
@@ -524,6 +611,18 @@ local function lookup_agent(cb)
       cb(pick_agent(listed))
     end)
   )
+end
+
+-- M.workdir without blocking, for completion as you type: the one the poll last saw,
+-- else looked up.
+---@param cb fun(cwd?: string)
+function M.workdir_async(cb)
+  if state.cwd then
+    return cb(state.cwd)
+  end
+  lookup_agent(function(agent)
+    cb(M.workdir(agent))
+  end)
 end
 
 -- Whether Claude's input box is on screen: a `❯` line under a `─` rule. A dialog such
@@ -1152,8 +1251,9 @@ local function pick_draft()
         file = path,
         time = time,
         when = os.date("%m-%d %H:%M", time),
-        -- ~/.claude/projects/-home-me-dots/ → dots
-        where = project and vim.fn.fnamemodify(project, ":h:t"):match("[^-]+$") or "",
+        -- From the cwd the transcript records, since its project dir's name can't be
+        -- read back: ~/dev/my-app is -home-me-dev-my-app.
+        where = project and vim.fn.fnamemodify(require("config.prompt_stash").cwd_of(project) or "", ":t") or "",
         title = text:match("[^\n]*"),
         preview = { text = text, ft = "markdown" },
       })
@@ -1173,7 +1273,7 @@ local function pick_draft()
       return {
         { item.when, "Comment" },
         { " " },
-        { ("%-12s"):format(item.where:sub(1, 12)), "Directory" },
+        { ("%-16s"):format(item.where:sub(1, 16)), "Directory" },
         { " " },
         { item.title },
       }
@@ -1555,18 +1655,26 @@ local function send()
     save_draft()
     return run_queue(items)
   end
-  if agent then
-    local sent = vim.system({ "herdr", "agent", "prompt", agent.pane_id, text }, { text = true }):wait()
-    err = sent.code ~= 0 and herdr_error(sent) or nil
-  end
-  if err then
+  if not agent then
     return notify_error(err)
   end
-  record(text)
+  -- Cleared now, not once herdr answers, so what you type meanwhile isn't lost; a
+  -- refused send goes back in the draft above it.
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
   save_draft()
-  -- The session may have changed since open (a restarted Claude); follow it.
-  attach()
+  vim.system(
+    { "herdr", "agent", "prompt", agent.pane_id, text },
+    { text = true },
+    vim.schedule_wrap(function(sent)
+      if sent.code ~= 0 then
+        put_back({ { source = text } })
+        return notify_error(herdr_error(sent) .. "; the prompt is back in the draft")
+      end
+      record(text)
+      -- The session may have changed since open (a restarted Claude); follow it.
+      M.transcript_async(attach_to)
+    end)
+  )
 end
 
 -- Interrupts Claude's turn, as Esc in its pane does, without leaving this one. A running
@@ -1916,9 +2024,17 @@ function M.open()
       if vim.tbl_contains(vim.v.event.windows, state.viewer.win) then
         redraw()
       end
+      -- So are the bars' hints.
+      set_winbars()
     end,
   })
-  vim.api.nvim_create_autocmd("VimResized", { group = group, callback = redraw })
+  vim.api.nvim_create_autocmd("VimResized", {
+    group = group,
+    callback = function()
+      redraw()
+      set_winbars()
+    end,
+  })
 
   if vim.env.HERDR_PANE_ID then
     local sock = M.socket(vim.env.HERDR_PANE_ID)
