@@ -1,0 +1,15 @@
+{
+    "id": "attention",
+    "name": "Attention",
+    "description": "Hands Discord and phone notifications to the attention queue, runs their actions for it, and shows the queue's depth in the bar.",
+    "version": "1.0.0",
+    "author": "hefker",
+    "type": "composite",
+    "capabilities": ["daemon", "dankbar-widget"],
+    "components": {
+        "daemon": "./AttentionDaemon.qml",
+        "widget": "./AttentionWidget.qml"
+    },
+    "icon": "priority_high",
+    "permissions": []
+}
