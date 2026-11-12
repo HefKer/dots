@@ -217,25 +217,28 @@ local function files(cwd, done)
   end)
 end
 
--- Looked up as each / or @ opens, so a new command, skill or file shows up on the next one.
+-- Looked up as each / or @ opens, so a new command, skill or file shows up on the next
+-- one, in Claude's directory as config.prompt.workdir_async has it, which doesn't wait
+-- on herdr while you type.
 function M:refresh(kind, done)
-  local agent = require("config.prompt").find_agent()
-  local cwd = agent and agent.cwd or vim.fn.getcwd()
-  local function store(list)
-    self.candidates[kind] = list
-    done()
-  end
-  if kind == "file" then
-    files(cwd, store)
-  else
-    local names, docs = listed_skills(cwd), {}
-    if kind == "command" then
-      names, docs = commands(cwd)
+  require("config.prompt").workdir_async(function(found)
+    local cwd = found or vim.fn.getcwd()
+    local function store(list)
+      self.candidates[kind] = list
+      done()
     end
-    self.docs = vim.tbl_extend("force", self.docs, docs)
-    table.sort(names)
-    store(vim.fn.uniq(names))
-  end
+    if kind == "file" then
+      files(cwd, store)
+    else
+      local names, docs = listed_skills(cwd), {}
+      if kind == "command" then
+        names, docs = commands(cwd)
+      end
+      self.docs = vim.tbl_extend("force", self.docs, docs)
+      table.sort(names)
+      store(vim.fn.uniq(names))
+    end
+  end)
 end
 
 -- blink matches only the word under the cursor, which would drop everything before the

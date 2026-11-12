@@ -37,11 +37,32 @@ local function account(config)
   return config and (vim.fs.basename(config):match("^%.claude%-(.+)$") or "main") or "?"
 end
 
--- The cwd a session was started in: the first one its transcript records.
-local function cwd_of(transcript)
-  local out = vim.system({ "rg", "--no-config", "-m1", "-o", [["cwd":"(?:[^"\\]|\\.)*"]], transcript }):wait()
-  local ok, decoded = pcall(vim.json.decode, "{" .. vim.trim(out.stdout or "") .. "}")
-  return ok and decoded.cwd or nil
+-- The cwd each session was started in: the first one its transcript records. One rg
+-- for them all.
+---@param transcripts string[]
+---@return table<string, string> cwd by transcript path
+function M.cwds_of(transcripts)
+  local found = {}
+  if #transcripts == 0 then
+    return found
+  end
+  local out = vim
+    .system(
+      vim.list_extend(
+        { "rg", "--no-config", "--null", "--with-filename", "-m1", "-o", [["cwd":"(?:[^"\\]|\\.)*"]] },
+        transcripts
+      ),
+      { text = true }
+    )
+    :wait()
+  for line in (out.stdout or ""):gmatch("[^\n]+") do
+    local path, match = line:match("^(.-)%z(.*)$")
+    local ok, decoded = pcall(vim.json.decode, "{" .. (match or "") .. "}")
+    if path and ok and type(decoded.cwd) == "string" then
+      found[path] = decoded.cwd
+    end
+  end
+  return found
 end
 
 ---Adds a session to the stash, or updates its note and draft, asking for the note.
@@ -59,7 +80,7 @@ function M.add(session, transcript, draft, cb)
     all[session] = {
       session = session,
       config = config_of(transcript),
-      cwd = cwd_of(transcript),
+      cwd = M.cwds_of({ transcript })[transcript],
       note = vim.trim(note),
       draft = vim.trim(draft) ~= "" and draft or nil,
       time = os.time(),
