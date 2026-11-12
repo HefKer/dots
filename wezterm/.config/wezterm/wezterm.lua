@@ -33,6 +33,10 @@ config.colors = {
 config.font = wezterm.font("Victor Mono")
 -- config.font = wezterm.font("JetBrains Mono")
 config.font_size = 14
+-- Respect emoji presentation selectors (U+FE0F makes ➡️ two cells), as herdr
+-- and Claude Code do; the default (9) draws it in one, shifting the rest of
+-- the line and leaving stale cells behind.
+config.unicode_version = 14
 
 config.use_fancy_tab_bar = false
 config.tab_bar_at_bottom = true
