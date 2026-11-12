@@ -1,8 +1,9 @@
 # Dotfiles
 
 The content of the user's app configs. This glossary fixes the vocabulary for
-binds (what triggers them, which scope owns them, and what earns one) and for
-writing to a Claude agent from nvim.
+binds (what triggers them, which scope owns them, and what earns one), for
+writing to a Claude agent from nvim, for the quick run, and for learning better
+nvim habits.
 
 ## Language
 
@@ -126,3 +127,27 @@ The Claude sessions set aside to come back to, each with an optional note and
 its draft, kept per machine. Stashing marks a session, or marks it and closes
 its agent; resuming one takes it off the stash.
 _Avoid_: bookmark, saved session
+
+### Quick run
+
+**Quick run**:
+The floating terminal summoned with Mod+; for running one command from
+anywhere, opened in fish's normal mode with the clipboard a `p` away. One at a
+time; while its command runs it can be hidden and brought back.
+_Avoid_: quick terminal, quick-run window
+
+**Saved command**:
+A named command line kept in the repo for the quick run to fill in on demand,
+for commands too rare to earn a fish function or abbr.
+_Avoid_: favorite, bookmark, snippet
+
+### Habits
+
+**Habit capture**:
+An entry recording a moment in nvim where a better way probably existed: the
+keys pressed, the text before and after, and a note on what was intended.
+_Avoid_: capture (the tracker's `capture` label means a quickly jotted issue)
+
+**Vim inbox**:
+The vault note collecting habit captures until each is answered with the
+idiomatic way and moved to the drills.
