@@ -68,6 +68,11 @@ Claude Code from Neovim.
     queue runs in the background with its progress in the reply's bar, and
     pauses at a dialog or permission prompt (below), going on once it's
     answered. [`config/prompt_queue.lua`](.config/nvim/lua/config/prompt_queue.lua)
+  - <a id="interrupt"></a>`<leader>ai`, or `Alt+c` even in insert mode,
+    interrupts Claude's turn from the prompt pane, as Esc in its own pane does,
+    and the reply's bar says so for a moment. A running command queue stops
+    too, whatever it was waiting on, and what it hadn't sent yet goes back at
+    the top of the draft. With Claude idle it only says so.
   - <a id="pending-call"></a>While Claude is blocked on a tool call, the reply
     gives way to the call: Bash's command, an edit's diff, the questions with
     their numbered options, or the plan to approve, then the dialog's own
