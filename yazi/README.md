@@ -16,3 +16,8 @@ uses ANSI colour names, so it follows the palette DMS generates for WezTerm.
 - <a id="cd-on-quit"></a>**`y`: the shell follows yazi when it quits.** `Q`
   quits without moving.
   [`y.fish`](../fish/.config/fish/functions/y.fish)
+- <a id="clipboard-and-drag"></a>**Hand files to GUI apps.** `c i` copies the
+  hovered file's contents, so an image pastes into Discord or a browser as an
+  image. `c r` opens the selection in a `ripdrag` window to drag it out with
+  the mouse.
+  [`keymap.toml`](.config/yazi/keymap.toml)
