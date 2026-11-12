@@ -50,6 +50,12 @@ Claude Code from Neovim.
     tokens, and 5-hour and weekly usage with the time to each reset,
     which the Claude statusline the pane covers shares in
     `$XDG_RUNTIME_DIR/claude-statusline/`.
+  - <a id="permission-mode"></a>The reply's bar also shows Claude's permission
+    mode (`plan`, `acceptEdits`, `auto`) when it isn't default, and
+    `<leader>am` cycles it, as Shift+Tab in Claude's pane does. The transcript
+    records the mode only as a turn starts, so the bar also reads the mode line
+    under Claude's input box: a cycle shows within a second, made from here or
+    in Claude's pane. [`config/prompt.lua`](.config/nvim/lua/config/prompt.lua)
   - The prompt's bar names Claude's directory and git branch
     (`~/nixos/main on main`), since the pane hides the statusline that shows
     them: writing to the agent in the wrong repo is easy with several tabs open.

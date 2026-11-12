@@ -39,6 +39,7 @@ local state = {
   queue = nil, -- the command queue being sent: { n, total, label }
   stop_queue = nil, -- stops it, putting back what isn't sent yet: fun(why: string)
   interrupted = false, -- shown in the viewer's bar for a moment after an interrupt
+  mode = nil, -- Claude's permission mode, from whichever was read last: transcript or screen
   cwd = nil, -- Claude's working directory, and its git branch
   branch = nil,
 }
@@ -252,6 +253,18 @@ local function read_new()
         state.calls = {} -- a prompt, or an interrupt: whatever was asked is over
       end
     end
+    -- Written as each turn starts, not when the mode changes: the screen is read for that.
+    if line:find('"type":"permission-mode"', 1, true) then
+      local ok, entry = pcall(vim.json.decode, line)
+      if
+        ok
+        and type(entry) == "table"
+        and entry.type == "permission-mode"
+        and type(entry.permissionMode) == "string"
+      then
+        state.mode = entry.permissionMode
+      end
+    end
     -- A tool result answers its call. Found without decoding: these lines hold tool output.
     if line:find('"type":"tool_result"', 1, true) then
       for id in line:gmatch('"tool_use_id":"([^"]+)"') do
@@ -316,6 +329,8 @@ end
 local status_hl =
   { working = "DiagnosticWarn", blocked = "DiagnosticError", idle = "DiagnosticOk", done = "DiagnosticOk" }
 
+local mode_hl = { plan = "DiagnosticInfo", bypassPermissions = "DiagnosticError" }
+
 local function pct_hl(pct)
   return pct >= 80 and "DiagnosticError" or pct >= 50 and "DiagnosticWarn" or "Comment"
 end
@@ -335,6 +350,10 @@ local function status_line()
       text = text .. "%#Comment# " .. effort:gsub("%%", "%%%%")
     end
     table.insert(parts, text)
+  end
+  -- So is the permission mode, when it isn't the default.
+  if state.mode and state.mode ~= "default" then
+    table.insert(parts, ("%%#%s#%s"):format(mode_hl[state.mode] or "DiagnosticWarn", (state.mode:gsub("%%", "%%%%"))))
   end
   if state.status then
     local activity = state.status == "working" and state.activity
@@ -522,6 +541,43 @@ local function input_box(screen)
   return false
 end
 
+-- Claude's permission mode by the name its footer shows; any other is passed on as shown.
+local mode_names = {
+  manual = "default",
+  ["accept edits"] = "acceptEdits",
+  ["bypass permissions"] = "bypassPermissions",
+}
+
+-- The permission mode Claude's footer shows under its input box (`⏸ plan mode on`,
+-- `⏵⏵ accept edits on`), or nil with the box covered or no mode shown. A Claude that
+-- shows nothing for default mode shows `? for shortcuts` there instead.
+---@param screen string Claude's screen
+---@return string?
+function M.screen_mode(screen)
+  if not input_box(screen) then
+    return nil
+  end
+  local lines = vim.split(screen, "\n", { plain = true })
+  local footer = #lines + 1
+  for i = #lines, 1, -1 do
+    if lines[i]:find("^─") then
+      footer = i + 1
+      break
+    end
+  end
+  for i = footer, #lines do
+    local line = vim.trim(lines[i])
+    local name = line:match("^[^%w%s]+%s+(%a[%a ']-) on%f[^%w]")
+    if name then
+      name = name:gsub(" mode$", "")
+      return mode_names[name] or name
+    elseif line:find("^%? for shortcuts") then
+      return "default"
+    end
+  end
+  return nil
+end
+
 -- What Claude's pane shows now. herdr's agent_status alone misses a dialog: it keeps
 -- the last state behind /model's picker, so the screen is read for the input box too.
 ---@param cb fun(screen?: "idle"|"working"|"blocked"|"dialog", agent?: table, err?: string, text?: string)
@@ -545,6 +601,26 @@ local function read_screen(cb)
       end)
     )
   end)
+end
+
+-- Claude's permission mode from its footer, which shows a change at once, where the
+-- transcript has it only once the next turn starts. Left as it was while a dialog covers it.
+---@param cb? fun(mode?: string)
+local function read_mode(agent, cb)
+  vim.system(
+    { "herdr", "pane", "read", agent.pane_id, "--source", "visible" },
+    { text = true },
+    vim.schedule_wrap(function(read)
+      local mode = read.code == 0 and M.screen_mode(read.stdout) or nil
+      if mode and mode ~= state.mode then
+        state.mode = mode
+        set_winbars()
+      end
+      if cb then
+        cb(mode)
+      end
+    end)
+  )
 end
 
 ------------------------------------------------------------------------------
@@ -1532,6 +1608,34 @@ local function interrupt()
   end)
 end
 
+-- Cycles Claude's permission mode, as Shift+Tab in its pane does, in either vim mode of
+-- its input. Not past a dialog, where Shift+Tab answers it instead. The footer is read
+-- until it shows the change, so the bar has it at once.
+local function cycle_mode()
+  read_screen(function(screen, agent, err, text)
+    if not screen then
+      return notify_error(err)
+    elseif screen == "blocked" or screen == "dialog" then
+      return notify_error("Claude has a dialog up; answer it before cycling its mode")
+    end
+    local before = M.screen_mode(text)
+    local sent = vim.system({ "herdr", "pane", "send-keys", agent.pane_id, "shift+tab" }, { text = true }):wait()
+    if sent.code ~= 0 then
+      return notify_error(herdr_error(sent))
+    end
+    local tries = 0
+    local function check()
+      tries = tries + 1
+      read_mode(agent, function(mode)
+        if (not mode or mode == before) and tries < 8 then
+          vim.defer_fn(check, 150)
+        end
+      end)
+    end
+    vim.defer_fn(check, 100)
+  end)
+end
+
 -- The hand-off on purpose: back on its own once Claude has opened a dialog and closed it.
 -- Not while a queue runs, which hands off for its own dialogs.
 local function to_claude()
@@ -1565,6 +1669,9 @@ local function start_polling()
         local was = state.status
         read_statusline(agent)
         locate(agent)
+        if agent then
+          read_mode(agent)
+        end
         -- Read first, so the call Claude is blocked on is known.
         if path then
           attach_to(path)
@@ -1635,6 +1742,7 @@ local function open_viewer(prompt_win)
   map("n", "<leader>as", send, "Send Prompt to Claude")
   map("n", "<leader>ac", to_claude, "Claude's Pane")
   map("n", "<leader>ai", interrupt, "Interrupt Claude")
+  map("n", "<leader>am", cycle_mode, "Cycle Permission Mode")
   map_answers(buf)
   -- The reply can't be edited, so insert keys move to the prompt and run there.
   for _, key in ipairs({ "i", "a", "I", "A", "o", "O" }) do
@@ -1718,6 +1826,11 @@ function M.open()
   state.session = agent and agent.session
   restore_draft(buf)
   locate(agent)
+  -- Before the first poll, for a Claude started in a mode that its transcript, not yet
+  -- written, can't tell.
+  if agent then
+    read_mode(agent)
+  end
 
   local map = function(mode, lhs, rhs, desc)
     vim.keymap.set(mode, lhs, rhs, { buffer = buf, desc = desc })
@@ -1738,6 +1851,7 @@ function M.open()
   map("n", "<leader>aH", pick_sessions, "Claude Sessions")
   map("n", "<leader>ac", to_claude, "Claude's Pane")
   map("n", "<leader>ai", interrupt, "Interrupt Claude")
+  map("n", "<leader>am", cycle_mode, "Cycle Permission Mode")
   -- Beside the Alt scroll keys: interrupting is wanted mid-sentence, without leaving insert.
   map({ "n", "i" }, "<M-c>", interrupt, "Interrupt Claude")
   map_answers(buf)
