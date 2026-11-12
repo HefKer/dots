@@ -36,6 +36,10 @@ c.hints.selectors["outer"] = [
 ]
 config.bind(";o", "hint outer")
 # --- \testing ---
+# osugacha: [o]sug [t]ile [c]ard/[m]od/[i]tem/[s]tone/[d]etail: save the page's
+# HTML as it is now + a screenshot to osugacha/hars/ (userscript symlinked from that repo)
+for _k, _kind in {"c": "card", "m": "mod", "i": "item", "s": "stone", "d": "detail"}.items():
+    config.bind(f",ot{_k}", f"spawn --userscript osug-tile {_kind}")
 # Hint a paragraph and drop the caret at its start (Tridactyl-style caret placement)
 # Source: https://github.com/vlify/qutebrowser-hint-caret
 c.hints.selectors["para"] = [
