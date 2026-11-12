@@ -195,7 +195,7 @@ end
 
 -- Whether a user entry is something you wrote: a prompt or a /command, not a tool
 -- result, an injected reminder, a background task's notification or `!` output.
-local function from_you(entry)
+function M.from_you(entry)
   if entry.type ~= "user" or entry.isMeta or entry.isSidechain or entry.toolUseResult ~= nil then
     return false
   end
@@ -237,7 +237,7 @@ local function read_new()
   for line in text:gmatch("[^\n]+") do
     if line:find('"type":"user"', 1, true) and not line:find('"tool_use_id"', 1, true) then
       local ok, entry = pcall(vim.json.decode, line)
-      if ok and type(entry) == "table" and from_you(entry) then
+      if ok and type(entry) == "table" and M.from_you(entry) then
         state.prompted = true
       end
     end
@@ -379,7 +379,7 @@ local function set_winbars()
     end
     vim.wo[state.prompt.win][0].winbar = "%#WinBar# 󰏫 Prompt"
       .. where
-      .. "%=%#Comment#<leader>ah history · <leader>at template · <leader>ad drafts "
+      .. "%=%#Comment#<leader>ah history · <leader>at template · <leader>ad drafts · <leader>al stash · <leader>aH sessions "
   end
 end
 
@@ -983,6 +983,52 @@ function M.add_ref(ref)
 end
 
 ------------------------------------------------------------------------------
+-- Stash (config/prompt_stash.lua)
+
+-- Closes the agent and this pane, or their tab when nothing else is in it. This pane
+-- goes last: closing it ends this nvim.
+local function close_agent(agent)
+  local listed = vim.system(list_panes(), { text = true }):wait()
+  local ok, decoded = pcall(vim.json.decode, listed.stdout or "")
+  local others = ok
+      and #vim.tbl_filter(function(pane)
+        return pane.tab_id == vim.env.HERDR_TAB_ID
+          and pane.pane_id ~= agent.pane_id
+          and pane.pane_id ~= vim.env.HERDR_PANE_ID
+      end, vim.tbl_get(decoded, "result", "panes") or {})
+    or 1
+  if others == 0 then
+    vim.system({ "herdr", "tab", "close", vim.env.HERDR_TAB_ID })
+  else
+    vim.system({ "herdr", "pane", "close", agent.pane_id }):wait()
+    vim.system({ "herdr", "pane", "close", vim.env.HERDR_PANE_ID })
+  end
+end
+
+-- Stashes this pane's session with the draft; with close, then closes the agent too,
+-- the draft going with the stash rather than staying in claude-drafts.
+local function stash(close)
+  local agent, err = M.find_agent()
+  local path, path_err = session_path(agent, err)
+  if not path then
+    return notify_error(path_err)
+  end
+  local buf = state.prompt.buf
+  local draft = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
+  require("config.prompt_stash").add(agent.session, path, draft, function()
+    if close then
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+      save_draft()
+      close_agent(agent)
+    end
+  end)
+end
+
+local function pick_sessions()
+  require("config.prompt_stash").pick(state.cwd)
+end
+
+------------------------------------------------------------------------------
 -- Sending
 
 -- `agent prompt` rather than `pane send-text`: it pastes, so newlines don't submit
@@ -1338,6 +1384,16 @@ function M.open()
   map("n", "<leader>at", pick_template, "Prompt Templates")
   map("n", "<leader>ad", pick_draft, "Saved Drafts")
   map("n", "<leader>ak", toggle_tasks, "Claude's Tasks")
+  map("n", "<leader>al", stash, "Stash Session")
+  map("n", "<leader>aL", function()
+    stash(true)
+  end, "Stash Session and Close")
+  map("n", "<leader>aH", pick_sessions, "Claude Sessions")
+  -- Reachable by search too; this nvim is the pane's alone.
+  vim.api.nvim_create_user_command("ClaudeStash", function(cmd)
+    stash(cmd.bang)
+  end, { bang = true, desc = "Stash this Claude session (! closes it)" })
+  vim.api.nvim_create_user_command("ClaudeSessions", pick_sessions, { desc = "Pick a Claude session to resume" })
   map("n", "[r", function()
     step(-1)
   end, "Older Reply")

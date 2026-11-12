@@ -1,6 +1,9 @@
 #!/bin/sh
 # A new tab in the focused pane's workspace and directory, with a fresh Claude and the
 # prompt pane (scripts/claude-prompt) already open over it. Run by herdr's ctrl+alt+t.
+# With --resume ID CONFIG CWD [DRAFT], by the prompt pane's sessions picker
+# (nvim's lua/config/prompt_stash.lua): Claude resumes session ID under the account
+# whose config dir is CONFIG, in CWD, with DRAFT's text in the prompt.
 # If no Claude shows up, the tab is left on Claude's pane with a notification.
 fail() {
   herdr notification show "New Claude tab" --body "$1" >/dev/null
@@ -11,12 +14,22 @@ info=$(herdr pane get "$HERDR_ACTIVE_PANE_ID" | jq -c .result.pane)
 [ -n "$info" ] || fail "Can't read the focused pane"
 ws=$(printf '%s' "$info" | jq -r .workspace_id)
 cwd=$(printf '%s' "$info" | jq -r '.foreground_cwd // .cwd')
+run=claude
+draft=""
+if [ "$1" = --resume ]; then
+  [ $# -ge 4 ] || fail "Usage: --resume ID CONFIG CWD [DRAFT]"
+  cwd=$4 draft=$5
+  run="claude --resume $2"
+  # The main account is Claude's default with no CLAUDE_CONFIG_DIR: setting it to
+  # ~/.claude would move its .claude.json.
+  [ "${3%/}" = "$HOME/.claude" ] || run="CLAUDE_CONFIG_DIR=$3 $run"
+fi
 
 pane=$(herdr tab create --workspace "$ws" --cwd "$cwd" --focus | jq -r '.result.root_pane.pane_id // empty')
 [ -n "$pane" ] || fail "Couldn't create the tab"
-# Through the fish function, for its launch guard; on the main account, as herdr's
-# environment has no CLAUDE_CONFIG_DIR.
-herdr pane run "$pane" claude >/dev/null
+# Through the fish function, for its launch guard; on the main account unless
+# resuming another's, as herdr's environment has no CLAUDE_CONFIG_DIR.
+herdr pane run "$pane" "$run" >/dev/null
 
 i=0
 until [ "$(herdr pane get "$pane" | jq -r .result.pane.agent)" = claude ]; do
@@ -25,4 +38,4 @@ until [ "$(herdr pane get "$pane" | jq -r .result.pane.agent)" = claude ]; do
   sleep 0.2
 done
 
-exec "$(dirname "$0")/claude-prompt" --fresh "$pane"
+exec "$(dirname "$0")/claude-prompt" --fresh "$pane" ${draft:+"$draft"}

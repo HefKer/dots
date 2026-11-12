@@ -69,6 +69,15 @@ Claude Code from Neovim.
   - `<leader>ah` picks from every prompt sent before, newest first with its
     directory, and `<leader>at` from the templates in
     [`prompts/`](.config/nvim/prompts/), which put the cursor at their `$0`.
+  - <a id="stash"></a>`<leader>al` stashes the pane's Claude session to come
+    back to, with an optional note and the draft; `<leader>aL` stashes it and
+    closes the agent, the prompt pane, and their tab if nothing else is in it.
+    `<leader>aH` (or `:ClaudeSessions`) picks from every session on the machine,
+    both accounts: stashed first, then this project's, then the rest, newest
+    first, previewing the conversation. Enter resumes the pick in a new herdr
+    tab, in its directory, under its own account, with the prompt pane over it
+    and the stashed draft back in place; `Ctrl+X` unstashes without resuming.
+    [`config/prompt_stash.lua`](.config/nvim/lua/config/prompt_stash.lua)
   - `Ctrl+V` with an image on the clipboard saves it to
     `$XDG_RUNTIME_DIR/claude-prompt-images/` and inserts its absolute path as an
     embed, previewed inline, for Claude to Read from any cwd.
@@ -78,6 +87,7 @@ Claude Code from Neovim.
   [`config/prompt.lua`](.config/nvim/lua/config/prompt.lua),
   [`config/prompt_source.lua`](.config/nvim/lua/config/prompt_source.lua),
   [`config/prompt_table.lua`](.config/nvim/lua/config/prompt_table.lua),
+  [`config/prompt_stash.lua`](.config/nvim/lua/config/prompt_stash.lua),
   [`prompts/`](.config/nvim/prompts/),
   [`plugins/img-clip.lua`](.config/nvim/lua/plugins/img-clip.lua),
   [`scripts/claude-prompt`](../scripts/claude-prompt) ·
