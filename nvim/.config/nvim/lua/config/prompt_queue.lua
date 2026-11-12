@@ -47,6 +47,17 @@ function M.parse(text)
   return items
 end
 
+-- Whether a command typed at the start of line `row` would be queued: the parser is asked
+-- with that line standing in as one, so only the lines above it decide.
+---@param lines string[] the draft, at least up to `row`
+---@param row integer
+function M.in_block(lines, row)
+  local above = vim.list_slice(lines, 1, row - 1)
+  table.insert(above, "/x")
+  local items = M.parse(table.concat(above, "\n"))
+  return items[#items].name ~= nil
+end
+
 -- How the item reads in the winbar: its first line, cut short.
 ---@param item prompt.Item
 function M.label(item)

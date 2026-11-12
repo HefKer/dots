@@ -6,6 +6,8 @@ local M = {}
 
 local tables = require("config.prompt_table")
 local queue = require("config.prompt_queue")
+local handoff = require("config.prompt_handoff")
+local pending = require("config.prompt_pending")
 
 local ns = vim.api.nvim_create_namespace("claude_prompt_quote")
 local ns_table = vim.api.nvim_create_namespace("claude_prompt_table")
@@ -23,13 +25,21 @@ local state = {
   session = nil, -- Claude's session id, last seen
   draft = nil, -- file the prompt is saved to
   index = 0, -- the one shown; 0 when there are none
-  view = "reply", -- or "tasks", the task list shown in its place
+  view = "reply", -- or "tasks", the task list shown in its place, or "pending", the call Claude is blocked on
   tasks = {}, -- Claude's task list: { id?, subject, status }
   activity = nil, -- the tool call Claude made last, while a turn runs
+  calls = {}, -- tool calls made this turn with no result yet, oldest first (config.prompt_pending)
+  answered = {}, -- ids of calls answered from here, before their result is written
+  shown_call = nil, -- the call the viewer shows, keyed by call_key
+  screen = nil, -- Claude's screen text, read while it's blocked
+  answered_screen = nil, -- a dialog known only from the screen, answered from here
   watcher = nil,
   timer = nil,
   unseen = false, -- a reply arrived while a file covered the viewer
   queue = nil, -- the command queue being sent: { n, total, label }
+  stop_queue = nil, -- stops it, putting back what isn't sent yet: fun(why: string)
+  interrupted = false, -- shown in the viewer's bar for a moment after an interrupt
+  mode = nil, -- Claude's permission mode, from whichever was read last: transcript or screen
   cwd = nil, -- Claude's working directory, and its git branch
   branch = nil,
 }
@@ -99,6 +109,18 @@ function M.find_agent()
   return pick_agent(vim.system(list_panes(), { text = true }):wait())
 end
 
+-- The directory Claude's @ paths are relative to, by one rule for the bar, @ completion
+-- and config.prompt_ref: its foreground process's, else its pane's.
+---@param agent? table a pane from `herdr pane list`
+---@return string?
+function M.workdir(agent)
+  local cwd = agent and agent.foreground_cwd
+  if type(cwd) ~= "string" then
+    cwd = agent and agent.cwd
+  end
+  return type(cwd) == "string" and cwd or nil
+end
+
 ---@return string? path of the agent's session transcript
 ---@return string? err
 local function session_path(agent, err)
@@ -164,6 +186,7 @@ local function track(entry)
     for _, block in ipairs(entry.message.content or {}) do
       if block.type == "tool_use" then
         state.activity = describe(block)
+        table.insert(state.calls, { id = block.id, name = block.name, input = block.input })
         if block.name == "TodoWrite" and block.input and block.input.todos then
           state.tasks = vim.tbl_map(function(todo)
             return { subject = todo.content, status = todo.status }
@@ -234,11 +257,47 @@ local function read_new()
   text = last_nl and text:sub(1, last_nl) or ""
 
   local before, last_id, joined = #state.replies, state.last_id, false
+  -- A message's content blocks arrive as separate entries; join them.
+  local function add(body, id)
+    local last = state.replies[#state.replies]
+    if id and id == last_id then
+      state.replies[#state.replies] = last .. "\n" .. body
+      joined = joined or #state.replies == before
+    elseif last and not state.prompted then
+      state.replies[#state.replies] = last .. "\n\n---\n\n" .. body
+      joined = joined or #state.replies == before
+    else
+      table.insert(state.replies, body)
+    end
+    last_id = id
+    state.prompted = false
+  end
   for line in text:gmatch("[^\n]+") do
     if line:find('"type":"user"', 1, true) and not line:find('"tool_use_id"', 1, true) then
       local ok, entry = pcall(vim.json.decode, line)
       if ok and type(entry) == "table" and M.from_you(entry) then
         state.prompted = true
+        state.calls = {} -- a prompt, or an interrupt: whatever was asked is over
+      end
+    end
+    -- Written as each turn starts, not when the mode changes: the screen is read for that.
+    if line:find('"type":"permission-mode"', 1, true) then
+      local ok, entry = pcall(vim.json.decode, line)
+      if
+        ok
+        and type(entry) == "table"
+        and entry.type == "permission-mode"
+        and type(entry.permissionMode) == "string"
+      then
+        state.mode = entry.permissionMode
+      end
+    end
+    -- A tool result answers its call. Found without decoding: these lines hold tool output.
+    if line:find('"type":"tool_result"', 1, true) then
+      for id in line:gmatch('"tool_use_id":"([^"]+)"') do
+        state.calls = vim.tbl_filter(function(call)
+          return call.id ~= id
+        end, state.calls)
       end
     end
     if line:find('"type":"tool_use"', 1, true) or line:find('"toolUseResult":{', 1, true) then
@@ -258,22 +317,19 @@ local function read_new()
           end
         end
         if #texts > 0 then
-          local body = table.concat(texts, "\n")
-          -- A message's content blocks arrive as separate entries; join them.
-          local last = state.replies[#state.replies]
-          if entry.message.id and entry.message.id == last_id then
-            state.replies[#state.replies] = last .. "\n" .. body
-            joined = joined or #state.replies == before
-          elseif last and not state.prompted then
-            state.replies[#state.replies] = last .. "\n\n---\n\n" .. body
-            joined = joined or #state.replies == before
-          else
-            table.insert(state.replies, body)
-          end
-          last_id = entry.message.id
-          state.prompted = false
+          add(table.concat(texts, "\n"), entry.message.id)
           state.activity = nil
+          state.calls = {}
         end
+      end
+    end
+    -- The recap Claude writes when you come back after being away (awaySummaryEnabled),
+    -- shown as it is under Claude's input box: with the last reply, unless you've
+    -- prompted since.
+    if line:find('"subtype":"away_summary"', 1, true) then
+      local ok, entry = pcall(vim.json.decode, line)
+      if ok and type(entry) == "table" and entry.type == "system" and type(entry.content) == "string" then
+        add("_Recap:_ " .. entry.content:gsub("%s*%(disable recaps in /config%)$", ""))
       end
     end
   end
@@ -296,6 +352,8 @@ end
 local status_hl =
   { working = "DiagnosticWarn", blocked = "DiagnosticError", idle = "DiagnosticOk", done = "DiagnosticOk" }
 
+local mode_hl = { plan = "DiagnosticInfo", bypassPermissions = "DiagnosticError" }
+
 local function pct_hl(pct)
   return pct >= 80 and "DiagnosticError" or pct >= 50 and "DiagnosticWarn" or "Comment"
 end
@@ -315,6 +373,10 @@ local function status_line()
       text = text .. "%#Comment# " .. effort:gsub("%%", "%%%%")
     end
     table.insert(parts, text)
+  end
+  -- So is the permission mode, when it isn't the default.
+  if state.mode and state.mode ~= "default" then
+    table.insert(parts, ("%%#%s#%s"):format(mode_hl[state.mode] or "DiagnosticWarn", (state.mode:gsub("%%", "%%%%"))))
   end
   if state.status then
     local activity = state.status == "working" and state.activity
@@ -348,17 +410,85 @@ local function read_statusline(agent)
   state.statusline = ok and info or nil
 end
 
+-- Each bar's binds, most-used first: as many as fit on its one line are shown. Keys
+-- are under <leader>a, written after that prefix once, unless marked plain.
+local viewer_hints = {
+  { "<CR>", "quote", plain = true },
+  { "s", "send" },
+  { "i", "interrupt" },
+  { "[r ]r", "replies", plain = true },
+  { "k", "tasks" },
+  { "c", "pane" },
+  { "m", "mode" },
+}
+local pending_hints = {
+  { "y", "yes" },
+  { "Y", "always" },
+  { "n", "no" },
+  { "1-9", "option" },
+  { "c", "pane" },
+  { "i", "interrupt" },
+}
+local prompt_hints = {
+  { "s", "send" },
+  { "<M-c>", "interrupt", plain = true },
+  { "q", "quote" },
+  { "[r ]r", "replies", plain = true },
+  { "h", "history" },
+  { "d", "drafts" },
+  { "t", "template" },
+  { "Q", "unquote" },
+  { "c", "pane" },
+  { "m", "mode" },
+  { "l", "stash" },
+  { "H", "sessions" },
+  { "k", "tasks" },
+}
+
+local function render_hints(hints)
+  local plain, leader = {}, {}
+  for _, hint in ipairs(hints) do
+    table.insert(hint.plain and plain or leader, hint[1] .. " " .. hint[2])
+  end
+  if #leader > 0 then
+    table.insert(plain, "<leader>a " .. table.concat(leader, " · "))
+  end
+  return table.concat(plain, " · ")
+end
+
+---@param win integer
+---@param bar string the bar's left side, as a statusline string
+---@param hints table[] { key, what, plain? }, most-used first
+local function fit_hints(win, bar, hints)
+  local room = vim.api.nvim_win_get_width(win)
+    - vim.api.nvim_eval_statusline(bar, { winid = win, use_winbar = true }).width
+    - 3
+  local shown = {}
+  for _, hint in ipairs(hints) do
+    local try = vim.list_extend(vim.list_slice(shown), { hint })
+    if vim.fn.strdisplaywidth(render_hints(try)) > room then
+      break
+    end
+    shown = try
+  end
+  return "%=%#Comment#" .. render_hints(shown):gsub("%%", "%%%%") .. " "
+end
+
 local function set_winbars()
   if viewer_valid() then
     local done = #vim.tbl_filter(function(task)
       return task.status == "completed"
     end, state.tasks)
     local tasks = #state.tasks > 0 and ("tasks %d/%d"):format(done, #state.tasks)
-    local title = state.view == "tasks" and ("Claude · " .. (tasks or "no tasks"))
+    local title = state.view == "pending" and "Claude · %#DiagnosticError#waiting on you%#WinBar#"
+      or state.view == "tasks" and ("Claude · " .. (tasks or "no tasks"))
       or state.index > 0 and ("Claude · reply %d/%d"):format(state.index, #state.replies)
       or "Claude · no reply yet"
     if state.view ~= "tasks" and tasks then
       title = title .. " · " .. tasks
+    end
+    if state.interrupted then
+      title = title .. "%#DiagnosticWarn# · interrupted%#WinBar#"
     end
     if state.queue then
       title = title
@@ -368,7 +498,9 @@ local function set_winbars()
           state.queue.total
         )
     end
-    vim.wo[state.viewer.win][0].winbar = "%#WinBar# 󰚩 " .. title .. status_line() .. "%=%#Comment#<leader>ak tasks "
+    local bar = "%#WinBar# 󰚩 " .. title .. status_line()
+    vim.wo[state.viewer.win][0].winbar = bar
+      .. fit_hints(state.viewer.win, bar, state.view == "pending" and pending_hints or viewer_hints)
   end
   if state.prompt.win and vim.api.nvim_win_is_valid(state.prompt.win) then
     local where = ""
@@ -377,17 +509,16 @@ local function set_winbars()
       local branch = state.branch and ("%#Comment# on %#DiagnosticHint# " .. state.branch:gsub("%%", "%%%%")) or ""
       where = "%#Comment# · %#Directory# " .. dir .. branch
     end
-    vim.wo[state.prompt.win][0].winbar = "%#WinBar# 󰏫 Prompt"
-      .. where
-      .. "%=%#Comment#<leader>ah history · <leader>at template · <leader>ad drafts · <leader>al stash · <leader>aH sessions "
+    local bar = "%#WinBar# 󰏫 Prompt" .. where
+    vim.wo[state.prompt.win][0].winbar = bar .. fit_hints(state.prompt.win, bar, prompt_hints)
   end
 end
 
 -- Where Claude is working, for the prompt's bar: its pane's directory, and the git
 -- branch there, looked up again only when the directory changes.
 local function locate(agent)
-  local cwd = agent and (agent.foreground_cwd or agent.cwd)
-  if not cwd or cwd == vim.NIL or cwd == state.cwd then
+  local cwd = M.workdir(agent)
+  if not cwd or cwd == state.cwd then
     return
   end
   state.cwd, state.branch = cwd, nil
@@ -468,12 +599,221 @@ local function show_tasks()
   set_winbars()
 end
 
-local function toggle_tasks()
-  if state.view == "tasks" then
-    show(state.index)
-  else
-    show_tasks()
+------------------------------------------------------------------------------
+-- Claude's screen
+
+local function lookup_agent(cb)
+  vim.system(
+    list_panes(),
+    { text = true },
+    vim.schedule_wrap(function(listed)
+      cb(pick_agent(listed))
+    end)
+  )
+end
+
+-- M.workdir without blocking, for completion as you type: the one the poll last saw,
+-- else looked up.
+---@param cb fun(cwd?: string)
+function M.workdir_async(cb)
+  if state.cwd then
+    return cb(state.cwd)
   end
+  lookup_agent(function(agent)
+    cb(M.workdir(agent))
+  end)
+end
+
+-- Whether Claude's input box is on screen: a `❯` line under a `─` rule. A dialog such
+-- as /model's picker, or a permission prompt, takes its place.
+local function input_box(screen)
+  local above
+  for _, line in ipairs(vim.split(screen, "\n", { plain = true })) do
+    if vim.trim(line) ~= "" then
+      if line:find("^❯") and above and above:find("^─") then
+        return true
+      end
+      above = line
+    end
+  end
+  return false
+end
+
+-- Claude's permission mode by the name its footer shows; any other is passed on as shown.
+local mode_names = {
+  manual = "default",
+  ["accept edits"] = "acceptEdits",
+  ["bypass permissions"] = "bypassPermissions",
+}
+
+-- The permission mode Claude's footer shows under its input box (`⏸ plan mode on`,
+-- `⏵⏵ accept edits on`), or nil with the box covered or no mode shown. A Claude that
+-- shows nothing for default mode shows `? for shortcuts` there instead.
+---@param screen string Claude's screen
+---@return string?
+function M.screen_mode(screen)
+  if not input_box(screen) then
+    return nil
+  end
+  local lines = vim.split(screen, "\n", { plain = true })
+  local footer = #lines + 1
+  for i = #lines, 1, -1 do
+    if lines[i]:find("^─") then
+      footer = i + 1
+      break
+    end
+  end
+  for i = footer, #lines do
+    local line = vim.trim(lines[i])
+    local name = line:match("^[^%w%s]+%s+(%a[%a ']-) on%f[^%w]")
+    if name then
+      name = name:gsub(" mode$", "")
+      return mode_names[name] or name
+    elseif line:find("^%? for shortcuts") then
+      return "default"
+    end
+  end
+  return nil
+end
+
+-- What Claude's pane shows now. herdr's agent_status alone misses a dialog: it keeps
+-- the last state behind /model's picker, so the screen is read for the input box too.
+---@param cb fun(screen?: "idle"|"working"|"blocked"|"dialog", agent?: table, err?: string, text?: string)
+local function read_screen(cb)
+  lookup_agent(function(agent, err)
+    if not agent then
+      return cb(nil, nil, err)
+    end
+    vim.system(
+      { "herdr", "pane", "read", agent.pane_id, "--source", "visible" },
+      { text = true },
+      vim.schedule_wrap(function(read)
+        if read.code ~= 0 then
+          return cb(nil, agent, herdr_error(read))
+        end
+        local screen = agent.agent_status == "blocked" and "blocked"
+          or not input_box(read.stdout) and "dialog"
+          or agent.agent_status == "working" and "working"
+          or "idle"
+        cb(screen, agent, nil, read.stdout)
+      end)
+    )
+  end)
+end
+
+-- Claude's permission mode from its footer, which shows a change at once, where the
+-- transcript has it only once the next turn starts. Left as it was while a dialog covers it.
+---@param cb? fun(mode?: string)
+local function read_mode(agent, cb)
+  vim.system(
+    { "herdr", "pane", "read", agent.pane_id, "--source", "visible" },
+    { text = true },
+    vim.schedule_wrap(function(read)
+      local mode = read.code == 0 and M.screen_mode(read.stdout) or nil
+      if mode and mode ~= state.mode then
+        state.mode = mode
+        set_winbars()
+      end
+      if cb then
+        cb(mode)
+      end
+    end)
+  )
+end
+
+------------------------------------------------------------------------------
+-- The pending call: while Claude is blocked on a tool call, the viewer shows it in
+-- place of the reply (config.prompt_pending), and <leader>ay/aY/an/a1-9 answer the
+-- dialog asking about it, back to the reply once answered.
+
+-- The call Claude's dialog asks about, with the dialog's options once its screen has
+-- been read: the oldest call made this turn with no result yet that the dialog shows,
+-- or, while Claude holds that back from the transcript, the dialog as the screen shows
+-- it. Not one answered from here.
+---@return prompt.Call? call, prompt.Option[]? options
+local function pending_call()
+  if state.status ~= "blocked" then
+    return nil
+  end
+  local options = state.screen and pending.options(state.screen)
+  local lines = options and pending.dialog(state.screen)
+  for _, call in ipairs(state.calls) do
+    if not state.answered[call.id] and (not lines or pending.asks_about(call, lines)) then
+      return call, options
+    end
+  end
+  local id = lines and "screen:" .. table.concat(lines, "\n")
+  if id and id ~= state.answered_screen then
+    return { id = id, screen = lines }, options
+  end
+end
+
+-- Which call the viewer shows, and whether with its options: once they're read, it's redrawn.
+local function call_key(call, options)
+  return call.id .. (options and "#" .. #options or "")
+end
+
+local function show_pending(call, options)
+  local buf = state.viewer.buf
+  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    return
+  end
+  state.view, state.shown_call = "pending", call_key(call, options)
+  draw(pending.render(call, options))
+  if viewer_valid() then
+    vim.api.nvim_win_set_cursor(state.viewer.win, { 1, 0 })
+  end
+  set_winbars()
+end
+
+-- Shows the pending call once Claude is blocked on it, and the reply again once not.
+-- Shown once per call, so [r or <leader>ak can step away from it while it waits.
+local function update_pending()
+  local call, options = pending_call()
+  if call and state.shown_call ~= call_key(call, options) then
+    show_pending(call, options)
+    if not viewer_valid() then
+      vim.notify("Claude is waiting on you · <leader>ar to show", vim.log.levels.WARN, { title = "Claude prompt" })
+    end
+  elseif not call and state.shown_call then
+    state.shown_call = nil
+    if state.view == "pending" then
+      show(#state.replies)
+    end
+  end
+end
+
+-- Claude's screen while it's blocked, read for the dialog; then the pending call shown.
+---@param cb fun(screen?: "idle"|"working"|"blocked"|"dialog", agent?: table, text?: string) only once read
+local function read_dialog(cb)
+  if state.status ~= "blocked" then
+    state.screen, state.answered_screen = nil, nil
+    return update_pending()
+  end
+  read_screen(function(screen, agent, _, text)
+    state.screen = screen == "blocked" and text or nil
+    update_pending()
+    cb(screen, agent, text)
+  end)
+end
+
+-- Back from the task list to the pending call while there is one, else the reply.
+local function toggle_tasks()
+  local call, options = pending_call()
+  if state.view ~= "tasks" then
+    show_tasks()
+  elseif call and state.shown_call then
+    show_pending(call, options)
+  else
+    show(state.index)
+  end
+end
+
+-- Whether the prompt pane answers the dialog on Claude's screen itself: one whose
+-- numbered options it can read. The hand-off takes the rest.
+---@param text string Claude's screen
+local function answerable(text)
+  return pending.options(text) ~= nil
 end
 
 -- Picks up new replies and tasks. Following the newest reply unless you've stepped
@@ -485,7 +825,12 @@ local function refresh()
     state.unseen = true
     vim.notify("Claude replied · <leader>ar to show", vim.log.levels.INFO, { title = "Claude prompt" })
   end
-  if state.view == "tasks" then
+  if state.view == "pending" then
+    if following then
+      state.index = #state.replies
+    end
+    set_winbars()
+  elseif state.view == "tasks" then
     if following then
       state.index = #state.replies
     end
@@ -509,6 +854,7 @@ local function refresh()
     set_winbars()
   end
   state.tasks_changed = false
+  update_pending()
 end
 
 -- Claude restarted or /clear'd: start over on the new transcript.
@@ -521,7 +867,7 @@ local function attach_to(path, err)
   end
   state.path, state.offset, state.partial, state.replies, state.last_id = path, 0, "", {}, nil
   state.prompted = true
-  state.tasks, state.activity = {}, nil
+  state.tasks, state.activity, state.calls, state.answered = {}, nil, {}, {}
   if not path then
     return show(0, "_" .. err .. "._")
   end
@@ -551,32 +897,13 @@ local function attach()
   attach_to(M.transcript())
 end
 
--- The transcript only exists once a session's first message is written, and
--- /clear or a restarted Claude moves to a new one, neither of which the file
--- watcher can see. So check the agent's session every few seconds, and re-read
--- too, in case libuv dropped an event. A failed lookup keeps the reply shown.
-local function start_polling()
-  state.poll = state.poll or vim.uv.new_timer()
-  state.poll:start(
-    2000,
-    2000,
-    vim.schedule_wrap(function()
-      M.transcript_async(function(path, _, agent)
-        read_statusline(agent)
-        locate(agent)
-        if path then
-          attach_to(path)
-        else
-          set_winbars()
-        end
-      end)
-    end)
-  )
-end
-
+-- Past the newest reply is the pending call, while one waits.
 local function step(delta)
-  local target = state.index + delta
-  if target >= 1 and target <= #state.replies then
+  local call = state.shown_call and pending_call()
+  local target = state.view == "pending" and delta < 0 and state.index or state.index + delta
+  if state.view ~= "pending" and target == #state.replies + 1 and call then
+    show_pending(call)
+  elseif target >= 1 and target <= #state.replies then
     show(target)
   end
 end
@@ -950,24 +1277,32 @@ end
 -- Every other saved draft, newest first: one whose pane is gone, or whose session
 -- came back under a new id. Picking one moves it into this prompt.
 local function pick_draft()
-  local items = {}
+  local items, drafts, transcripts = {}, {}, {}
   for _, path in ipairs(vim.fn.glob(drafts_dir .. "/*.md", false, true)) do
     if path ~= state.draft then
-      local text = table.concat(vim.fn.readfile(path), "\n")
       local key = vim.fn.fnamemodify(path, ":t:r")
-      local project = vim.fn.glob("~/.claude*/projects/*/" .. key .. ".jsonl", false, true)[1]
-      local time = vim.fn.getftime(path)
-      table.insert(items, {
-        text = text,
-        file = path,
-        time = time,
-        when = os.date("%m-%d %H:%M", time),
-        -- ~/.claude/projects/-home-me-dots/ → dots
-        where = project and vim.fn.fnamemodify(project, ":h:t"):match("[^-]+$") or "",
-        title = text:match("[^\n]*"),
-        preview = { text = text, ft = "markdown" },
-      })
+      local transcript = vim.fn.glob("~/.claude*/projects/*/" .. key .. ".jsonl", false, true)[1]
+      table.insert(drafts, { path = path, transcript = transcript })
+      if transcript then
+        table.insert(transcripts, transcript)
+      end
     end
+  end
+  -- From the cwd each transcript records, since its project dir's name can't be read
+  -- back: ~/dev/my-app is -home-me-dev-my-app.
+  local cwds = require("config.prompt_stash").cwds_of(transcripts)
+  for _, draft in ipairs(drafts) do
+    local text = table.concat(vim.fn.readfile(draft.path), "\n")
+    local time = vim.fn.getftime(draft.path)
+    table.insert(items, {
+      text = text,
+      file = draft.path,
+      time = time,
+      when = os.date("%m-%d %H:%M", time),
+      where = vim.fn.fnamemodify(draft.transcript and cwds[draft.transcript] or "", ":t"),
+      title = text:match("[^\n]*"),
+      preview = { text = text, ft = "markdown" },
+    })
   end
   if #items == 0 then
     return notify_error("No other saved drafts")
@@ -983,7 +1318,7 @@ local function pick_draft()
       return {
         { item.when, "Comment" },
         { " " },
-        { ("%-12s"):format(item.where:sub(1, 12)), "Directory" },
+        { ("%-16s"):format(item.where:sub(1, 16)), "Directory" },
         { " " },
         { item.title },
       }
@@ -1102,80 +1437,37 @@ local function send_item(agent, item, cb)
   )
 end
 
-local function lookup_agent(cb)
-  vim.system(
-    list_panes(),
-    { text = true },
-    vim.schedule_wrap(function(listed)
-      cb(pick_agent(listed))
-    end)
-  )
-end
-
--- Whether Claude's input box is on screen: a `❯` line under a `─` rule. A dialog such
--- as /model's picker, or a permission prompt, takes its place.
-local function input_box(screen)
-  local above
-  for _, line in ipairs(vim.split(screen, "\n", { plain = true })) do
-    if vim.trim(line) ~= "" then
-      if line:find("^❯") and above and above:find("^─") then
-        return true
-      end
-      above = line
-    end
-  end
-  return false
-end
-
--- What Claude's pane shows now. herdr's agent_status alone misses a dialog: it keeps
--- the last state behind /model's picker, so the screen is read for the input box too.
----@param cb fun(screen?: "idle"|"working"|"blocked"|"dialog", agent?: table, err?: string)
-local function read_screen(cb)
-  lookup_agent(function(agent, err)
-    if not agent then
-      return cb(nil, nil, err)
-    end
-    vim.system(
-      { "herdr", "pane", "read", agent.pane_id, "--source", "visible" },
-      { text = true },
-      vim.schedule_wrap(function(read)
-        if read.code ~= 0 then
-          return cb(nil, agent, herdr_error(read))
-        end
-        local screen = agent.agent_status == "blocked" and "blocked"
-          or not input_box(read.stdout) and "dialog"
-          or agent.agent_status == "working" and "working"
-          or "idle"
-        cb(screen, agent)
-      end)
-    )
-  end)
-end
-
 local waiting_msg = "Claude is waiting on you (a dialog or permission prompt)"
 
 -- Waits for a command to finish: /clear until Claude's session record names a new
 -- session, anything else until Claude's input box is back. A command too quick to be
 -- seen working counts as done once it has been idle for a second. Gives up after 10s,
--- so the next item goes anyway; calls back with why when a prompt or dialog opens, or
--- the input box stays gone for over a second.
+-- so the next item goes anyway; calls back with the screen, "blocked" or "dialog", when
+-- a prompt or dialog opens, or the input box stays gone for over a second.
 ---@param item prompt.Item
 ---@param before? string the session the command was sent in
----@param cb fun(why?: string)
-local function await_item(item, before, cb)
+---@param cb fun(screen?: "blocked"|"dialog", text?: string)
+---@param alive fun(): boolean false once the queue is stopped, which ends the wait unanswered
+local function await_item(item, before, cb, alive)
   local start, busy, stuck = vim.uv.now(), false, nil
   local function poll()
-    read_screen(function(screen, agent)
+    if not alive() then
+      return
+    end
+    read_screen(function(screen, agent, _, text)
+      if not alive() then
+        return
+      end
       local now = vim.uv.now()
       local elapsed = now - start
       if screen == "blocked" then
-        return cb(waiting_msg)
+        return cb(screen, text)
       end
       busy = busy or screen == "working"
       if screen == "dialog" then
         stuck = stuck or now
         if now - stuck >= 1000 then
-          return cb(waiting_msg)
+          return cb(screen, text)
         end
       else
         stuck = nil
@@ -1189,6 +1481,63 @@ local function await_item(item, before, cb)
     end)
   end
   vim.defer_fn(poll, 250)
+end
+
+local answer_hint = "answer with <leader>ay yes, <leader>aY always, <leader>an no or <leader>a1-9"
+
+-- Answers Claude's dialog from here: `choice` is checked against the options on its
+-- screen first, so a dialog laid out differently, or none, only notifies.
+---@param choice "yes"|"always"|"no"|integer
+local function answer(choice)
+  read_screen(function(screen, agent, err, text)
+    if not screen then
+      return notify_error(err)
+    elseif screen == "dialog" then
+      return notify_error("Claude's dialog isn't a question to answer from here; <leader>ac goes to its pane")
+    elseif screen ~= "blocked" then
+      return vim.notify("No dialog from Claude to answer", vim.log.levels.INFO, { title = "Claude prompt" })
+    end
+    state.status, state.screen = "blocked", text
+    refresh() -- the call may have been written since the watcher last fired
+    local call, options = pending_call()
+    if not (call and options) then
+      return notify_error("Couldn't read the options of Claude's dialog; answer it in Claude's pane (<leader>ac)")
+    end
+    local key, why = pending.key(options, choice)
+    if not key then
+      return notify_error(why)
+    end
+    local sent = vim.system({ "herdr", "pane", "send-keys", agent.pane_id, key }, { text = true }):wait()
+    if sent.code ~= 0 then
+      return notify_error(herdr_error(sent))
+    end
+    if call.screen then
+      state.answered_screen = call.id
+    else
+      state.answered[call.id] = true
+    end
+    state.screen = nil
+    update_pending()
+  end)
+end
+
+-- Waits for an answerable dialog to close, answered from here or in Claude's pane.
+---@param cb fun()
+---@param alive fun(): boolean false once the queue is stopped, which ends the wait
+local function wait_answered(cb, alive)
+  if not alive() then
+    return
+  end
+  read_screen(function(screen)
+    if not alive() then
+      return
+    elseif screen == "blocked" or screen == "dialog" then
+      return vim.defer_fn(function()
+        wait_answered(cb, alive)
+      end, 500)
+    end
+    cb()
+  end)
 end
 
 -- Puts items the queue didn't send back in the draft, above anything typed since.
@@ -1217,43 +1566,98 @@ local function put_back(items)
 end
 
 -- Steps through the command queue in the background, each item once the one before
--- has finished, with its progress in the viewer's winbar. A blocked agent or a refused
--- send stops it, and what's left goes back in the draft.
+-- has finished, with its progress in the viewer's winbar. A dialog asking about a tool
+-- call is answered from here, and one the prompt pane can't answer hands off to Claude's
+-- pane (config.prompt_handoff); either holds the rest until it closes. A trip not taken
+-- or abandoned, a refused send, or an interrupt (state.stop_queue) stops it, and what
+-- isn't sent yet goes back in the draft. Every wait checks it's still running first.
 ---@param items prompt.Item[]
 local function run_queue(items)
+  local step
+  local running, unsent = true, 1
+  local function alive()
+    return running
+  end
   local function stop(from, why)
-    state.queue = nil
+    if not running then
+      return
+    end
+    running, state.queue, state.stop_queue = false, nil, nil
     set_winbars()
     put_back(vim.list_slice(items, from))
     notify_error(why .. (from <= #items and "; the rest is back in the draft" or ""))
   end
-  local function step(i)
+  state.stop_queue = function(why)
+    stop(unsent, why)
+  end
+  -- Pauses at item `from` for a dialog, or stops there if no trip is taken.
+  local function pause(agent, from, screen, text)
+    if not handoff.wants(screen, text) then
+      state.queue.label = state.queue.label .. " · waiting on you"
+      state.status, state.screen = "blocked", text
+      update_pending()
+      vim.notify("Claude is waiting on you: " .. answer_hint, vim.log.levels.WARN, { title = "Claude prompt" })
+      return wait_answered(function()
+        step(from)
+      end, alive)
+    end
+    handoff.go(agent, {
+      armed = true,
+      resume = function()
+        step(from)
+      end,
+      abandon = function()
+        stop(from, waiting_msg)
+      end,
+    }, function(went)
+      if not running then
+        return
+      elseif went then
+        state.queue.label = state.queue.label .. " · in Claude's pane"
+        set_winbars()
+      else
+        stop(from, waiting_msg)
+      end
+    end)
+  end
+  step = function(i)
+    if not running then
+      return
+    end
+    unsent = i
     if i > #items then
-      state.queue = nil
+      running, state.queue, state.stop_queue = false, nil, nil
       set_winbars()
       -- The session may have changed (/clear, a restarted Claude); follow it.
       return M.transcript_async(attach_to)
     end
     state.queue = { n = i, total = #items, label = queue.label(items[i]) }
     set_winbars()
-    read_screen(function(screen, agent, err)
-      if not screen then
+    read_screen(function(screen, agent, err, text)
+      if not running then
+        return
+      elseif not screen then
         return stop(i, err)
       elseif screen == "blocked" or screen == "dialog" then
-        return stop(i, waiting_msg)
+        return pause(agent, i, screen, text)
       end
       send_item(agent, items[i], function(send_err)
-        if send_err then
+        if not running then
+          return
+        elseif send_err then
           return stop(i, send_err)
-        elseif i == #items then
+        end
+        unsent = i + 1
+        if i == #items and not items[i].name then
           return step(i + 1)
         end
-        await_item(items[i], agent.session, function(why)
-          if why then
-            return stop(i + 1, why)
+        -- A last command is awaited too, for the dialog it may open (/model).
+        await_item(items[i], agent.session, function(opened, text)
+          if opened then
+            return pause(agent, i + 1, opened, text)
           end
           step(i + 1)
-        end)
+        end, alive)
       end)
     end)
   end
@@ -1274,31 +1678,192 @@ local function send()
   end
   local items = queue.parse(text)
   local agent, err = M.find_agent()
+  -- Refused while Claude waits on you: a dialog answerable here is shown, the rest hand
+  -- off to its pane, sending once back.
+  if agent and agent.agent_status == "blocked" then
+    return read_screen(function(screen, now, _, text)
+      if screen and not handoff.wants(screen, text) then
+        state.status, state.screen = "blocked", text
+        update_pending()
+        return notify_error("Claude is waiting on you: " .. answer_hint)
+      end
+      handoff.go(now or agent, { armed = true, resume = send }, function(went)
+        if not went then
+          notify_error(waiting_msg)
+        end
+      end)
+    end)
+  end
   if agent and items[1].name then
-    if agent.agent_status == "blocked" then
-      return notify_error(waiting_msg)
-    end
     record(text)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
     save_draft()
     return run_queue(items)
   end
-  if agent then
-    local sent = vim.system({ "herdr", "agent", "prompt", agent.pane_id, text }, { text = true }):wait()
-    err = sent.code ~= 0 and herdr_error(sent) or nil
-  end
-  if err then
+  if not agent then
     return notify_error(err)
   end
-  record(text)
+  -- Cleared now, not once herdr answers, so what you type meanwhile isn't lost; a
+  -- refused send goes back in the draft above it.
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
   save_draft()
-  -- The session may have changed since open (a restarted Claude); follow it.
-  attach()
+  vim.system(
+    { "herdr", "agent", "prompt", agent.pane_id, text },
+    { text = true },
+    vim.schedule_wrap(function(sent)
+      if sent.code ~= 0 then
+        put_back({ { source = text } })
+        return notify_error(herdr_error(sent) .. "; the prompt is back in the draft")
+      end
+      record(text)
+      -- The session may have changed since open (a restarted Claude); follow it.
+      M.transcript_async(attach_to)
+    end)
+  )
+end
+
+-- Interrupts Claude's turn, as Esc in its pane does, without leaving this one. A running
+-- queue stops first, whatever it's waiting on, and what isn't sent yet goes back in the
+-- draft; Claude is sent Esc only while it's working or has a dialog up. In vim mode an
+-- Esc in insert mode only leaves it, so Claude's input mode, from the statusline it
+-- shares, decides between one and two. The pending call clears once the interrupt
+-- reaches the transcript.
+local function interrupt()
+  local had_queue = state.stop_queue ~= nil
+  if had_queue then
+    state.stop_queue("Interrupted")
+  end
+  read_screen(function(screen, agent, err)
+    if not screen then
+      return notify_error(err)
+    elseif screen == "idle" then
+      if not had_queue then
+        vim.notify("Claude isn't working", vim.log.levels.INFO, { title = "Claude prompt" })
+      end
+      return
+    end
+    read_statusline(agent)
+    local mode = vim.tbl_get(state.statusline or {}, "vim", "mode")
+    local keys = { "herdr", "pane", "send-keys", agent.pane_id, "esc" }
+    if type(mode) == "string" and mode:upper() ~= "NORMAL" then
+      table.insert(keys, "esc")
+    end
+    local sent = vim.system(keys, { text = true }):wait()
+    if sent.code ~= 0 then
+      return notify_error(herdr_error(sent))
+    end
+    state.interrupted = true
+    set_winbars()
+    vim.defer_fn(function()
+      state.interrupted = false
+      set_winbars()
+    end, 3000)
+  end)
+end
+
+-- Cycles Claude's permission mode, as Shift+Tab in its pane does, in either vim mode of
+-- its input. Not past a dialog, where Shift+Tab answers it instead. The footer is read
+-- until it shows the change, so the bar has it at once.
+local function cycle_mode()
+  read_screen(function(screen, agent, err, text)
+    if not screen then
+      return notify_error(err)
+    elseif screen == "blocked" or screen == "dialog" then
+      return notify_error("Claude has a dialog up; answer it before cycling its mode")
+    end
+    local before = M.screen_mode(text)
+    local sent = vim.system({ "herdr", "pane", "send-keys", agent.pane_id, "shift+tab" }, { text = true }):wait()
+    if sent.code ~= 0 then
+      return notify_error(herdr_error(sent))
+    end
+    local tries = 0
+    local function check()
+      tries = tries + 1
+      read_mode(agent, function(mode)
+        if (not mode or mode == before) and tries < 8 then
+          vim.defer_fn(check, 150)
+        end
+      end)
+    end
+    vim.defer_fn(check, 100)
+  end)
+end
+
+-- The hand-off on purpose: back on its own once Claude has opened a dialog and closed it.
+-- Not while a queue runs, which hands off for its own dialogs.
+local function to_claude()
+  if state.queue then
+    return notify_error("Still sending the command queue; it hands off at a dialog")
+  end
+  local agent, err = M.find_agent()
+  if not agent then
+    return notify_error(err)
+  end
+  handoff.go(agent, {}, function(went)
+    if not went then
+      notify_error("Already handed off, or this pane isn't focused in herdr")
+    end
+  end)
+end
+
+-- The transcript only exists once a session's first message is written, and
+-- /clear or a restarted Claude moves to a new one, neither of which the file
+-- watcher can see. So check the agent's session every few seconds, and re-read
+-- too, in case libuv dropped an event. A failed lookup keeps the reply shown.
+-- Claude going blocked mid-turn shows the pending call, or hands off to its pane for a
+-- dialog the prompt pane can't answer; a running queue does its own.
+local function start_polling()
+  state.poll = state.poll or vim.uv.new_timer()
+  state.poll:start(
+    2000,
+    2000,
+    vim.schedule_wrap(function()
+      M.transcript_async(function(path, _, agent)
+        local was = state.status
+        read_statusline(agent)
+        locate(agent)
+        if agent then
+          read_mode(agent)
+        end
+        -- Read first, so the call Claude is blocked on is known.
+        if path then
+          attach_to(path)
+        else
+          set_winbars()
+        end
+        read_dialog(function(screen, now, text)
+          if
+            was ~= "blocked"
+            and screen
+            and not state.queue
+            and not handoff.active()
+            and handoff.wants(screen, text)
+          then
+            handoff.go(now, { armed = true })
+          end
+        end)
+      end)
+    end)
+  )
 end
 
 ------------------------------------------------------------------------------
 -- Opening
+
+-- The answers to Claude's dialog, in the draft and the viewer alike.
+local function map_answers(buf)
+  local function map(lhs, choice, desc)
+    vim.keymap.set("n", lhs, function()
+      answer(choice)
+    end, { buffer = buf, desc = desc })
+  end
+  map("<leader>ay", "yes", "Yes to Claude's Dialog")
+  map("<leader>aY", "always", "Yes, Don't Ask Again")
+  map("<leader>an", "no", "No to Claude's Dialog")
+  for n = 1, 9 do
+    map("<leader>a" .. n, n, "Option " .. n .. " in Claude's Dialog")
+  end
+end
 
 local function open_viewer(prompt_win)
   local buf = vim.api.nvim_create_buf(false, true)
@@ -1329,6 +1894,10 @@ local function open_viewer(prompt_win)
   map("n", "R", attach, "Reload Reply")
   map("n", "<leader>ak", toggle_tasks, "Claude's Tasks")
   map("n", "<leader>as", send, "Send Prompt to Claude")
+  map("n", "<leader>ac", to_claude, "Claude's Pane")
+  map("n", "<leader>ai", interrupt, "Interrupt Claude")
+  map("n", "<leader>am", cycle_mode, "Cycle Permission Mode")
+  map_answers(buf)
   -- The reply can't be edited, so insert keys move to the prompt and run there.
   for _, key in ipairs({ "i", "a", "I", "A", "o", "O" }) do
     map("n", key, function()
@@ -1355,7 +1924,7 @@ local function open_viewer(prompt_win)
           for opt, val in pairs(viewer_opts) do
             vim.wo[win][0][opt] = val
           end
-          if state.unseen then
+          if state.unseen and state.view ~= "pending" then
             state.unseen = false
             show(#state.replies)
           else
@@ -1411,6 +1980,11 @@ function M.open()
   state.session = agent and agent.session
   restore_draft(buf)
   locate(agent)
+  -- Before the first poll, for a Claude started in a mode that its transcript, not yet
+  -- written, can't tell.
+  if agent then
+    read_mode(agent)
+  end
 
   local map = function(mode, lhs, rhs, desc)
     vim.keymap.set(mode, lhs, rhs, { buffer = buf, desc = desc })
@@ -1429,6 +2003,17 @@ function M.open()
     stash(true)
   end, "Stash Session and Close")
   map("n", "<leader>aH", pick_sessions, "Claude Sessions")
+  map("n", "<leader>ac", to_claude, "Claude's Pane")
+  map("n", "<leader>ai", interrupt, "Interrupt Claude")
+  map("n", "<leader>am", cycle_mode, "Cycle Permission Mode")
+  -- Beside the Alt scroll keys: interrupting is wanted mid-sentence, without leaving insert.
+  map({ "n", "i" }, "<M-c>", interrupt, "Interrupt Claude")
+  map_answers(buf)
+  vim.api.nvim_create_user_command(
+    "ClaudePane",
+    to_claude,
+    { desc = "Hand off to Claude's pane until its next dialog closes" }
+  )
   -- Reachable by search too; this nvim is the pane's alone.
   vim.api.nvim_create_user_command("ClaudeStash", function(cmd)
     stash(cmd.bang)
@@ -1485,9 +2070,17 @@ function M.open()
       if vim.tbl_contains(vim.v.event.windows, state.viewer.win) then
         redraw()
       end
+      -- So are the bars' hints.
+      set_winbars()
     end,
   })
-  vim.api.nvim_create_autocmd("VimResized", { group = group, callback = redraw })
+  vim.api.nvim_create_autocmd("VimResized", {
+    group = group,
+    callback = function()
+      redraw()
+      set_winbars()
+    end,
+  })
 
   if vim.env.HERDR_PANE_ID then
     local sock = M.socket(vim.env.HERDR_PANE_ID)
@@ -1496,6 +2089,7 @@ function M.open()
     pcall(vim.fn.serverstart, sock)
   end
 
+  handoff.setup(read_screen, answerable)
   open_viewer(win)
   attach()
   start_polling()

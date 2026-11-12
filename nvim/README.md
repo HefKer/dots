@@ -32,12 +32,13 @@ Claude Code from Neovim.
     mode, and `[r`/`]r` step through earlier replies. Replies Claude ends
     several turns with, with no prompt of yours between (a background task
     finishing, say), join the one shown under a rule, keeping your place in it,
-    so none is skipped behind the newest.
+    so none is skipped behind the newest. So does the recap Claude writes when
+    you come back after being away (`awaySummaryEnabled`).
   - The prompt is saved as you type, synced to disk, to
     `~/.local/state/nvim/claude-drafts/<session-id>.md`, and deleted once sent.
     A crash, reboot or power cut doesn't take it: the next `prefix+a` in the tab
     herdr resumes brings it back. `<leader>ad` picks from every other saved
-    draft, for a pane that's gone.
+    draft, for a pane that's gone, named by the project its session ran in.
   - Tables in the reply are redrawn as box grids whose cells wrap to fit the
     pane, so a wide table never breaks mid-row; quoting or yanking one takes its markdown.
   - `<CR>` in the reply quotes the list item, code block, table or paragraph
@@ -50,22 +51,62 @@ Claude Code from Neovim.
     tokens, and 5-hour and weekly usage with the time to each reset,
     which the Claude statusline the pane covers shares in
     `$XDG_RUNTIME_DIR/claude-statusline/`.
+  - <a id="permission-mode"></a>The reply's bar also shows Claude's permission
+    mode (`plan`, `acceptEdits`, `auto`) when it isn't default, and
+    `<leader>am` cycles it, as Shift+Tab in Claude's pane does. The transcript
+    records the mode only as a turn starts, so the bar also reads the mode line
+    under Claude's input box: a cycle shows within a second, made from here or
+    in Claude's pane. [`config/prompt.lua`](.config/nvim/lua/config/prompt.lua)
   - The prompt's bar names Claude's directory and git branch
     (`~/nixos/main on main`), since the pane hides the statusline that shows
     them: writing to the agent in the wrong repo is easy with several tabs open.
   - `<leader>ak` swaps the reply for Claude's task list, rebuilt from its task
     tools in the transcript and updated as it works; the bar counts done tasks.
+  - Each bar ends with its binds, most-used first, as many as fit on one line.
   - `<leader>ap` in any other nvim in the tab adds `@file`, or `@file#L10-20`
     for a selection, to the draft, relative to Claude's directory. It opens the
     prompt pane first if there isn't one, and focuses it to keep writing.
-  - `/skill` and `@file` complete as they do in Claude's own input.
+  - `/skill` and `@file` complete as they do in Claude's own input. Every line
+    of the leading command block also completes the built-in, custom and plugin
+    commands, with their descriptions. Both look up Claude's directory without
+    waiting on herdr, so typing never stalls.
+  - A draft starting with `!` runs in Claude's bash mode, as typing `!` in its
+    input does: Claude reads the leading `!` of the send's paste the same way.
   - Slash commands leading the draft are a command queue: each is sent on its
     own, once the one before has finished (`/clear` once Claude is on the new
     session), and then the prose. `/clear`, `/model opus`, then a question, in
     one send. A command directly followed by text takes it as arguments. The
     queue runs in the background with its progress in the reply's bar, and
-    stops at a dialog or permission prompt, putting what's left back in the
-    draft. [`config/prompt_queue.lua`](.config/nvim/lua/config/prompt_queue.lua)
+    pauses at a dialog or permission prompt (below), going on once it's
+    answered. [`config/prompt_queue.lua`](.config/nvim/lua/config/prompt_queue.lua)
+  - <a id="interrupt"></a>`<leader>ai`, or `Alt+c` even in insert mode,
+    interrupts Claude's turn from the prompt pane, as Esc in its own pane does,
+    and the reply's bar says so for a moment. A running command queue stops
+    too, whatever it was waiting on, and what it hadn't sent yet goes back at
+    the top of the draft. With Claude idle it only says so.
+  - <a id="pending-call"></a>While Claude is blocked on a tool call, the reply
+    gives way to the call: Bash's command, an edit's diff, the questions with
+    their numbered options, or the plan to approve, then the dialog's own
+    options. `<leader>ay` answers yes, `<leader>aY` yes and don't ask again,
+    `<leader>an` no (Esc), `<leader>a1`..`<leader>a9` an option, each checked
+    against the options on Claude's screen first, so a dialog laid out
+    differently only notifies. Once answered, the reply is back. Claude can hold
+    a call back from its transcript until it's answered; the dialog as its
+    screen shows it stands in, diff and plan included. A send refused while
+    blocked points at the binds; a queue reaching such a dialog waits for the
+    answer. Free-text answers ("Type something", "Tell Claude what to change")
+    are left to Claude's pane, through `<leader>ac`.
+    [`config/prompt_pending.lua`](.config/nvim/lua/config/prompt_pending.lua)
+  - <a id="hand-off"></a>When Claude opens a dialog the prompt pane can't answer
+    (`/model`'s picker, or one whose options can't be read off the screen), the
+    prompt pane hands off: Claude's pane comes up zoomed and focused, and once
+    the dialog is answered the prompt pane is zoomed and focused again, the
+    queue picking up where it paused. A send Claude refuses at such a dialog
+    hands off too, and is sent once you're back. `<leader>ac` (or
+    `:ClaudePane`) hands off on purpose, coming back once a dialog you open there closes. Only from a
+    focused prompt pane; going elsewhere, or back by hand with the dialog still
+    up, abandons the hand-off and puts the paused queue back in the draft.
+    [`config/prompt_handoff.lua`](.config/nvim/lua/config/prompt_handoff.lua)
   - `<leader>ah` picks from every prompt sent before, newest first with its
     directory, and `<leader>at` from the templates in
     [`prompts/`](.config/nvim/prompts/), which put the cursor at their `$0`.
@@ -88,6 +129,8 @@ Claude Code from Neovim.
   [`config/prompt_source.lua`](.config/nvim/lua/config/prompt_source.lua),
   [`config/prompt_table.lua`](.config/nvim/lua/config/prompt_table.lua),
   [`config/prompt_stash.lua`](.config/nvim/lua/config/prompt_stash.lua),
+  [`config/prompt_handoff.lua`](.config/nvim/lua/config/prompt_handoff.lua),
+  [`config/prompt_pending.lua`](.config/nvim/lua/config/prompt_pending.lua),
   [`prompts/`](.config/nvim/prompts/),
   [`plugins/img-clip.lua`](.config/nvim/lua/plugins/img-clip.lua),
   [`scripts/claude-prompt`](../scripts/claude-prompt) ·

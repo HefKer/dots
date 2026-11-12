@@ -64,7 +64,8 @@ It's where my Claude Code sessions, shells and editors live. Only
 - <a id="agent-notify"></a>**Clickable notifications for finished or blocked agents.**
   herdr's `system` toasts run a plain `notify-send` that ignores clicks. The
   [agent-notify plugin](plugins/agent-notify/herdr-plugin.toml) sends its own
-  notification when an agent you aren't looking at finishes or blocks. Clicking it
+  notification when an agent you aren't looking at (in its own pane or its tab's
+  prompt pane) finishes or blocks. Clicking it
   switches wezterm to the tab running herdr, raises that window in niri, and opens
   the agent: a finished Claude in its [prompt pane](#prompt-pane), reusing one
   already open, and a blocked one (a question or a permission prompt, which nvim
