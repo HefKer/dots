@@ -667,22 +667,61 @@ local function quote_block()
   insert_quote(quote_lines(block_at_cursor()))
 end
 
+-- Viewer rows from..to (1-based) as markdown: a drawn table touched by the range
+-- comes back whole, as its pipe-table source.
+---@return string[]
+local function source_lines(from, to)
+  local lines, last = {}, nil
+  for row, line in ipairs(vim.api.nvim_buf_get_lines(state.viewer.buf, from - 1, to, false)) do
+    local table_at = state.shown.source[from + row - 1]
+    if not table_at then
+      table.insert(lines, line)
+    elseif not last or table_at[1] ~= last[1] then
+      vim.list_extend(lines, vim.list_slice(state.shown.lines, table_at[1], table_at[2]))
+    end
+    last = table_at
+  end
+  return lines
+end
+
 -- A table drawn in the selection is quoted whole, as its markdown.
 local function quote_selection()
   local from, to = vim.fn.line("v"), vim.fn.line(".")
   vim.cmd.normal({ vim.keycode("<Esc>"), bang = true })
   from, to = math.min(from, to), math.max(from, to)
-  local lines, last = {}, nil
-  for row, line in ipairs(vim.api.nvim_buf_get_lines(0, from - 1, to, false)) do
-    local table_at = state.shown.source[from + row - 1]
-    if not table_at then
-      table.insert(lines, line)
-    elseif table_at ~= last then
-      vim.list_extend(lines, vim.list_slice(state.shown.lines, table_at[1], table_at[2]))
-    end
-    last = table_at
+  insert_quote(quote_lines((source_lines(from, to))))
+end
+
+-- A yank touching a drawn table copies its markdown instead of the box grid, so
+-- pasted elsewhere it renders as a table, and no ~ pairs up across rows into a
+-- strikethrough. The yank turns linewise, as a table is only whole in lines.
+local function yank_source()
+  local ev = vim.v.event
+  if ev.operator ~= "y" or ev.visual and ev.regtype:sub(1, 1) == "\22" then
+    return
   end
-  insert_quote(quote_lines(lines))
+  local from, to = vim.fn.line("'["), vim.fn.line("']")
+  local touched = false
+  for row = from, to do
+    touched = touched or state.shown.source[row] ~= nil
+  end
+  if not touched then
+    return
+  end
+  local lines = source_lines(from, to)
+  local regs = { ev.regname == "" and '"' or ev.regname }
+  if ev.regname == "" then
+    -- unnamed yanks also land in 0, and in + under clipboard=unnamedplus
+    table.insert(regs, "0")
+    if vim.o.clipboard:find("unnamedplus") then
+      table.insert(regs, "+")
+    elseif vim.o.clipboard:find("unnamed") then
+      table.insert(regs, "*")
+    end
+  end
+  for _, r in ipairs(regs) do
+    vim.fn.setreg(r, lines, "V")
+  end
 end
 
 -- The whole reply shown, for replying between its lines and deleting what doesn't
@@ -1280,6 +1319,7 @@ local function open_viewer(prompt_win)
   end
   map("n", "<CR>", quote_block, "Quote Block into Prompt")
   map("x", "<CR>", quote_selection, "Quote Selection into Prompt")
+  vim.api.nvim_create_autocmd("TextYankPost", { buffer = buf, callback = yank_source })
   map("n", "[r", function()
     step(-1)
   end, "Older Reply")

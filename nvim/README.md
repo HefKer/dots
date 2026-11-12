@@ -39,7 +39,7 @@ Claude Code from Neovim.
     herdr resumes brings it back. `<leader>ad` picks from every other saved
     draft, for a pane that's gone.
   - Tables in the reply are redrawn as box grids whose cells wrap to fit the
-    pane, so a wide table never breaks mid-row; quoting one quotes its markdown.
+    pane, so a wide table never breaks mid-row; quoting or yanking one takes its markdown.
   - `<CR>` in the reply quotes the list item, code block, table or paragraph
     under the cursor into the prompt (a visual selection quotes just that), with
     an empty line under it to answer on. Quotes in the prompt are dimmed.
