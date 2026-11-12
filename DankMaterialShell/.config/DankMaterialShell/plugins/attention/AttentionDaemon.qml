@@ -65,9 +65,10 @@ PluginComponent {
     IpcHandler {
         target: "attention"
 
-        function invoke(id: string): string {
+        // The summary guards against an id DMS has handed out again since a shell restart.
+        function invoke(id: string, summary: string): string {
             const w = root.wrapperFor(id);
-            if (!w)
+            if (!w || (w.summary || "").replace(/[\u2066-\u2069]/g, "").trim() !== summary)
                 return "GONE";
             const actions = w.actions || [];
             const action = actions.find(a => a.identifier === "default") || actions[0];
