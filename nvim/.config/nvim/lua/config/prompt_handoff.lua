@@ -8,12 +8,25 @@ local M = {}
 -- resume = what to do once back, abandon = what to do if you leave it }.
 local trip = nil
 local timer = nil
+-- What Claude's pane shows, given by config.prompt at open: fun(cb(screen?, agent?, err?)).
+local read_screen = nil
+
+---@param reader fun(cb: fun(screen?: "idle"|"working"|"blocked"|"dialog", agent?: table, err?: string))
+function M.setup(reader)
+  read_screen = reader
+end
+
+-- Whether a dialog is up in Claude's pane, in place of its input box.
+local function dialog_up(screen)
+  return screen == "blocked" or screen == "dialog"
+end
 
 -- Whether this dialog sends you to Claude's pane. Every one does, for now; the place
--- to narrow it to the dialogs the prompt pane can't answer itself.
+-- to narrow it to the dialogs the prompt pane can't answer itself. Only for going:
+-- coming back waits for any dialog to close.
 ---@param screen "idle"|"working"|"blocked"|"dialog"
 function M.wants(screen)
-  return screen == "blocked" or screen == "dialog"
+  return dialog_up(screen)
 end
 
 function M.active()
@@ -33,9 +46,10 @@ local function focused(cb)
   )
 end
 
--- Zooming a pane focuses it too, and its tab; the tab's zoom moves to it.
+-- Zooming a pane focuses it too, and its tab; the tab's zoom moves to it. Waited for,
+-- so the first check after it sees the focus it set.
 local function zoom(pane_id)
-  vim.system({ "herdr", "pane", "zoom", pane_id, "--on" })
+  return vim.system({ "herdr", "pane", "zoom", pane_id, "--on" }):wait().code == 0
 end
 
 local function finish(how)
@@ -52,8 +66,7 @@ end
 
 -- Every half second while away: back at the input box takes you back; leaving
 -- Claude's pane abandons the trip, unless the dialog was answered by then.
----@param read_screen fun(cb: fun(screen?: string, agent?: table, err?: string))
-local function watch(read_screen)
+local function watch()
   timer = timer or vim.uv.new_timer()
   timer:start(
     500,
@@ -67,8 +80,8 @@ local function watch(read_screen)
           if not trip then
             return
           end
-          local answered = trip.armed and screen and not M.wants(screen)
-          trip.armed = trip.armed or (screen and M.wants(screen))
+          local answered = trip.armed and screen and not dialog_up(screen)
+          trip.armed = trip.armed or dialog_up(screen)
           if pane == trip.agent and answered then
             zoom(vim.env.HERDR_PANE_ID)
             return finish("resume")
@@ -77,7 +90,7 @@ local function watch(read_screen)
           elseif pane ~= trip.agent then
             return finish("abandon")
           end
-          watch(read_screen)
+          watch()
         end)
       end)
     end)
@@ -88,20 +101,21 @@ end
 -- back with whether it did. A trip for a dialog already up is armed: it returns as
 -- soon as Claude's input box is back. A manual one waits to see a dialog first.
 ---@param agent table Claude's pane, from `herdr pane list`
----@param read_screen fun(cb: fun(screen?: string, agent?: table, err?: string))
 ---@param opts { armed?: boolean, resume?: fun(), abandon?: fun() }
 ---@param cb? fun(went: boolean)
-function M.go(agent, read_screen, opts, cb)
+function M.go(agent, opts, cb)
   if trip then
     return cb and cb(false)
   end
   focused(function(pane)
-    if trip or not vim.env.HERDR_PANE_ID or pane ~= vim.env.HERDR_PANE_ID then
+    if trip or not read_screen or not vim.env.HERDR_PANE_ID or pane ~= vim.env.HERDR_PANE_ID then
+      return cb and cb(false)
+    end
+    if not zoom(agent.pane_id) then
       return cb and cb(false)
     end
     trip = { agent = agent.pane_id, armed = opts.armed, resume = opts.resume, abandon = opts.abandon }
-    zoom(agent.pane_id)
-    watch(read_screen)
+    watch()
     if cb then
       cb(true)
     end

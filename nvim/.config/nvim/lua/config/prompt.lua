@@ -552,8 +552,6 @@ local function attach()
   attach_to(M.transcript())
 end
 
-local read_screen -- Sending, below
-
 -- The transcript only exists once a session's first message is written, and
 -- /clear or a restarted Claude moves to a new one, neither of which the file
 -- watcher can see. So check the agent's session every few seconds, and re-read
@@ -576,7 +574,7 @@ local function start_polling()
           and not handoff.active()
           and handoff.wants("blocked")
         then
-          handoff.go(agent, read_screen, { armed = true })
+          handoff.go(agent, { armed = true })
         end
         if path then
           attach_to(path)
@@ -1105,7 +1103,7 @@ end
 -- What Claude's pane shows now. herdr's agent_status alone misses a dialog: it keeps
 -- the last state behind /model's picker, so the screen is read for the input box too.
 ---@param cb fun(screen?: "idle"|"working"|"blocked"|"dialog", agent?: table, err?: string)
-function read_screen(cb)
+local function read_screen(cb)
   lookup_agent(function(agent, err)
     if not agent then
       return cb(nil, nil, err)
@@ -1136,7 +1134,7 @@ local waiting_msg = "Claude is waiting on you (a dialog or permission prompt)"
 -- a prompt or dialog opens, or the input box stays gone for over a second.
 ---@param item prompt.Item
 ---@param before? string the session the command was sent in
----@param cb fun(why?: "blocked"|"dialog")
+---@param cb fun(screen?: "blocked"|"dialog")
 local function await_item(item, before, cb)
   local start, busy, stuck = vim.uv.now(), false, nil
   local function poll()
@@ -1210,7 +1208,7 @@ local function run_queue(items)
     if not handoff.wants(screen) then
       return stop(from, waiting_msg)
     end
-    handoff.go(agent, read_screen, {
+    handoff.go(agent, {
       armed = true,
       resume = function()
         step(from)
@@ -1249,9 +1247,9 @@ local function run_queue(items)
           return step(i + 1)
         end
         -- A last command is awaited too, for the dialog it may open (/model).
-        await_item(items[i], agent.session, function(why)
-          if why then
-            return pause(agent, i + 1, why)
+        await_item(items[i], agent.session, function(opened)
+          if opened then
+            return pause(agent, i + 1, opened)
           end
           step(i + 1)
         end)
@@ -1280,7 +1278,7 @@ local function send()
     if not handoff.wants("blocked") then
       return notify_error(waiting_msg)
     end
-    return handoff.go(agent, read_screen, { armed = true, resume = send }, function(went)
+    return handoff.go(agent, { armed = true, resume = send }, function(went)
       if not went then
         notify_error(waiting_msg)
       end
@@ -1304,6 +1302,23 @@ local function send()
   save_draft()
   -- The session may have changed since open (a restarted Claude); follow it.
   attach()
+end
+
+-- The hand-off on purpose: back on its own once Claude has opened a dialog and closed it.
+-- Not while a queue runs, which hands off for its own dialogs.
+local function to_claude()
+  if state.queue then
+    return notify_error("Still sending the command queue; it hands off at a dialog")
+  end
+  local agent, err = M.find_agent()
+  if not agent then
+    return notify_error(err)
+  end
+  handoff.go(agent, {}, function(went)
+    if not went then
+      notify_error("Already handed off, or this pane isn't focused in herdr")
+    end
+  end)
 end
 
 ------------------------------------------------------------------------------
@@ -1337,6 +1352,7 @@ local function open_viewer(prompt_win)
   map("n", "R", attach, "Reload Reply")
   map("n", "<leader>ak", toggle_tasks, "Claude's Tasks")
   map("n", "<leader>as", send, "Send Prompt to Claude")
+  map("n", "<leader>ac", to_claude, "Claude's Pane")
   -- The reply can't be edited, so insert keys move to the prompt and run there.
   for _, key in ipairs({ "i", "a", "I", "A", "o", "O" }) do
     map("n", key, function()
@@ -1437,18 +1453,12 @@ function M.open()
     stash(true)
   end, "Stash Session and Close")
   map("n", "<leader>aH", pick_sessions, "Claude Sessions")
-  -- Back on its own once Claude has opened a dialog and closed it again.
-  map("n", "<leader>ac", function()
-    local agent, err = M.find_agent()
-    if not agent then
-      return notify_error(err)
-    end
-    handoff.go(agent, read_screen, {}, function(went)
-      if not went then
-        notify_error("Already handed off, or this pane isn't focused in herdr")
-      end
-    end)
-  end, "Claude's Pane")
+  map("n", "<leader>ac", to_claude, "Claude's Pane")
+  vim.api.nvim_create_user_command(
+    "ClaudePane",
+    to_claude,
+    { desc = "Hand off to Claude's pane until its next dialog closes" }
+  )
   -- Reachable by search too; this nvim is the pane's alone.
   vim.api.nvim_create_user_command("ClaudeStash", function(cmd)
     stash(cmd.bang)
@@ -1516,6 +1526,7 @@ function M.open()
     pcall(vim.fn.serverstart, sock)
   end
 
+  handoff.setup(read_screen)
   open_viewer(win)
   attach()
   start_polling()

@@ -71,10 +71,10 @@ Claude Code from Neovim.
     off: Claude's pane comes up zoomed and focused, and once the dialog is
     answered the prompt pane is zoomed and focused again, the queue picking up
     where it paused. A send Claude refuses while blocked hands off too, and is
-    sent once you're back. `<leader>ac` takes the trip on purpose, returning
-    once a dialog you open there closes. Only from a focused prompt pane; going
-    elsewhere, or back by hand with the dialog still up, abandons the trip and
-    puts the paused queue back in the draft.
+    sent once you're back. `<leader>ac` (or `:ClaudePane`) hands off on
+    purpose, coming back once a dialog you open there closes. Only from a
+    focused prompt pane; going elsewhere, or back by hand with the dialog still
+    up, abandons the hand-off and puts the paused queue back in the draft.
     [`config/prompt_handoff.lua`](.config/nvim/lua/config/prompt_handoff.lua)
   - `<leader>ah` picks from every prompt sent before, newest first with its
     directory, and `<leader>at` from the templates in
