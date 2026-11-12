@@ -58,7 +58,9 @@ Claude Code from Neovim.
   - `<leader>ap` in any other nvim in the tab adds `@file`, or `@file#L10-20`
     for a selection, to the draft, relative to Claude's directory. It opens the
     prompt pane first if there isn't one, and focuses it to keep writing.
-  - `/skill` and `@file` complete as they do in Claude's own input.
+  - `/skill` and `@file` complete as they do in Claude's own input. Every line
+    of the leading command block also completes the built-in, custom and plugin
+    commands, with their descriptions.
   - Slash commands leading the draft are a command queue: each is sent on its
     own, once the one before has finished (`/clear` once Claude is on the new
     session), and then the prose. `/clear`, `/model opus`, then a question, in
