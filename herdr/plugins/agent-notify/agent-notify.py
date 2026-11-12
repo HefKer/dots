@@ -130,9 +130,19 @@ def wezterm_title(client):
     return None
 
 
+def in_view(pane_id, snap):
+    """Whether herdr's focus is on the agent or on its tab's prompt pane, zoomed over it."""
+    focused = snap.get("focused_pane_id")
+    if focused == pane_id:
+        return True
+    pane = next((p for p in snap["panes"] if p["pane_id"] == focused), None)
+    agent = next((p for p in snap["panes"] if p["pane_id"] == pane_id), None)
+    return bool(pane and agent and pane.get("label") == "prompt" and pane["tab_id"] == agent["tab_id"])
+
+
 def watching(pane_id, snap):
-    """Whether the agent is the focused pane, shown in the focused terminal window."""
-    if snap.get("focused_pane_id") != pane_id:
+    """Whether the agent is in view in herdr, shown in the focused terminal window."""
+    if not in_view(pane_id, snap):
         return False
     windows = niri_windows()
     focused = next((w for w in windows if w.get("is_focused")), None)
