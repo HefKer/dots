@@ -49,6 +49,9 @@ abbr -a CHF 'claude-hulio --model fable'
 abbr -a n nvim
 abbr -a calc kalker
 abbr -a ff fastfetch
+# za: add a dir to zoxide or boost its rank (the boost fades with frecency)
+abbr -a za --set-cursor 'zoxide add -s % .'
+abbr -a ze zoxide edit
 abbr -a st syncthing
 abbr -a H herdr
 abbr -a HH herdr --session
