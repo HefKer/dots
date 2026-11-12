@@ -43,6 +43,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urljoin
 
+import qutefifo
+
 CONFIG_DIR = Path(os.environ.get("QUTE_CONFIG_DIR", "~/.config/qutebrowser")).expanduser()
 DATA_DIR = Path(os.environ.get("QUTE_DATA_DIR", "~/.local/share/qutebrowser")).expanduser()
 OUTPUT = DATA_DIR / "greasemonkey" / "ubo-scriptlets.js"
@@ -97,16 +99,8 @@ OTHER_TYPES = {
 REGEX_SPECIAL = set(".+?${}()|[]\\/")
 
 
-def command(cmd):
-    fifo = os.environ.get("QUTE_FIFO")
-    if fifo:
-        with open(fifo, "w") as f:
-            f.write(cmd + "\n")
-    return bool(fifo)
-
-
 def message(level, text):
-    if not command(f"message-{level} {json.dumps('ubo-scriptlets: ' + text)}"):
+    if not qutefifo.message(level, f"ubo-scriptlets: {text}"):
         print(text, file=sys.stderr if level == "error" else sys.stdout)
 
 
@@ -935,7 +929,7 @@ def main():
     for url, path in MIRRORS.items():
         mirror(url, path)
     # the network rules update even if the rest of this run fails
-    command("adblock-update")
+    qutefifo.send("adblock-update")
     urls = read_list_urls()
     try:
         texts = load_all(urls)
@@ -960,7 +954,7 @@ def main():
     missing = [u for u in texts if u not in urls and u not in MIRRORS]
     if missing:
         message("warning", "included lists missing from privacy.py: " + ", ".join(missing))
-    command("greasemonkey-reload --quiet")
+    qutefifo.send("greasemonkey-reload --quiet")
     return 0
 
 

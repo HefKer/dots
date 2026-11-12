@@ -24,19 +24,16 @@ from collections import defaultdict
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import qutefifo
+
 MIN_MARKS = 2  # marks sharing a first word before it counts as a group
 EXAMPLES = 4  # marks described per group
 MIN_FITS = 0.7  # probability that the page shares a site or subject with a group, below which none is prefilled
 MIN_PROBABILITY = 0.5  # of the picked group, below which it isn't prefilled
 
 
-def command(text):
-    with open(os.environ["QUTE_FIFO"], "a") as fifo:
-        fifo.write(text + "\n")
-
-
 def msg(level, text):
-    command(f"message-{level} {json.dumps('quickmark-file: ' + text)}")
+    qutefifo.message(level, f"quickmark-file: {text}")
 
 
 def bare(url):
@@ -117,8 +114,7 @@ def main():
     name = " ".join(done.stdout.split())
     if done.returncode or not name:
         return  # dismissed
-    quoted = name.replace("\\", "\\\\").replace('"', '\\"')
-    command(f'quickmark-add {url} "{quoted}"')
+    qutefifo.send(f"quickmark-add {qutefifo.url_arg(url)} {qutefifo.text_arg(name)}")
     msg("info", f"saved as {name}")
 
 

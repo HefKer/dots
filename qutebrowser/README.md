@@ -183,6 +183,13 @@ file as it is now and to the commit that added it, which explains why.
   similar links go to the Spotify desktop app instead of the web player.
   [`spotify.py`](.config/qutebrowser/spotify.py) ·
   [5bd8683](https://github.com/HefKer/dots/commit/5bd8683)
+- <a id="qutefifo"></a>**Userscript messages a page can't inject into.**
+  qutebrowser splits a `QUTE_FIFO` line on `;;` and line breaks before it looks
+  at quotes, so a page title with `;; spawn …` in it, echoed in a userscript's
+  message, runs that spawn. The userscripts write through one module that keeps
+  free text a single argument while it reads the same, and percent-encodes what
+  would split a URL.
+  [`qutefifo.py`](.local/share/qutebrowser/userscripts/qutefifo.py)
 
 ## Using it yourself
 

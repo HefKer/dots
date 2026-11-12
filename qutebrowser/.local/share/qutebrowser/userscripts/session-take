@@ -17,17 +17,17 @@ Taking a window's last tab removes the window; taking the session's last tab
 deletes the session.
 """
 
-import json
 import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
+import qutefifo
+
 
 def msg(level, text):
-    with open(os.environ["QUTE_FIFO"], "a") as fifo:
-        fifo.write(f"message-{level} {json.dumps('session-take: ' + text)}\n")
+    qutefifo.message(level, f"session-take: {text}")
 
 
 def fuzzel(prompt, entries, index=False):
@@ -245,8 +245,7 @@ def main():
         return
     first, last, title, url = tabs[int(choice)]
 
-    with open(os.environ["QUTE_FIFO"], "a") as fifo:
-        fifo.write(f"open -t {url}\n")
+    qutefifo.send(f"open -t {qutefifo.url_arg(url)}")
     if keep:
         return
     rest = remove(lines, first, last)

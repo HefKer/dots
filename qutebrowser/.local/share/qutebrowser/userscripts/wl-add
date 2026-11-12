@@ -17,10 +17,11 @@ import re
 import tempfile
 from urllib.parse import parse_qs, urlparse
 
+import qutefifo
+
 
 def msg(level, text):
-    with open(os.environ["QUTE_FIFO"], "a") as fifo:
-        fifo.write(f"message-{level} {json.dumps('wl-add: ' + text)}\n")
+    qutefifo.message(level, f"wl-add: {text}")
 
 
 def video_id(url):
@@ -99,8 +100,7 @@ def main():
     with os.fdopen(fd, "w") as f:
         f.write(JS.replace("VIDEO_ID", json.dumps(vid)))
     # Main world: ytcfg is a page global, invisible from the isolated world.
-    with open(os.environ["QUTE_FIFO"], "a") as fifo:
-        fifo.write(f"jseval -q -w main -f {path}\n")
+    qutefifo.send(f"jseval -q -w main -f {path}")
 
 
 main()

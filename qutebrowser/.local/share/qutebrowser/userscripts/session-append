@@ -22,10 +22,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+import qutefifo
+
 
 def msg(level, text):
-    with open(os.environ["QUTE_FIFO"], "a") as fifo:
-        fifo.write(f"message-{level} {json.dumps('session-append: ' + text)}\n")
+    qutefifo.message(level, f"session-append: {text}")
 
 
 def pick(sessions_dir):
@@ -115,8 +116,7 @@ def main():
 
     if close and os.environ.get("QUTE_MODE") != "hints":
         # By index, not the current tab: focus may have moved while fuzzel was up.
-        with open(os.environ["QUTE_FIFO"], "a") as fifo:
-            fifo.write(f"cmd-run-with-count {os.environ['QUTE_TAB_INDEX']} tab-close\n")
+        qutefifo.send(f"cmd-run-with-count {int(os.environ['QUTE_TAB_INDEX'])} tab-close")
 
 
 main()

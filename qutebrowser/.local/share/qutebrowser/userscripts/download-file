@@ -33,6 +33,8 @@ import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import qutefifo
+
 DOWNLOADS = Path(os.environ.get("QUTE_DOWNLOAD_DIR") or Path.home() / "Downloads")
 DIRS_FILE = Path(os.environ.get("QUTE_CONFIG_DIR") or Path.home() / ".config/qutebrowser") / "download-dirs"
 DEFAULT_DIRS = """\
@@ -45,13 +47,8 @@ MAX_FITS_TO_STAY = 0.3  # probability that the file fits some directory, below w
 STAY = "leave where it is"
 
 
-def command(text):
-    with open(os.environ["QUTE_FIFO"], "a") as fifo:
-        fifo.write(text + "\n")
-
-
 def msg(level, text):
-    command(f"message-{level} {json.dumps('download-file: ' + text)}")
+    qutefifo.message(level, f"download-file: {text}")
 
 
 def visible(directory):

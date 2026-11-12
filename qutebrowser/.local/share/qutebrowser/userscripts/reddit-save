@@ -17,10 +17,11 @@ import re
 import tempfile
 from urllib.parse import urlparse
 
+import qutefifo
+
 
 def msg(level, text):
-    with open(os.environ["QUTE_FIFO"], "a") as fifo:
-        fifo.write(f"message-{level} {json.dumps('reddit-save: ' + text)}\n")
+    qutefifo.message(level, f"reddit-save: {text}")
 
 
 def post_id(url):
@@ -78,8 +79,7 @@ def main():
     fd, path = tempfile.mkstemp(prefix="reddit-save-", suffix=".js")
     with os.fdopen(fd, "w") as f:
         f.write(JS.replace("POST_ID", json.dumps(pid)))
-    with open(os.environ["QUTE_FIFO"], "a") as fifo:
-        fifo.write(f"jseval -q -f {path}\n")
+    qutefifo.send(f"jseval -q -f {path}")
 
 
 main()

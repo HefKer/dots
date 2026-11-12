@@ -35,6 +35,10 @@ Because `cc` clears first, it rebuilds bindings from qutebrowser's defaults plus
 
 The defaults are listed under `bindings.default` in `qute://help/settings.html`.
 
+## Userscripts
+
+A Python userscript writes to `QUTE_FIFO` only through `userscripts/qutefifo.py` (`send`, `message`), and puts free text in a command line only through `text_arg` and a URL only through `url_arg`. qutebrowser splits FIFO lines on `;;` before quoting counts, so a raw page title or URL can add commands.
+
 ## Testing in a live page
 
 To try a userscript, keybind or config change in a real page, or to debug a page (memory growth, crashes, DevTools protocol, local test pages), use `scripts/qute-sandbox` (`--help` has the commands). It runs the repo's config in a throwaway instance and leaves the user's browser alone; `--profile` covers pages that need the user's logins.
