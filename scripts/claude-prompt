@@ -1,14 +1,17 @@
 #!/bin/sh
 # Open the prompt pane (nvim's lua/config/prompt.lua) zoomed over the active herdr pane,
-# moving Claude's unsent prompt into it. Run by herdr's prefix+a.
+# moving Claude's unsent prompt into it. Run by herdr's prefix+a; with --fresh PANE, by
+# scripts/claude-prompt-tab, over a Claude just started, which has no prompt to move.
 pane="$HERDR_ACTIVE_PANE_ID"
+fresh=""
+[ "$1" = --fresh ] && pane=$2 fresh=1
 marker="${XDG_RUNTIME_DIR:-/tmp}/claude-prompt-capture"
 draft=$(mktemp --suffix=.md)
 
 # A Claude started without the editor, like one from before this was set up, would
 # open a real nvim inside its own pane on Ctrl+G, so check its environment first.
 pid=$(herdr pane process-info --pane "$pane" | jq -r '.result.process_info.foreground_processes[0].pid // empty')
-if [ -n "$pid" ] && tr '\0' '\n' <"/proc/$pid/environ" 2>/dev/null | grep -qx "VISUAL=$(dirname "$0")/claude-prompt-editor"; then
+if [ -z "$fresh" ] && [ -n "$pid" ] && tr '\0' '\n' <"/proc/$pid/environ" 2>/dev/null | grep -qx "VISUAL=$(dirname "$0")/claude-prompt-editor"; then
   echo "$draft" >"$marker"
   herdr pane send-keys "$pane" ctrl+g >/dev/null
   # Claude ignores Ctrl+G behind a dialog, so don't wait for it, and don't leave the

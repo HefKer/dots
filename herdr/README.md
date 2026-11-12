@@ -11,6 +11,11 @@ It's where my Claude Code sessions, shells and editors live. Only
   It opens a zoomed nvim buffer holding Claude's unsent prompt, and
   sends it back when you're done. See the
   [nvim README](../nvim/README.md#prompt-pane) for the editor side.
+- <a id="new-claude-tab"></a>**`ctrl+alt+t`: a new tab with a fresh Claude, the
+  prompt pane already open over it.** In the focused pane's directory, with the
+  cursor in an empty draft; if Claude doesn't start within 10s, the tab is left
+  on its pane with a notification. `prefix+alt+t` too.
+  [`scripts/claude-prompt-tab`](../scripts/claude-prompt-tab)
 - <a id="account-switch"></a>**`prefix+u`: move the focused Claude session to
   your other account.** It exits an idle Claude and resumes the same session in
   the same pane under the other account, through the fish

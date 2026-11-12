@@ -1,0 +1,28 @@
+#!/bin/sh
+# A new tab in the focused pane's workspace and directory, with a fresh Claude and the
+# prompt pane (scripts/claude-prompt) already open over it. Run by herdr's ctrl+alt+t.
+# If no Claude shows up, the tab is left on Claude's pane with a notification.
+fail() {
+  herdr notification show "New Claude tab" --body "$1" >/dev/null
+  exit 1
+}
+
+info=$(herdr pane get "$HERDR_ACTIVE_PANE_ID" | jq -c .result.pane)
+[ -n "$info" ] || fail "Can't read the focused pane"
+ws=$(printf '%s' "$info" | jq -r .workspace_id)
+cwd=$(printf '%s' "$info" | jq -r '.foreground_cwd // .cwd')
+
+pane=$(herdr tab create --workspace "$ws" --cwd "$cwd" --focus | jq -r '.result.root_pane.pane_id // empty')
+[ -n "$pane" ] || fail "Couldn't create the tab"
+# Through the fish function, for its launch guard; on the main account, as herdr's
+# environment has no CLAUDE_CONFIG_DIR.
+herdr pane run "$pane" claude >/dev/null
+
+i=0
+until [ "$(herdr pane get "$pane" | jq -r .result.pane.agent)" = claude ]; do
+  i=$((i + 1))
+  [ "$i" -le 50 ] || fail "Claude didn't start within 10s"
+  sleep 0.2
+done
+
+exec "$(dirname "$0")/claude-prompt" --fresh "$pane"

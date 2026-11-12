@@ -64,6 +64,19 @@ key = "prefix+a"
 type = "shell"
 command = "$HOME/dots/scripts/claude-prompt"
 
+# A new tab with a fresh Claude, its prompt pane already open over it.
+[[keys.command]]
+key = "prefix+alt+t"
+type = "shell"
+command = "$HOME/dots/scripts/claude-prompt-tab"
+description = "new claude tab with prompt pane"
+
+[[keys.command]]
+key = "ctrl+alt+t"
+type = "shell"
+command = "$HOME/dots/scripts/claude-prompt-tab"
+description = "new claude tab with prompt pane"
+
 # Move the focused Claude session to the other account (main <-> hulio) and resume it.
 [[keys.command]]
 key = "prefix+u"
