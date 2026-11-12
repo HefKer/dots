@@ -6,6 +6,7 @@ local M = {}
 
 local tables = require("config.prompt_table")
 local queue = require("config.prompt_queue")
+local handoff = require("config.prompt_handoff")
 
 local ns = vim.api.nvim_create_namespace("claude_prompt_quote")
 local ns_table = vim.api.nvim_create_namespace("claude_prompt_table")
@@ -551,10 +552,13 @@ local function attach()
   attach_to(M.transcript())
 end
 
+local read_screen -- Sending, below
+
 -- The transcript only exists once a session's first message is written, and
 -- /clear or a restarted Claude moves to a new one, neither of which the file
 -- watcher can see. So check the agent's session every few seconds, and re-read
 -- too, in case libuv dropped an event. A failed lookup keeps the reply shown.
+-- Claude going blocked mid-turn hands off to its pane; a running queue does its own.
 local function start_polling()
   state.poll = state.poll or vim.uv.new_timer()
   state.poll:start(
@@ -562,8 +566,18 @@ local function start_polling()
     2000,
     vim.schedule_wrap(function()
       M.transcript_async(function(path, _, agent)
+        local was = state.status
         read_statusline(agent)
         locate(agent)
+        if
+          state.status == "blocked"
+          and was ~= "blocked"
+          and not state.queue
+          and not handoff.active()
+          and handoff.wants("blocked")
+        then
+          handoff.go(agent, read_screen, { armed = true })
+        end
         if path then
           attach_to(path)
         else
@@ -1091,7 +1105,7 @@ end
 -- What Claude's pane shows now. herdr's agent_status alone misses a dialog: it keeps
 -- the last state behind /model's picker, so the screen is read for the input box too.
 ---@param cb fun(screen?: "idle"|"working"|"blocked"|"dialog", agent?: table, err?: string)
-local function read_screen(cb)
+function read_screen(cb)
   lookup_agent(function(agent, err)
     if not agent then
       return cb(nil, nil, err)
@@ -1118,11 +1132,11 @@ local waiting_msg = "Claude is waiting on you (a dialog or permission prompt)"
 -- Waits for a command to finish: /clear until Claude's session record names a new
 -- session, anything else until Claude's input box is back. A command too quick to be
 -- seen working counts as done once it has been idle for a second. Gives up after 10s,
--- so the next item goes anyway; calls back with why when a prompt or dialog opens, or
--- the input box stays gone for over a second.
+-- so the next item goes anyway; calls back with the screen, "blocked" or "dialog", when
+-- a prompt or dialog opens, or the input box stays gone for over a second.
 ---@param item prompt.Item
 ---@param before? string the session the command was sent in
----@param cb fun(why?: string)
+---@param cb fun(why?: "blocked"|"dialog")
 local function await_item(item, before, cb)
   local start, busy, stuck = vim.uv.now(), false, nil
   local function poll()
@@ -1130,13 +1144,13 @@ local function await_item(item, before, cb)
       local now = vim.uv.now()
       local elapsed = now - start
       if screen == "blocked" then
-        return cb(waiting_msg)
+        return cb(screen)
       end
       busy = busy or screen == "working"
       if screen == "dialog" then
         stuck = stuck or now
         if now - stuck >= 1000 then
-          return cb(waiting_msg)
+          return cb(screen)
         end
       else
         stuck = nil
@@ -1178,17 +1192,42 @@ local function put_back(items)
 end
 
 -- Steps through the command queue in the background, each item once the one before
--- has finished, with its progress in the viewer's winbar. A blocked agent or a refused
--- send stops it, and what's left goes back in the draft.
+-- has finished, with its progress in the viewer's winbar. A dialog hands off to
+-- Claude's pane (config.prompt_handoff), holding the rest until you're back; one the
+-- hand-off can't take, a trip abandoned, or a refused send stops it, and what's left
+-- goes back in the draft.
 ---@param items prompt.Item[]
 local function run_queue(items)
+  local step
   local function stop(from, why)
     state.queue = nil
     set_winbars()
     put_back(vim.list_slice(items, from))
     notify_error(why .. (from <= #items and "; the rest is back in the draft" or ""))
   end
-  local function step(i)
+  -- Pauses at item `from` for a dialog, or stops there if no trip is taken.
+  local function pause(agent, from, screen)
+    if not handoff.wants(screen) then
+      return stop(from, waiting_msg)
+    end
+    handoff.go(agent, read_screen, {
+      armed = true,
+      resume = function()
+        step(from)
+      end,
+      abandon = function()
+        stop(from, waiting_msg)
+      end,
+    }, function(went)
+      if went then
+        state.queue.label = state.queue.label .. " · in Claude's pane"
+        set_winbars()
+      else
+        stop(from, waiting_msg)
+      end
+    end)
+  end
+  step = function(i)
     if i > #items then
       state.queue = nil
       set_winbars()
@@ -1201,17 +1240,18 @@ local function run_queue(items)
       if not screen then
         return stop(i, err)
       elseif screen == "blocked" or screen == "dialog" then
-        return stop(i, waiting_msg)
+        return pause(agent, i, screen)
       end
       send_item(agent, items[i], function(send_err)
         if send_err then
           return stop(i, send_err)
-        elseif i == #items then
+        elseif i == #items and not items[i].name then
           return step(i + 1)
         end
+        -- A last command is awaited too, for the dialog it may open (/model).
         await_item(items[i], agent.session, function(why)
           if why then
-            return stop(i + 1, why)
+            return pause(agent, i + 1, why)
           end
           step(i + 1)
         end)
@@ -1235,10 +1275,18 @@ local function send()
   end
   local items = queue.parse(text)
   local agent, err = M.find_agent()
-  if agent and items[1].name then
-    if agent.agent_status == "blocked" then
+  -- Refused while Claude waits on you: hand off to its pane, and send once back.
+  if agent and agent.agent_status == "blocked" then
+    if not handoff.wants("blocked") then
       return notify_error(waiting_msg)
     end
+    return handoff.go(agent, read_screen, { armed = true, resume = send }, function(went)
+      if not went then
+        notify_error(waiting_msg)
+      end
+    end)
+  end
+  if agent and items[1].name then
     record(text)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
     save_draft()
@@ -1389,6 +1437,18 @@ function M.open()
     stash(true)
   end, "Stash Session and Close")
   map("n", "<leader>aH", pick_sessions, "Claude Sessions")
+  -- Back on its own once Claude has opened a dialog and closed it again.
+  map("n", "<leader>ac", function()
+    local agent, err = M.find_agent()
+    if not agent then
+      return notify_error(err)
+    end
+    handoff.go(agent, read_screen, {}, function(went)
+      if not went then
+        notify_error("Already handed off, or this pane isn't focused in herdr")
+      end
+    end)
+  end, "Claude's Pane")
   -- Reachable by search too; this nvim is the pane's alone.
   vim.api.nvim_create_user_command("ClaudeStash", function(cmd)
     stash(cmd.bang)

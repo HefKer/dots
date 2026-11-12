@@ -113,6 +113,10 @@ the next, ahead of the prose that follows them. A command directly followed by
 text takes that text as its arguments.
 _Avoid_: message queue
 
+**Hand-off**:
+The prompt pane giving focus to Claude's own pane for a dialog only it answers,
+and taking it back once the dialog is answered. A command queue pauses for it.
+
 **Stash**:
 The Claude sessions set aside to come back to, each with an optional note and
 its draft, kept per machine. Stashing marks a session, or marks it and closes
