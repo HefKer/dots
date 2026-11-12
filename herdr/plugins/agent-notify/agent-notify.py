@@ -1,9 +1,10 @@
-"""Clickable desktop notifications for agents that finish or block while you look elsewhere.
+"""Clickable desktop notifications for agents that block while you look elsewhere.
 
 `event` runs on herdr's pane.agent_status_changed hook and hands off to a detached
 `notify`, since the notification waits for a click and the hook must return. Clicking
 focuses the agent in herdr, the terminal tab running the herdr client (wezterm), and
-that terminal's niri window.
+that terminal's niri window. A finished agent raises no popup: it goes into the attention
+queue (~/nixos/main/pkgs/attention), which calls `watching` and `go` here.
 """
 
 import json
@@ -16,7 +17,7 @@ from pathlib import Path
 
 SOCKET = os.environ.get("HERDR_SOCKET_PATH", "")
 STATE = Path(os.environ.get("HERDR_PLUGIN_STATE_DIR", "/tmp/herdr-agent-notify"))
-STATUSES = {"done": "finished", "blocked": "needs you"}
+STATUSES = {"blocked": "needs you"}
 # Matches herdr's [ui.toast] delay_seconds default: a status that flips straight back stays quiet.
 DELAY = 1
 
@@ -221,8 +222,11 @@ def notify(pane_id, status):
     id_file.write_text(proc.stdout.readline().strip())
     action = proc.stdout.read().strip()
     proc.wait()
-    if action != "default":
-        return
+    if action == "default":
+        go(pane_id)
+
+
+def go(pane_id):
     open_agent(pane_id)
     for client in clients():
         show(client)
@@ -244,8 +248,12 @@ def main():
             )
     elif sys.argv[1:2] == ["notify"]:
         notify(*sys.argv[2:4])
+    elif sys.argv[1:2] == ["go"] and len(sys.argv) == 3:
+        go(sys.argv[2])
+    elif sys.argv[1:2] == ["watching"] and len(sys.argv) == 3:
+        sys.exit(0 if watching(sys.argv[2], snapshot()) else 1)
     else:
-        sys.exit("usage: agent-notify.py event|notify <pane> <status>")
+        sys.exit("usage: agent-notify.py event | notify <pane> <status> | go <pane> | watching <pane>")
 
 
 if __name__ == "__main__":

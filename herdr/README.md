@@ -61,15 +61,18 @@ It's where my Claude Code sessions, shells and editors live. Only
   survives a server restart. The NixOS config registers it in place from this
   repo, so edits need no rebuild.
   [`agent-focus.py`](plugins/agent-focus/agent-focus.py)
-- <a id="agent-notify"></a>**Clickable notifications for finished or blocked agents.**
+- <a id="agent-notify"></a>**Clickable notifications for blocked agents.**
   herdr's `system` toasts run a plain `notify-send` that ignores clicks. The
   [agent-notify plugin](plugins/agent-notify/herdr-plugin.toml) sends its own
   notification when an agent you aren't looking at (in its own pane or its tab's
-  prompt pane) finishes or blocks. Clicking it
+  prompt pane) blocks. Clicking it
   switches wezterm to the tab running herdr, raises that window in niri, and opens
-  the agent: a finished Claude in its [prompt pane](#prompt-pane), reusing one
-  already open, and a blocked one (a question or a permission prompt, which nvim
-  doesn't answer) in its own pane. A newer status for the same pane replaces the old notification.
+  the agent in its own pane, since a question or a permission prompt is answered
+  there, not in nvim. A newer status for the same pane replaces the old notification.
+  A finished agent pops nothing up: it joins the [attention
+  queue](https://github.com/HefKer/nixos-config#attention), whose `Mod+Shift+N`
+  opens it through the same `go`, a finished Claude in its [prompt pane](#prompt-pane),
+  reusing one already open.
   [`agent-notify.py`](plugins/agent-notify/agent-notify.py)
 - <a id="limits"></a>**Claude's usage limits in the tab bar.** The right of the
   tab row shows `5h 29% 3h17m · wk 52% 3d15h`: usage and time to reset of the
