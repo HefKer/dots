@@ -2,6 +2,8 @@
 # Per project: name, repo, match (words looked for in the focused window's title and app id, or the cwd;
 # the name always matches), labels (default [needs-triage, capture]), public_ok (default false: a public
 # repo is refused). After adding a repo or a label, run `backlog setup` once.
+# attachments_repo: the private repo `backlog add --image` and Shift+Enter in the box upload images to.
+attachments_repo: HefKer/backlog-attachments
 projects:
   - name: nixos
     repo: HefKer/nixos-issues
