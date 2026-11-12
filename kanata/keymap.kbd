@@ -99,7 +99,7 @@
 ;; (word motions, selection), vim-lettered macros on the left, hard-to-reach keys on the right.
 (deflayermap (nav)
   w C-rght  e @nve  r C-S-z
-  a @nva  d lctl  f lsft  g C-home
+  a @nva  s esc  d lctl  f lsft  g C-home
   z C-z  x @nvx  c C-c  b C-left
   y @nvy  u home  i pgup  o end  p C-v
   h left  j down  k up  l rght  ; ret

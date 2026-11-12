@@ -8,6 +8,9 @@ out: <home><end><pgup><pgdown>
 # Hard-to-reach keys: n Backspace, , Delete, ; Enter.
 in: d:spc t:250 d:n t:20 u:n d:, t:20 u:, d:; t:20 u:; t:30 u:spc
 out: <bspace><delete><enter>
+# s: Esc, on the home row.
+in: d:spc t:250 d:s t:20 u:s t:30 u:spc
+out: <escape>
 
 # f holds Shift: a motion selects.
 in: d:spc t:250 d:f t:30 d:l t:20 u:l t:20 u:f t:30 u:spc

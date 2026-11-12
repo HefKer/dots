@@ -44,7 +44,7 @@ times a guess until the real windows are measured.
   (word motions, selection), and the left hand has vim-lettered macros: `a`
   opens a line, `x` deletes it, `e` changes a word, `y` yanks the line, and with
   `f` held each gives its capital (`O`, `D`, `C`). Backspace, Delete and Enter
-  sit under the right hand. Space pressed mid-word stays Space, and tapping it
+  sit under the right hand, and `s` is Esc. Space pressed mid-word stays Space, and tapping it
   then holding it repeats Space. [`keymap.kbd`](keymap.kbd)
 - <a id="passthrough"></a>**A passthrough layer for games.** It drops the
   tap-hold delays so key timing is exact. A watcher switches to it
