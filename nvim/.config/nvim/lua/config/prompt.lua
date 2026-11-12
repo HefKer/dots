@@ -30,6 +30,8 @@ local state = {
   timer = nil,
   unseen = false, -- a reply arrived while a file covered the viewer
   queue = nil, -- the command queue being sent: { n, total, label }
+  cwd = nil, -- Claude's working directory, and its git branch
+  branch = nil,
 }
 
 -- The viewer window's look while it shows the reply; a file shown there gets the
@@ -359,9 +361,37 @@ local function set_winbars()
     vim.wo[state.viewer.win][0].winbar = "%#WinBar# 󰚩 " .. title .. status_line() .. "%=%#Comment#<leader>ak tasks "
   end
   if state.prompt.win and vim.api.nvim_win_is_valid(state.prompt.win) then
-    vim.wo[state.prompt.win][0].winbar =
-      "%#WinBar# 󰏫 Prompt%=%#Comment#<leader>ah history · <leader>at template · <leader>ad drafts "
+    local where = ""
+    if state.cwd then
+      local dir = vim.fn.fnamemodify(state.cwd, ":~"):gsub("%%", "%%%%")
+      local branch = state.branch and ("%#Comment# on %#DiagnosticHint# " .. state.branch:gsub("%%", "%%%%")) or ""
+      where = "%#Comment# · %#Directory# " .. dir .. branch
+    end
+    vim.wo[state.prompt.win][0].winbar = "%#WinBar# 󰏫 Prompt"
+      .. where
+      .. "%=%#Comment#<leader>ah history · <leader>at template · <leader>ad drafts "
   end
+end
+
+-- Where Claude is working, for the prompt's bar: its pane's directory, and the git
+-- branch there, looked up again only when the directory changes.
+local function locate(agent)
+  local cwd = agent and (agent.foreground_cwd or agent.cwd)
+  if not cwd or cwd == vim.NIL or cwd == state.cwd then
+    return
+  end
+  state.cwd, state.branch = cwd, nil
+  set_winbars()
+  vim.system(
+    { "git", "-C", cwd, "branch", "--show-current" },
+    { text = true },
+    vim.schedule_wrap(function(out)
+      if state.cwd == cwd and out.code == 0 and vim.trim(out.stdout) ~= "" then
+        state.branch = vim.trim(out.stdout)
+        set_winbars()
+      end
+    end)
+  )
 end
 
 -- Fills the viewer with markdown, its tables drawn to fit the window (config.prompt_table).
@@ -523,6 +553,7 @@ local function start_polling()
     vim.schedule_wrap(function()
       M.transcript_async(function(path, _, agent)
         read_statusline(agent)
+        locate(agent)
         if path then
           attach_to(path)
         else
@@ -1283,6 +1314,7 @@ function M.open()
   local agent = M.find_agent()
   state.session = agent and agent.session
   restore_draft(buf)
+  locate(agent)
 
   local map = function(mode, lhs, rhs, desc)
     vim.keymap.set(mode, lhs, rhs, { buffer = buf, desc = desc })

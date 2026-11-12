@@ -49,6 +49,9 @@ Claude Code from Neovim.
     tokens, and 5-hour and weekly usage with the time to each reset,
     which the Claude statusline the pane covers shares in
     `$XDG_RUNTIME_DIR/claude-statusline/`.
+  - The prompt's bar names Claude's directory and git branch
+    (`~/nixos/main on main`), since the pane hides the statusline that shows
+    them: writing to the agent in the wrong repo is easy with several tabs open.
   - `<leader>ak` swaps the reply for Claude's task list, rebuilt from its task
     tools in the transcript and updated as it works; the bar counts done tasks.
   - `<leader>ap` in any other nvim in the tab adds `@file`, or `@file#L10-20`
