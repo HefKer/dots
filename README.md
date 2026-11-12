@@ -89,7 +89,7 @@ stealing list][nixos-worth-stealing].
 | [xdg](xdg/) | Default apps for file types and link schemes | [README](xdg/README.md) |
 | [xdg-desktop-portal-termfilechooser](xdg-desktop-portal-termfilechooser/) | File picker portal: apps that use it get yazi in WezTerm | |
 | [claude](claude/) | Claude Code: global `CLAUDE.md`, keybindings, statusline, hooks and the launch guard; `settings.json` stays in `~/.claude`, since Claude Code rewrites it | |
-| [scripts](scripts/) | Helpers the configs call (prompt pane, qutebrowser sandbox, unfocused screenshots); [`jev`](scripts/jev) asks TypeSafe's decision model a yes/no, choice or rubric question from the shell, or where something is in an image (`jev box`); `jev ask --image` sends any request with images; [`proxy-why`](scripts/proxy-why) tells whether a site that failed through Proton is blocked on the exit, and [`proxy-watch`](scripts/proxy-watch) runs it on Privoxy's failures | |
+| [scripts](scripts/) | Helpers the configs call (prompt pane, qutebrowser sandbox, unfocused screenshots, [`quick-run`](scripts/quick-run) behind Mod+;); [`jev`](scripts/jev) asks TypeSafe's decision model a yes/no, choice or rubric question from the shell, or where something is in an image (`jev box`); `jev ask --image` sends any request with images; [`proxy-why`](scripts/proxy-why) tells whether a site that failed through Proton is blocked on the exit, and [`proxy-watch`](scripts/proxy-watch) runs it on Privoxy's failures | |
 
 Each package mirrors where its files go under `$HOME`, so
 `qutebrowser/.config/qutebrowser/` is `~/.config/qutebrowser/`. To borrow a

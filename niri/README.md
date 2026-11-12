@@ -17,3 +17,8 @@ to `~/.config/niri-host.kdl`.
   workspace 3 without filling 1 and 2 first. Names are global, so the second
   screen's are prefixed, and Mod+N goes by position.
   [`desktop.kdl`](host/desktop.kdl)
+- <a id="quick-run"></a>**Run the clipboard's command from anywhere.** Mod+;
+  opens a small floating fish prompt with the copied command typed in, unrun
+  until Enter, multi-line included. The output stays until a key, and a
+  failure or a run over 10 s sends a notification. A second press focuses the
+  open window. [`quick-run`](../scripts/quick-run)

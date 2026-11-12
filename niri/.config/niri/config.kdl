@@ -304,6 +304,14 @@ window-rule {
     default-window-height { proportion 0.9; }
 }
 
+// Quick run (Mod+;), a one-off command from the clipboard: small, floating, centred.
+window-rule {
+    match app-id="^quick-run$"
+    open-floating true
+    default-column-width { fixed 1100; }
+    default-window-height { fixed 560; }
+}
+
 // Throwaway windows an agent opens to screenshot a config, floating so the columns don't
 // shift and unfocused so typing carries on in the window you were in.
 window-rule {
@@ -409,6 +417,9 @@ binds {
     Mod+A hotkey-overlay-title="Set an Alarm" { spawn "alarm" "prompt"; }
     // Pick the project (guessed from this window), type "title // body"; filed as a GitHub issue in the background, queued if offline (from the nixos flake's backlog package).
     Mod+B hotkey-overlay-title="Capture an Idea" { spawn "backlog" "prompt"; }
+    // vim's : for the desktop: a floating fish prompt with the clipboard's command typed in, unrun until Enter;
+    // its output stays until a key, and a failure or a run over 10 s notifies. A second press focuses it (~/dots/scripts/quick-run).
+    Mod+Semicolon repeat=false hotkey-overlay-title="Run a Command" { spawn-sh "~/dots/scripts/quick-run"; }
     // vim's . for the desktop: replays the last repeatable action (a meme or sound pick, backlog into the same project, a meme/sound save
     // of the clipboard) with no menu (from the nixos flake's repeat package). Took the key from DMS's expel, which Mod+[ / Mod+] cover.
     Mod+Period repeat=false hotkey-overlay-title="Repeat the Last Action" { spawn "repeat"; }

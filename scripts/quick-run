@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Quick run (niri's Mod+;): a floating WezTerm on a fish prompt with the clipboard's text
+# already typed in. Nothing runs until Enter. Once the command ends, its output stays until
+# a key is pressed. If it fails or runs longer than 10 s, a notification says so.
+# Pressing the bind again focuses the open window instead of opening a second.
+set -euo pipefail
+app=quick-run
+
+id=$(niri msg -j windows | jq -r --arg a "$app" '.[] | select(.app_id == $a) | .id' | head -1)
+[[ -n $id ]] && exec niri msg action focus-window --id "$id"
+
+# --type text picks any text type and fails on an image or an empty clipboard.
+# $(...) strips the trailing newlines.
+text=$(wl-paste --no-newline --type text 2>/dev/null) || text=""
+
+# -C runs after the user's config, so abbrs, functions and atuin are loaded. The text
+# goes in through an env var and `commandline`, so it is never typed or run.
+init='
+function __quick_run_fill --on-event fish_prompt
+    functions -e __quick_run_fill
+    set -l text $QUICK_RUN_TEXT
+    set -e QUICK_RUN_TEXT
+    test -n "$text"; and commandline -r -- $text
+end
+function __quick_run_done --on-event fish_postexec
+    set -l st $status
+    set -l secs (math --scale 0 $CMD_DURATION / 1000)
+    set -l cmd (string join " " -- (string split \n -- $argv[1]))
+    if test $st -ne 0
+        notify-send -a "Quick run" "Exit $st" "$cmd" &
+    else if test $CMD_DURATION -gt 10000
+        notify-send -a "Quick run" "Done after $secs s" "$cmd" &
+    end
+    echo
+    set_color --dim; echo "[exit $st, $secs s] any key closes"; set_color normal
+    # The fish read builtin is vi-mode aware and swallows Esc; a raw byte read takes any key.
+    bash -c "read -rsn1" </dev/tty
+    exit
+end
+'
+
+cd "$HOME"
+QUICK_RUN_TEXT=$text exec wezterm start --always-new-process --class "$app" --cwd "$HOME" -- \
+	fish -C "$init"
