@@ -71,7 +71,7 @@ Claude Code from Neovim.
     commands, with their descriptions. Both look up Claude's directory without
     waiting on herdr, so typing never stalls.
   - A draft starting with `!` runs in Claude's bash mode, as typing `!` in its
-    input does.
+    input does: Claude reads the leading `!` of the send's paste the same way.
   - Slash commands leading the draft are a command queue: each is sent on its
     own, once the one before has finished (`/clear` once Claude is on the new
     session), and then the prose. `/clear`, `/model opus`, then a question, in

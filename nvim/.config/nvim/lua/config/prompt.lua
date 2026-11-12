@@ -114,11 +114,11 @@ end
 ---@param agent? table a pane from `herdr pane list`
 ---@return string?
 function M.workdir(agent)
-  for _, cwd in ipairs({ agent and agent.foreground_cwd, agent and agent.cwd }) do
-    if type(cwd) == "string" then
-      return cwd
-    end
+  local cwd = agent and agent.foreground_cwd
+  if type(cwd) ~= "string" then
+    cwd = agent and agent.cwd
   end
+  return type(cwd) == "string" and cwd or nil
 end
 
 ---@return string? path of the agent's session transcript
@@ -410,13 +410,13 @@ local function read_statusline(agent)
   state.statusline = ok and info or nil
 end
 
--- Each bar's binds, most-used first: as many as fit on its one line are shown, those
--- under <leader>a after that prefix, once.
+-- Each bar's binds, most-used first: as many as fit on its one line are shown. Keys
+-- are under <leader>a, written after that prefix once, unless marked plain.
 local viewer_hints = {
-  { "<CR>", "quote" },
+  { "<CR>", "quote", plain = true },
   { "s", "send" },
   { "i", "interrupt" },
-  { "[r ]r", "replies" },
+  { "[r ]r", "replies", plain = true },
   { "k", "tasks" },
   { "c", "pane" },
   { "m", "mode" },
@@ -431,9 +431,9 @@ local pending_hints = {
 }
 local prompt_hints = {
   { "s", "send" },
-  { "<M-c>", "interrupt" },
+  { "<M-c>", "interrupt", plain = true },
   { "q", "quote" },
-  { "[r ]r", "replies" },
+  { "[r ]r", "replies", plain = true },
   { "h", "history" },
   { "d", "drafts" },
   { "t", "template" },
@@ -448,8 +448,7 @@ local prompt_hints = {
 local function render_hints(hints)
   local plain, leader = {}, {}
   for _, hint in ipairs(hints) do
-    -- A key starting with a letter or digit is under <leader>a; <CR> or [r isn't.
-    table.insert(hint[1]:match("^%w") and leader or plain, hint[1] .. " " .. hint[2])
+    table.insert(hint.plain and plain or leader, hint[1] .. " " .. hint[2])
   end
   if #leader > 0 then
     table.insert(plain, "<leader>a " .. table.concat(leader, " · "))
@@ -459,7 +458,7 @@ end
 
 ---@param win integer
 ---@param bar string the bar's left side, as a statusline string
----@param hints string[][] { key, what } pairs, most-used first
+---@param hints table[] { key, what, plain? }, most-used first
 local function fit_hints(win, bar, hints)
   local room = vim.api.nvim_win_get_width(win)
     - vim.api.nvim_eval_statusline(bar, { winid = win, use_winbar = true }).width
@@ -1239,25 +1238,32 @@ end
 -- Every other saved draft, newest first: one whose pane is gone, or whose session
 -- came back under a new id. Picking one moves it into this prompt.
 local function pick_draft()
-  local items = {}
+  local items, drafts, transcripts = {}, {}, {}
   for _, path in ipairs(vim.fn.glob(drafts_dir .. "/*.md", false, true)) do
     if path ~= state.draft then
-      local text = table.concat(vim.fn.readfile(path), "\n")
       local key = vim.fn.fnamemodify(path, ":t:r")
-      local project = vim.fn.glob("~/.claude*/projects/*/" .. key .. ".jsonl", false, true)[1]
-      local time = vim.fn.getftime(path)
-      table.insert(items, {
-        text = text,
-        file = path,
-        time = time,
-        when = os.date("%m-%d %H:%M", time),
-        -- From the cwd the transcript records, since its project dir's name can't be
-        -- read back: ~/dev/my-app is -home-me-dev-my-app.
-        where = project and vim.fn.fnamemodify(require("config.prompt_stash").cwd_of(project) or "", ":t") or "",
-        title = text:match("[^\n]*"),
-        preview = { text = text, ft = "markdown" },
-      })
+      local transcript = vim.fn.glob("~/.claude*/projects/*/" .. key .. ".jsonl", false, true)[1]
+      table.insert(drafts, { path = path, transcript = transcript })
+      if transcript then
+        table.insert(transcripts, transcript)
+      end
     end
+  end
+  -- From the cwd each transcript records, since its project dir's name can't be read
+  -- back: ~/dev/my-app is -home-me-dev-my-app.
+  local cwds = require("config.prompt_stash").cwds_of(transcripts)
+  for _, draft in ipairs(drafts) do
+    local text = table.concat(vim.fn.readfile(draft.path), "\n")
+    local time = vim.fn.getftime(draft.path)
+    table.insert(items, {
+      text = text,
+      file = draft.path,
+      time = time,
+      when = os.date("%m-%d %H:%M", time),
+      where = vim.fn.fnamemodify(draft.transcript and cwds[draft.transcript] or "", ":t"),
+      title = text:match("[^\n]*"),
+      preview = { text = text, ft = "markdown" },
+    })
   end
   if #items == 0 then
     return notify_error("No other saved drafts")
