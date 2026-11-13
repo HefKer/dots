@@ -1,32 +1,94 @@
 #!/usr/bin/env bash
-# Quick run (niri's Mod+;): a floating WezTerm on a fish prompt with the clipboard's text
-# already typed in. Nothing runs until Enter. Once the command ends, its output stays until
-# a key is pressed. If it fails or runs longer than 10 s, a notification says so.
-# Pressing the bind again focuses the open window instead of opening a second.
+# Quick run (niri's Mod+;): a floating WezTerm on a fish prompt in vi normal mode, so the
+# clipboard is a `p` away. Nothing runs until Enter. Once the command ends, its output
+# stays until a key is pressed. If it fails or runs longer than 10 s, a notification says so.
+#
+# One at a time. Mod+; again:
+#   - while a command runs in the focused quick run: hides it on the "hidden" workspace;
+#     its end is announced (a success closes it, a failure offers Show)
+#   - while one is hidden: brings it to the workspace you're on
+#   - otherwise: focuses the open one, or opens one
+#
+#   quick-run          the Mod+; action above
+#   quick-run show     bring a hidden quick run back, else focus it (the notification's Show)
+#   quick-run hidden   exit 0 if the quick run is hidden (asked by its own fish)
 set -euo pipefail
 app=quick-run
+hidden_ws=hidden
+running=${XDG_RUNTIME_DIR:-/tmp}/quick-run.running
+self=$(realpath "$0")
 
-id=$(niri msg -j windows | jq -r --arg a "$app" '.[] | select(.app_id == $a) | .id' | head -1)
-[[ -n $id ]] && exec niri msg action focus-window --id "$id"
+win=$(niri msg -j windows | jq -c --arg a "$app" 'first(.[] | select(.app_id == $a)) // empty')
+id=$(jq -r '.id // empty' <<<"$win")
+hidden_id=$(niri msg -j workspaces | jq -r --arg n "$hidden_ws" '.[] | select(.name == $n) | .id')
+is_hidden() { [[ -n $id && $(jq -r .workspace_id <<<"$win") == "$hidden_id" ]]; }
 
-# --type text picks any text type and fails on an image or an empty clipboard.
-# $(...) strips the trailing newlines.
-text=$(wl-paste --no-newline --type text 2>/dev/null) || text=""
+show() {
+	# The active workspace of the focused output. Moving to another output lands on its
+	# active workspace; on the same output, an index is that output's.
+	local out ws_out idx
+	out=$(niri msg -j focused-output | jq -r .name)
+	ws_out=$(niri msg -j workspaces | jq -r --arg i "$hidden_id" '.[] | select((.id | tostring) == $i) | .output')
+	if [[ $ws_out != "$out" ]]; then
+		niri msg action move-window-to-monitor --id "$id" "$out"
+	else
+		idx=$(niri msg -j workspaces | jq -r --arg o "$out" '.[] | select(.output == $o and .is_active) | .idx')
+		niri msg action move-window-to-workspace --window-id "$id" --focus false "$idx"
+	fi
+	niri msg action focus-window --id "$id"
+}
 
-# -C runs after the user's config, so abbrs, functions and atuin are loaded. The text
-# goes in through an env var and `commandline`, so it is never typed or run.
+case ${1:-} in
+hidden)
+	is_hidden
+	exit
+	;;
+show)
+	[[ -n $id ]] || exit 0
+	if is_hidden; then show; else niri msg action focus-window --id "$id"; fi
+	exit
+	;;
+esac
+
+if [[ -n $id ]]; then
+	if is_hidden; then
+		show
+	elif [[ $(jq -r .is_focused <<<"$win") == true && -e $running ]]; then
+		niri msg action move-window-to-workspace --window-id "$id" --focus false "$hidden_ws"
+	else
+		niri msg action focus-window --id "$id"
+	fi
+	exit
+fi
+
+# A marker left by a quick run that was killed mid-command.
+rm -f "$running"
+
+# -C runs after the user's config, so abbrs, functions, atuin and the clipboard binds
+# (fish conf.d/22-clipboard.fish) are loaded. A marker file says a command is running.
 init='
-function __quick_run_fill --on-event fish_prompt
-    functions -e __quick_run_fill
-    set -l text $QUICK_RUN_TEXT
-    set -e QUICK_RUN_TEXT
-    test -n "$text"; and commandline -r -- $text
+function __quick_run_normal --on-event fish_prompt
+    functions -e __quick_run_normal
+    set -g fish_bind_mode default
+end
+function __quick_run_start --on-event fish_preexec
+    touch $QUICK_RUN_RUNNING
 end
 function __quick_run_done --on-event fish_postexec
     set -l st $status
+    rm -f $QUICK_RUN_RUNNING
     set -l secs (math --scale 0 $CMD_DURATION / 1000)
     set -l cmd (string join " " -- (string split \n -- $argv[1]))
-    if test $st -ne 0
+    if $QUICK_RUN_SELF hidden
+        if test $st -eq 0
+            notify-send -a "Quick run" "Done after $secs s" "$cmd" &
+            disown
+            exit
+        end
+        # notify-send -A waits for the click; setsid keeps it alive past this window.
+        setsid -f bash -c "notify-send -a \"Quick run\" -A show=Show \"Exit \$1\" \"\$2\" | grep -qx show && exec \"\$0\" show" \
+            $QUICK_RUN_SELF $st "$cmd" >/dev/null 2>&1
+    else if test $st -ne 0
         notify-send -a "Quick run" "Exit $st" "$cmd" &
     else if test $CMD_DURATION -gt 10000
         notify-send -a "Quick run" "Done after $secs s" "$cmd" &
@@ -40,5 +102,5 @@ end
 '
 
 cd "$HOME"
-QUICK_RUN_TEXT=$text exec wezterm start --always-new-process --class "$app" --cwd "$HOME" -- \
+QUICK_RUN_SELF=$self QUICK_RUN_RUNNING=$running exec wezterm start --always-new-process --class "$app" --cwd "$HOME" -- \
 	fish -C "$init"

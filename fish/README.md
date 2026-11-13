@@ -89,3 +89,9 @@ Commands are autoloaded from [`functions/`](.config/fish/functions/), one per fi
   starship's `add_newline`.
   [`50-hooks.fish`](.config/fish/conf.d/50-hooks.fish) ·
   [e537aa1](https://github.com/HefKer/dots/commit/e537aa1)
+- <a id="vi-clipboard"></a>**vi normal mode on the system clipboard.** `p`/`P`
+  paste it (text only, so an image pastes nothing), and every yank (`yy`, `yw`,
+  `y` + any motion, visual `y`) copies to it as well as the kill ring, while
+  `d`/`c`/`x` leave it alone. fish has no read of its kill ring, so each yank
+  bind is fish's own, wrapped to yank once more, read what that inserted, and
+  undo it. [`22-clipboard.fish`](.config/fish/conf.d/22-clipboard.fish)

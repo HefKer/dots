@@ -4,6 +4,7 @@
 #   00-env     exported vars, PATH, key binding mode
 #   10-tools   atuin  (zoxide, starship, direnv come from /etc/fish/config.fish)
 #   20-fzf     fzf defaults, key bindings and the $HOME-wide widgets
+#   22-clipboard  vi normal mode's p/P and yanks on the system clipboard
 #   25-help    Alt+T tldr page; binds.tsv lists the fish scope for bind-palette
 #   30-alias   aliases
 #   40-abbr    abbreviations

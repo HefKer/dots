@@ -13,3 +13,5 @@ Alt+.	Insert the last argument of an earlier command
 Ctrl+F	fzf: insert a file
 Ctrl+G	fzf: cd into a directory
 Tab after cmd -	List the command's flags with descriptions
+p in normal mode	Paste the clipboard after the cursor (P before)
+y in normal mode	Yank (yy, yw, y + motion) to the clipboard too

@@ -17,8 +17,10 @@ to `~/.config/niri-host.kdl`.
   workspace 3 without filling 1 and 2 first. Names are global, so the second
   screen's are prefixed, and Mod+N goes by position.
   [`desktop.kdl`](host/desktop.kdl)
-- <a id="quick-run"></a>**Run the clipboard's command from anywhere.** Mod+;
-  opens a small floating fish prompt with the copied command typed in, unrun
-  until Enter, multi-line included. The output stays until a key, and a
-  failure or a run over 10 s sends a notification. A second press focuses the
-  open window. [`quick-run`](../scripts/quick-run)
+- <a id="quick-run"></a>**Run a command from anywhere, and background it.**
+  Mod+; opens a small floating fish prompt in vi normal mode, the clipboard a
+  `p` away, unrun until Enter. The output stays until a key, and a failure or a
+  run over 10 s sends a notification. Mod+; while it runs hides it on a spare
+  workspace (niri has no minimize) and again brings it to the workspace you're
+  on; a hidden run that succeeds closes itself and says so, and one that fails
+  notifies with a Show button. [`quick-run`](../scripts/quick-run)
