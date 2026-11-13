@@ -301,7 +301,8 @@ window-rule {
     match app-id="^kanata-keymap$"
     open-floating true
     default-column-width { proportion 0.5; }
-    default-window-height { proportion 0.9; }
+    // One layer's height at half a 1920 px screen's width; a search's hit list scrolls.
+    default-window-height { fixed 490; }
 }
 
 // Quick run (Mod+;), a one-off command from the clipboard: small, floating, centred.
