@@ -31,6 +31,7 @@ DankMaterialShell/.config/DankMaterialShell/plugins/*
 !DankMaterialShell/.config/DankMaterialShell/plugins/soundboard/
 !DankMaterialShell/.config/DankMaterialShell/plugins/micStatus/
 !DankMaterialShell/.config/DankMaterialShell/plugins/alarms/
+!DankMaterialShell/.config/DankMaterialShell/plugins/attention/
 # DMS — input.kdl is regenerated from settings.json on start; it still syncs.
 niri/.config/niri/dms/input.kdl
 

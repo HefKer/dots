@@ -21,5 +21,8 @@
   },
   "alarms": {
     "enabled": true
+  },
+  "attention": {
+    "enabled": true
   }
 }

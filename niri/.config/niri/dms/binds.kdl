@@ -6,7 +6,7 @@ binds {
     Mod+Comma hotkey-overlay-title="Settings" { spawn "dms" "ipc" "call" "settings" "focusOrToggle"; }
     Mod+N hotkey-overlay-title="Notification Center" { spawn "dms" "ipc" "call" "notifications" "toggle"; }
     Mod+Print hotkey-overlay-title="Edit a Region" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
-    Mod+Shift+N hotkey-overlay-title="Open last notification" { spawn "dms" "ipc" "call" "notifications" "invokeLast"; }
+    Mod+Shift+N hotkey-overlay-title="Go to What Needs You" { spawn "attention" "next"; }
     Mod+Space hotkey-overlay-title="Application Launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
     Mod+V hotkey-overlay-title="Clipboard Manager" { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
     Print hotkey-overlay-title="Copy a Region" { spawn "dms" "screenshot" "region" "--no-file" "--no-confirm"; }

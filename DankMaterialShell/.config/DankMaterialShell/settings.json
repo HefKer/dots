@@ -151,7 +151,15 @@
       "field": "desktopEntry",
       "pattern": "org.kde.kdeconnect.daemon",
       "matchType": "exact",
-      "action": "default",
+      "action": "mute",
+      "urgency": "default"
+    },
+    {
+      "enabled": true,
+      "field": "appName",
+      "pattern": "vesktop",
+      "matchType": "exact",
+      "action": "mute",
       "urgency": "default"
     }
   ],
@@ -199,6 +207,7 @@
         "cpuUsage",
         "memUsage",
         "notificationButton",
+        "attention",
         {
           "id": "controlCenterButton",
           "enabled": true,
