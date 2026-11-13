@@ -80,9 +80,8 @@ end
 # s: a saved command onto the command line, unrun.
 function __quick_run_pick
     if not test -s $__quick_run_list
-        echo
-        set_color --dim; echo "No saved commands yet: s on the closing screen saves one"; set_color normal
-        commandline -f repaint
+        # __fish_echo prints below the line and moves the prompt under it; a plain echo is painted over.
+        __fish_echo echo (set_color --dim)"No saved commands yet: s on the closing screen saves one"(set_color normal)
         return
     end
     set -l pick (fzf --delimiter \t --prompt "saved> " --no-multi <$__quick_run_list)
