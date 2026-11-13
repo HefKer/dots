@@ -929,28 +929,23 @@ local function quote_lines(lines)
   end, lines)
 end
 
--- Puts quoted lines in the prompt at its cursor, leaves an empty line under them
--- to answer on, and goes there in insert mode.
+-- Puts quoted lines at the end of the prompt, a blank line after any text above,
+-- leaves an empty line under them to answer on, and goes there in insert mode.
 local function insert_quote(lines)
   local buf, win = state.prompt.buf, state.prompt.win
   if #lines == 0 or not (buf and win and vim.api.nvim_win_is_valid(win)) then
     return
   end
-  local row = vim.api.nvim_win_get_cursor(win)[1]
-  local current = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1] or ""
-  local block = vim.list_extend({}, lines)
-  table.insert(block, "")
-  local start
-  if vim.trim(current) == "" then
-    start = row - 1
-    vim.api.nvim_buf_set_lines(buf, start, row, false, block)
-  else
-    table.insert(block, 1, "")
-    start = row
-    vim.api.nvim_buf_set_lines(buf, start, start, false, block)
+  local all = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local last = #all
+  while last > 0 and vim.trim(all[last]) == "" do
+    last = last - 1
   end
+  local block = vim.list_extend(last > 0 and { "" } or {}, lines)
+  table.insert(block, "")
+  vim.api.nvim_buf_set_lines(buf, last, -1, false, block)
   vim.api.nvim_set_current_win(win)
-  vim.api.nvim_win_set_cursor(win, { start + #block, 0 })
+  vim.api.nvim_win_set_cursor(win, { last + #block, 0 })
   vim.cmd.startinsert()
 end
 

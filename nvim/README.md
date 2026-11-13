@@ -42,8 +42,8 @@ Claude Code from Neovim.
   - Tables in the reply are redrawn as box grids whose cells wrap to fit the
     pane, so a wide table never breaks mid-row; quoting or yanking one takes its markdown.
   - `<CR>` in the reply quotes the list item, code block, table or paragraph
-    under the cursor into the prompt (a visual selection quotes just that), with
-    an empty line under it to answer on. Quotes in the prompt are dimmed.
+    under the cursor onto the end of the prompt, wherever its cursor was (a
+    visual selection quotes just that), with an empty line under it to answer on. Quotes in the prompt are dimmed.
   - `<leader>aq` quotes the whole reply, and `<leader>aQ` strips the quoted
     lines again, leaving only what you wrote.
   - The reply's bar shows the model and effort level (`Opus 5.5 medium`), whether Claude is working, idle or blocked, with the
