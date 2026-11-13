@@ -13,8 +13,10 @@ for sock in "${socks[@]}"; do
   # A socket left by an nvim that's gone.
   [[ -n $pid ]] || continue
   # Bounded, so an nvim stuck in a prompt can't hold up the rest.
-  out=$(timeout 5 nvim --server "$sock" --remote-expr "luaeval('loadstring(_A)()', '$lua')" 2>&1) ||
-    out="no answer${out:+: $out}"
+  out=$(timeout 5 nvim --server "$sock" --remote-expr "luaeval('loadstring(_A)()', '$lua')" 2>/dev/null)
+  code=$?
+  ((code == 124)) && out="no answer in 5 s (busy, or waiting on a prompt)"
+  ((code != 0 && code != 124)) && out="failed (exit $code)"
   cwd=$(readlink /proc/"$pid"/cwd)
   printf '%s in %s: %s\n' "$pid" "${cwd/#$HOME/\~}" "$out"
 done
