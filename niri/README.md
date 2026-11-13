@@ -23,4 +23,7 @@ to `~/.config/niri-host.kdl`.
   run over 10 s sends a notification. Mod+; while it runs hides it on a spare
   workspace (niri has no minimize) and again brings it to the workspace you're
   on; a hidden run that succeeds closes itself and says so, and one that fails
-  notifies with a Show button. [`quick-run`](../scripts/quick-run)
+  notifies with a Show button. Long, rare commands are kept as saved
+  commands: `s` on the closing screen names the one just run, and `s` in normal
+  mode picks one through fzf onto the command line, unrun, to edit first.
+  [`quick-run`](../scripts/quick-run)

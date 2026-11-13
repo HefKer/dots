@@ -3,6 +3,9 @@
 # clipboard is a `p` away. Nothing runs until Enter. Once the command ends, its output
 # stays until a key is pressed. If it fails or runs longer than 10 s, a notification says so.
 #
+# Saved commands, name<TAB>command in fish's quick-run.tsv: `s` in normal mode picks one
+# onto the command line, unrun; `s` on the closing screen names and saves the one just run.
+#
 # One at a time. Mod+; again:
 #   - while a command runs in the focused quick run: hides it on the "hidden" workspace;
 #     its end is announced (a success closes it, a failure offers Show)
@@ -67,9 +70,33 @@ rm -f "$running"
 # -C runs after the user's config, so abbrs, functions, atuin and the clipboard binds
 # (fish conf.d/22-clipboard.fish) are loaded. A marker file says a command is running.
 init='
+set -g __quick_run_list $__fish_config_dir/quick-run.tsv
+# Installed at the first prompt, once fish_vi_key_bindings has run, so it is not erased.
 function __quick_run_normal --on-event fish_prompt
     functions -e __quick_run_normal
     set -g fish_bind_mode default
+    bind -M default s __quick_run_pick
+end
+# s: a saved command onto the command line, unrun.
+function __quick_run_pick
+    if not test -s $__quick_run_list
+        echo
+        set_color --dim; echo "No saved commands yet: s on the closing screen saves one"; set_color normal
+        commandline -f repaint
+        return
+    end
+    set -l pick (fzf --delimiter \t --prompt "saved> " --no-multi <$__quick_run_list)
+    and commandline -r -- (string split -m1 -f2 \t -- $pick)
+    commandline -f repaint
+end
+# name<TAB>command, a name already listed replaced.
+function __quick_run_save -a name cmd
+    set -l keep
+    test -f $__quick_run_list
+    and for l in (cat $__quick_run_list)
+        test "$(string split -m1 -f1 \t -- $l)" = "$name"; or set -a keep $l
+    end
+    printf "%s\n" $keep (printf "%s\t%s" $name $cmd) >$__quick_run_list
 end
 function __quick_run_start --on-event fish_preexec
     touch $QUICK_RUN_RUNNING
@@ -94,9 +121,19 @@ function __quick_run_done --on-event fish_postexec
         notify-send -a "Quick run" "Done after $secs s" "$cmd" &
     end
     echo
-    set_color --dim; echo "[exit $st, $secs s] any key closes"; set_color normal
+    set_color --dim; echo "[exit $st, $secs s] s saves · any key closes"; set_color normal
     # The fish read builtin is vi-mode aware and swallows Esc; a raw byte read takes any key.
-    bash -c "read -rsn1" </dev/tty
+    set -l key (bash -c "read -rsn1 k; printf %s \"\$k\"" </dev/tty)
+    if test "$key" = s
+        read -P "name: " name
+        set name (string trim -- (string replace -a \t " " -- "$name"))
+        if test -n "$name"
+            __quick_run_save $name "$cmd"
+            exit
+        end
+        set_color --dim; echo "not saved · any key closes"; set_color normal
+        bash -c "read -rsn1" </dev/tty
+    end
     exit
 end
 '
