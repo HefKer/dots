@@ -61,3 +61,4 @@ quickmarks
 qutebrowser/.config/qutebrowser/greasemonkey/osugacha-capture.js
 # qutebrowser — osugacha page capture (osug-tile), a symlink into ~/dev/_osu/osugacha (that repo owns it)
 qutebrowser/.config/qutebrowser/userscripts/osug-tile
+/fish/.config/fish/quick-run.tsv
