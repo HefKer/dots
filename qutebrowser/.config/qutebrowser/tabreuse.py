@@ -17,23 +17,33 @@ def reusable(host):
     return any(host == d or host.endswith("." + d) for d in REUSE)
 
 
-def find_tab(browser, url, skip):
-    """An open tab on url's site in a window of the same privacy, exact URL first.
-
-    skip is a tab (or tabs) never to match: the new tab itself and the tab the link was
-    clicked in, so a same-site link can't navigate its own source tab."""
+def all_tabs(browser):
+    """(browser, tab) for every tab in windows of browser's privacy, browser's own first."""
     from qutebrowser.utils import objreg
 
-    host = site(url)
-    if not host or not reusable(host):
-        return None
-    skip = skip if isinstance(skip, tuple) else (skip,)
     browsers = [browser] + [
         w.tabbed_browser
         for w in objreg.window_registry.values()
         if w.tabbed_browser is not browser and w.tabbed_browser.is_private == browser.is_private
     ]
-    tabs = [(b, t) for b in browsers for t in b.widgets() if t not in skip]
+    return [(b, t) for b in browsers for t in b.widgets()]
+
+
+def route(url):
+    """Site and path, ignoring query, fragment and a trailing slash."""
+    return site(url), url.path().rstrip("/")
+
+
+def find_tab(browser, url, skip):
+    """An open tab on url's site in a window of the same privacy, exact URL first.
+
+    skip is a tab (or tabs) never to match: the new tab itself and the tab the link was
+    clicked in, so a same-site link can't navigate its own source tab."""
+    host = site(url)
+    if not host or not reusable(host):
+        return None
+    skip = skip if isinstance(skip, tuple) else (skip,)
+    tabs = [(b, t) for b, t in all_tabs(browser) if t not in skip]
     same_site = [(b, t) for b, t in tabs if site(t.url()) == host]
     exact = [(b, t) for b, t in same_site if t.url() == url]
     return (exact or same_site or [None])[0]
@@ -113,10 +123,42 @@ def open_url(url, target=None, no_raise=False, via_ipc=True):
     return window
 
 
+# Every site, unlike REUSE: a quickmark whose route is already open focuses that tab, left
+# as it is, instead of loading again. -b still opens a new background tab.
+def quickmark_load(dispatcher, name, tab=False, bg=False, window=False):
+    from qutebrowser.browser import urlmarks
+    from qutebrowser.utils import objreg
+
+    if not bg:
+        try:
+            url = objreg.get("quickmark-manager").get(name)
+        except urlmarks.Error:
+            url = None
+        if url is not None and url.isValid():
+            want = route(url)
+            browser = dispatcher._tabbed_browser
+            found = next((bt for bt in all_tabs(browser) if route(bt[1].url()) == want), None)
+            if found is not None:
+                browser_, tab_ = found
+                browser_.widget.setCurrentWidget(tab_)
+                browser_.window().activateWindow()
+                browser_.window().raise_()
+                return
+    return _quickmark_load_orig(dispatcher, name, tab, bg, window)
+
+
 def patch():
-    global TabbedBrowser
+    global TabbedBrowser, _quickmark_load_orig
     from qutebrowser import app
     from qutebrowser.mainwindow.tabbedbrowser import TabbedBrowser
+    from qutebrowser.misc import objects
+
+    # The command keeps the handler it was registered with, so patch that, not the class.
+    cmd = objects.commands["quickmark-load"]
+    if not hasattr(cmd, "_tabreuse_orig"):
+        cmd._tabreuse_orig = cmd.handler
+    _quickmark_load_orig = cmd._tabreuse_orig
+    cmd.handler = quickmark_load
 
     # :config-source reruns this file, so wrap the original rather than the last wrapper.
     if not hasattr(TabbedBrowser, "_tabreuse_orig"):

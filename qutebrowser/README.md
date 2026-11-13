@@ -26,7 +26,7 @@ and greasemonkey scripts for the things qutebrowser doesn't do on its own.
 | [`spotify.py`](.config/qutebrowser/spotify.py) | Hand Spotify links to the desktop app |
 | [`injectfix.py`](.config/qutebrowser/injectfix.py) | Workaround for page scripts dying after cross-site navigation |
 | [`devtoolssave.py`](.config/qutebrowser/devtoolssave.py) | Lets DevTools save files (Export HAR, Save as) through the download prompt |
-| [`tabreuse.py`](.config/qutebrowser/tabreuse.py) | Links to an already open site reuse its tab |
+| [`tabreuse.py`](.config/qutebrowser/tabreuse.py) | Links to an already open site, and quickmarks to an open route, reuse its tab |
 | [`js/`](.config/qutebrowser/js/) | Small scripts the binds run through `jseval` |
 | [`greasemonkey/`](.config/qutebrowser/greasemonkey/) | Per-site userscripts |
 | [`userscripts/`](.local/share/qutebrowser/userscripts/) | qutebrowser userscripts, linked to `~/.local/share/qutebrowser/userscripts` |
@@ -177,7 +177,9 @@ file as it is now and to the commit that added it, which explains why.
   outside (`xdg-open`, e.g. a notification's action) switches to a tab already
   on that site instead, navigating it when the path differs. Only sites in
   `REUSE` are affected; middle-click and other background opens always get a
-  new tab, and a link never reuses the tab it was clicked in.
+  new tab, and a link never reuses the tab it was clicked in. On any site, a
+  quickmark (`b`, `B`, `wb`) whose route (site and path, query ignored) is
+  already open focuses that tab instead of loading it again.
   [`tabreuse.py`](.config/qutebrowser/tabreuse.py)
 - <a id="spotify"></a>**Spotify links open the app.** Track, album, playlist and
   similar links go to the Spotify desktop app instead of the web player.
