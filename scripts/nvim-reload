@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Reload lua/config/ in every running nvim (nvim's config/reload.lua), so edits reach
+# open sessions, prompt panes included, without a restart. Reloads config/reload.lua
+# itself first, so a change to it applies too. Prints one line per nvim.
+# Usage: nvim-reload [socket...]  (default: every nvim's own socket)
+set -uo pipefail
+lua='package.loaded["config.reload"] = nil; return require("config.reload").run()'
+shopt -s nullglob
+socks=("$@")
+((${#socks[@]})) || socks=("${XDG_RUNTIME_DIR:-/tmp}"/nvim.*.0)
+for sock in "${socks[@]}"; do
+  pid=$(fuser "$sock" 2>/dev/null | awk '{print $1}')
+  # A socket left by an nvim that's gone.
+  [[ -n $pid ]] || continue
+  # Bounded, so an nvim stuck in a prompt can't hold up the rest.
+  out=$(timeout 5 nvim --server "$sock" --remote-expr "luaeval('loadstring(_A)()', '$lua')" 2>&1) ||
+    out="no answer${out:+: $out}"
+  cwd=$(readlink /proc/"$pid"/cwd)
+  printf '%s in %s: %s\n' "$pid" "${cwd/#$HOME/\~}" "$out"
+done

@@ -148,6 +148,14 @@ Claude Code from Neovim.
   note alone. `<leader>hi` opens the inbox; a Claude skill answers each entry
   with the idiomatic keys and files it as a drill.
   [`config/habit_capture.lua`](.config/nvim/lua/config/habit_capture.lua)
+- <a id="config-reload"></a>**Reload the config in every running nvim.**
+  `:ConfigReload`, or [`scripts/nvim-reload`](../scripts/nvim-reload) for every
+  nvim at once over their sockets, unloads the `lua/config/` modules and runs
+  options, keymaps and autocmds again, so an edit reaches open sessions without a
+  restart. An open prompt pane survives it: the old module stops its timers,
+  watcher and autocmds and closes the reply, and the new one takes over the
+  prompt window, text and all. Plugin specs still need a restart.
+  [`config/reload.lua`](.config/nvim/lua/config/reload.lua)
 - <a id="markdown"></a>**Obsidian-style markdown.** On top of LazyVim's markdown
   extra, marksman resolves `[[wikilinks]]` by file name as Obsidian does and hides
   unresolved-link errors inside a vault, and markdownlint is cut down to rules

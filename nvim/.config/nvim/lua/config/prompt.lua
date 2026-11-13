@@ -1959,10 +1959,55 @@ local function show_reply()
   end
 end
 
+-- Stops this pane's timers, watcher and autocmds, saves the draft and closes the reply,
+-- leaving the prompt window with its text for M.open({ adopt = ... }) from a reloaded
+-- copy of this module (config/reload.lua) to take over.
+---@return { buf: integer, win: integer }? the prompt, or nil when no pane is open here
+function M.teardown()
+  local buf, win = state.prompt.buf, state.prompt.win
+  if not (buf and win and vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_win_is_valid(win)) then
+    return nil
+  end
+  if state.stop_queue then
+    state.stop_queue("Queue stopped by a config reload")
+  end
+  save_draft()
+  for _, key in ipairs({ "watcher", "timer", "poll", "save_timer" }) do
+    local handle = state[key]
+    if handle and not handle:is_closing() then
+      handle:stop()
+      handle:close()
+    end
+    state[key] = nil
+  end
+  handoff.stop()
+  for _, group in ipairs({ "claude_prompt", "claude_prompt_viewer" }) do
+    pcall(vim.api.nvim_del_augroup_by_name, group)
+  end
+  local viewer = state.viewer
+  if viewer.win and vim.api.nvim_win_is_valid(viewer.win) then
+    -- A file shown in the reply's place stays loaded, hidden; <leader>fb finds it.
+    vim.api.nvim_win_close(viewer.win, true)
+  end
+  if viewer.buf and vim.api.nvim_buf_is_valid(viewer.buf) then
+    vim.api.nvim_buf_delete(viewer.buf, { force = true })
+  end
+  state.prompt, state.viewer = { buf = nil, win = nil }, { buf = nil, win = nil }
+  return { buf = buf, win = win }
+end
+
 -- Runs in the .md file scripts/claude-prompt opens, not an empty buffer: a file argument
 -- is what skips the dashboard and makes LazyVim load its markdown autocmds in time.
-function M.open()
-  vim.fn.delete(vim.api.nvim_buf_get_name(0))
+-- With adopt, it takes over a pane an older copy of this module tore down instead,
+-- keeping its text and its server socket.
+---@param opts? { adopt?: { buf: integer, win: integer } }
+function M.open(opts)
+  local adopt = opts and opts.adopt
+  if adopt then
+    vim.api.nvim_set_current_win(adopt.win)
+  else
+    vim.fn.delete(vim.api.nvim_buf_get_name(0))
+  end
   local buf, win = vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()
   vim.bo[buf].buftype = "nofile"
   vim.bo[buf].swapfile = false
@@ -1971,7 +2016,11 @@ function M.open()
   vim.wo[win][0].winfixheight = true
   local agent = M.find_agent()
   state.session = agent and agent.session
-  restore_draft(buf)
+  if adopt then
+    state.draft = draft_path() -- the text is still in the buffer
+  else
+    restore_draft(buf)
+  end
   locate(agent)
   -- Before the first poll, for a Claude started in a mode that its transcript, not yet
   -- written, can't tell.
@@ -2075,7 +2124,7 @@ function M.open()
     end,
   })
 
-  if vim.env.HERDR_PANE_ID then
+  if vim.env.HERDR_PANE_ID and not adopt then
     local sock = M.socket(vim.env.HERDR_PANE_ID)
     vim.fn.mkdir(vim.fs.dirname(sock), "p")
     vim.fn.delete(sock) -- left by a prompt pane that didn't exit cleanly
@@ -2087,8 +2136,10 @@ function M.open()
   attach()
   start_polling()
   dim_quotes(buf)
-  vim.cmd.normal({ "G", bang = true })
-  vim.cmd.startinsert({ bang = true })
+  if not adopt then
+    vim.cmd.normal({ "G", bang = true })
+    vim.cmd.startinsert({ bang = true })
+  end
 end
 
 return M

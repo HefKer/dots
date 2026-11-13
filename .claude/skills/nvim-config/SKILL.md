@@ -25,6 +25,10 @@ Prefer extending or overriding LazyVim's spec over replacing it — return a plu
 - `lazy-lock.json` is committed. After adding a plugin, run `nvim --headless "+Lazy! install" +qa`: it clones only the new plugin and adds its lock entry. `Lazy sync` also upgrades every other plugin, so use it only when the user asks for upgrades. Commit the lockfile alongside the change.
 - Lua is formatted with `stylua` (`stylua.toml` at the package root).
 
+## Applying
+
+After committing a change under `lua/config/`, run `~/dots/scripts/nvim-reload`: it reloads that directory in every running nvim, prompt panes included, so the user doesn't restart them. A change to `lua/plugins/` or the lockfile still needs a restart; say so.
+
 ## Verifying
 
 - Installed plugin source lives in `~/.local/share/nvim/lazy/<name>/`. Read it before concluding a plugin lacks a feature or backend — the pinned commit may already ship it.

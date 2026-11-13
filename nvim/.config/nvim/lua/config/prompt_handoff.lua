@@ -103,6 +103,16 @@ local function watch()
   )
 end
 
+-- Drops a trip in progress without calling back, for a reload of the prompt pane.
+function M.stop()
+  trip = nil
+  if timer and not timer:is_closing() then
+    timer:stop()
+    timer:close()
+  end
+  timer = nil
+end
+
 -- Takes the trip to Claude's pane if this prompt pane is the focused one, calling
 -- back with whether it did. A trip for a dialog already up is armed: it returns as
 -- soon as Claude's input box is back. A manual one waits to see a dialog first.

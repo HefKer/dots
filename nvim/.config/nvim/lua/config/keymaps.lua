@@ -69,3 +69,6 @@ end, { desc = "Capture Habit" })
 vim.keymap.set("n", "<leader>hi", function()
   require("config.habit_capture").open_inbox()
 end, { desc = "Vim Inbox" })
+
+-- :ConfigReload picks up edits to lua/config/ in a running nvim (config/reload.lua).
+require("config.reload")
