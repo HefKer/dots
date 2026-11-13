@@ -396,7 +396,7 @@ binds {
     // Most actions that you can bind here can also be invoked programmatically with
     // `niri msg action do-something`.
 
-    // Toggles the kanata keymap, every layer (from the nixos flake's kanata-keymap module).
+    // Toggles the kanata keymap viewer: layers by number key, / to search (from the nixos flake's kanata-keymap module).
     Mod+Slash hotkey-overlay-title="Show the Keymap" { spawn "kanata-keymap"; }
     // ? for help: search every scope's binds, in place of DMS's cheatsheet (from the nixos flake's bind-palette).
     Mod+Shift+Slash hotkey-overlay-title="Search Binds" { spawn "bind-palette"; }

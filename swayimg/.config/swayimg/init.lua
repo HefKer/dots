@@ -1,5 +1,4 @@
 -- swayimg config, on top of the built-in defaults (share/swayimg/example.lua in the package).
--- Mainly drives the kanata keymap viewer (Mod+/), a tall SVG in a half-width window.
 
 local viewer = swayimg.viewer
 local step = 100
@@ -11,12 +10,6 @@ end
 
 local function half_page()
 	return math.floor(swayimg.get_window_size().height / 2)
-end
-
--- The keymap fills the window's width and opens at its top; plain "optimal" fits the whole height, too small to read.
-if swayimg.appid == "kanata-keymap" then
-	viewer.default_scale = "width"
-	viewer.default_position = "topcenter"
 end
 
 -- Vim motions move the view, so the image moves the other way.
