@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+"""PROTOTYPE (hefker/dots-issues#54), throwaway. Keymap viewer (c): the key grid drawn in the terminal.
+
+Stdlib only, truecolor ANSI. Keys: 1-9 / h l / Tab pick a layer; / searches (live, Enter keeps it,
+Esc clears); n / N jump to the next / previous layer with a hit; q quits.
+Polls once a second: a theme change recolors, a keymap edit reloads.
+"""
+
+import os
+import re
+import select
+import shutil
+import signal
+import sys
+import termios
+import tty
+import unicodedata
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import keymapdata as kd
+
+
+def rgb(h):
+    return int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16)
+
+
+def fg(h):
+    return "\x1b[38;2;%d;%d;%dm" % rgb(h)
+
+
+def bg(h):
+    return "\x1b[48;2;%d;%d;%dm" % rgb(h)
+
+
+def width(s):
+    return sum(0 if unicodedata.combining(c) else 2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in s)
+
+
+def fit(s, n):
+    """Centre s in n cells, cutting it with … if it's too long."""
+    if width(s) > n:
+        while s and width(s) > n - 1:
+            s = s[:-1]
+        s += "…"
+    pad = n - width(s)
+    return " " * (pad // 2) + s + " " * (pad - pad // 2)
+
+
+class App:
+    def __init__(self):
+        self.layer = 0
+        self.query = ""
+        self.typing = False
+        self.reload()
+
+    def reload(self):
+        self.data = kd.keymap()
+        self.th = kd.theme()
+        self.stamps = (kd.theme_stamp(), self.data["stamp"])
+
+    def hits(self):
+        return kd.search(self.data, self.query) if self.query else []
+
+    def draw(self):
+        th, data = self.th, self.data
+        cols, rows = shutil.get_terminal_size()
+        cw = max(4, min(9, (cols - 2) // 15))  # cells per key unit
+        rh = 4  # rows per key: border, tap, hold/shifted, border
+        hits = self.hits()
+        hit_pos = {k["pos"] for name, k in hits if name == data["layers"][self.layer]["name"]}
+        per = {}
+        for name, _ in hits:
+            per[name] = per.get(name, 0) + 1
+        base = bg(th["bg"]) + fg(th["legend"])
+        out = ["\x1b[H" + base + "\x1b[2J"]
+
+        # tabs
+        line = " "
+        for i, l in enumerate(data["layers"]):
+            label = f" {i + 1} {l['name']}" + (f" ·{per[l['name']]}" if l["name"] in per else "") + " "
+            if i == self.layer:
+                line += bg(th["held"]) + fg(th["on_held"]) + label + base
+            elif l["name"] in per:
+                line += fg(th["hit"]) + label + base
+            else:
+                line += fg(th["sub"]) + label + base
+            line += " "
+        out.append(line + "\r\n")
+        prompt = ("/" + self.query + ("█" if self.typing else "")) if (self.typing or self.query) else ""
+        hint = "1-9 h l: layer · /: search · n N: layer with hits · q: quit"
+        out.append(" " + fg(th["accent"]) + prompt + base + ("   " if prompt else "") + fg(th["dim"]) + hint + base + "\r\n\r\n")
+
+        # grid
+        top = 4
+        for k, g in zip(data["layers"][self.layer]["keys"], data["geometry"]):
+            x = 1 + round(g["x"] * cw)
+            y = top + round(g["y"] * rh)
+            w = round((g["x"] + g["w"]) * cw) - round(g["x"] * cw) - 1
+            if k["pos"] in hit_pos:
+                fill, text, sub, border = th["hit"], th["on_hit"], th["on_hit"], th["hit"]
+            elif k["held"]:
+                fill, text, sub, border = th["held"], th["on_held"], th["on_held"], th["held"]
+            else:
+                fill, border = th["key"], th["border"]
+                text = th["dim"] if k["inherited"] else th["legend"]
+                sub = th["sub"]
+            tap = "▼ held" if k["held"] else k["t"]
+            low = k["h"] or k["s"]
+            inner = w - 2
+            box = fg(border) + bg(th["bg"])
+            out.append(f"\x1b[{y};{x}H" + box + "╭" + "─" * inner + "╮")
+            out.append(f"\x1b[{y + 1};{x}H" + box + "│" + bg(fill) + fg(text) + fit(tap, inner) + box + "│")
+            out.append(f"\x1b[{y + 2};{x}H" + box + "│" + bg(fill) + fg(sub) + fit(low, inner) + box + "│")
+            out.append(f"\x1b[{y + 3};{x}H" + box + "╰" + "─" * inner + "╯")
+        out.append(base)
+
+        # every hit, on every layer
+        y = top + 5 * rh + 1
+        if self.query:
+            out.append(f"\x1b[{y};2H" + fg(th["dim"]) + f"{len(hits)} keys match “{self.query}”" + base)
+            for i, (name, k) in enumerate(hits[: max(0, rows - y - 1)]):
+                legend = k["t"] + (f" / {k['h']}" if k["h"] else "")
+                action = k["raw"] or ("unmapped → defsrc" if k["inherited"] else "")
+                out.append(f"\x1b[{y + 1 + i};2H" + fg(th["hit"]) + f"{name:<12}" + fg(th["legend"]) + f"{k['src']:<6}{legend:<18}" + fg(th["sub"]) + action + base)
+        sys.stdout.write("".join(out))
+        sys.stdout.flush()
+
+    def jump(self, step):
+        names = {n for n, _ in self.hits()}
+        n = len(self.data["layers"])
+        for i in range(1, n + 1):
+            j = (self.layer + step * i) % n
+            if self.data["layers"][j]["name"] in names:
+                self.layer = j
+                return
+
+    def key(self, ch):
+        n = len(self.data["layers"])
+        if self.typing:
+            if ch in ("\r", "\n"):
+                self.typing = False
+            elif ch == "\x1b":
+                self.typing, self.query = False, ""
+            elif ch in ("\x7f", "\b"):
+                self.query = self.query[:-1]
+            elif ch.isprintable():
+                self.query += ch
+            return True
+        if ch in ("q", "\x03"):
+            return False
+        if ch == "\x1b":
+            if not self.query:
+                return False
+            self.query = ""
+        elif ch == "/":
+            self.typing, self.query = True, ""
+        elif ch.isdigit() and 1 <= int(ch) <= n:
+            self.layer = int(ch) - 1
+        elif ch in ("l", "\t", "\x1b[C"):
+            self.layer = (self.layer + 1) % n
+        elif ch in ("h", "\x1b[Z", "\x1b[D"):
+            self.layer = (self.layer - 1) % n
+        elif ch == "n":
+            self.jump(1)
+        elif ch == "N":
+            self.jump(-1)
+        return True
+
+
+def read_keys(fd):
+    """One read can hold several keys (a paste, fast typing): split it into chars and CSI sequences."""
+    return re.findall(r"\x1b\[[0-9;]*[A-Za-z~]|.", os.read(fd, 64).decode(errors="ignore"), re.S)
+
+
+def main():
+    app = App()
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    sys.stdout.write("\x1b[?1049h\x1b[?25l")
+    signal.signal(signal.SIGWINCH, lambda *_: app.draw())
+    try:
+        tty.setraw(fd)
+        app.draw()
+        while True:
+            r, _, _ = select.select([fd], [], [], 1.0)
+            if r:
+                if not all(app.key(k) for k in read_keys(fd)):
+                    break
+                app.draw()
+            elif (kd.theme_stamp(), kd.keymap()["stamp"]) != app.stamps:
+                app.reload()
+                app.draw()
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+        sys.stdout.write("\x1b[0m\x1b[?25h\x1b[?1049l")
+        sys.stdout.flush()
+
+
+main()

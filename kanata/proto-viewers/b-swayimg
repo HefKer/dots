@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""PROTOTYPE (hefker/dots-issues#54), throwaway. Keymap viewer (b): swayimg, one image per layer.
+
+Splits keymap-drawer's themed SVG into one file per layer and opens them in swayimg with
+b-swayimg.lua (not the real init.lua), app-id kanata-keymap (override: APPID=...).
+Keys: 1-9 jump to a layer, PageDown/PageUp, l/h, Tab cycle, / opens b-search in a terminal, q/Esc quit.
+A watcher redraws on a theme change or keymap edit and signals swayimg (USR1) to reload.
+b-search's pick is written to goto and signalled with USR2, so swayimg jumps to that layer.
+"""
+
+import os
+import re
+import signal
+import subprocess
+import sys
+import threading
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import keymapdata as kd
+
+OUT = kd.CACHE / "swayimg"
+
+
+def argb(hex_):
+    return "0xff" + hex_.lstrip("#")
+
+
+def split_layers():
+    """keymap-drawer's SVG holds every layer stacked; cut out one file each, with unmapped keys named."""
+    data = kd.keymap()
+    full = OUT / "all.svg"
+    kd.draw_svg(full)
+    svg = full.read_text()
+    head_end = svg.index("</style>") + len("</style>")
+    head = svg[:head_end]
+    starts = [m.start() for m in re.finditer(r'<g transform="translate\(30, \d+\)" class="layer-', svg)]
+    ends = starts[1:] + [svg.rindex("</svg>")]
+    width = re.search(r'<svg width="(\d+)"', svg).group(1)
+    height = 336
+    head = re.sub(r'<svg width="\d+" height="\d+" viewBox="[^"]*"', f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}"', head)
+    head += f"\n<style>text.inherited {{ fill: {kd.theme()['dim']}; }}</style>"
+    paths = []
+    for i, (s, e, layer) in enumerate(zip(starts, ends, data["layers"])):
+        block = re.sub(r'translate\(30, \d+\)', "translate(30, 0)", svg[s:e], count=1)
+        for k in layer["keys"]:
+            if k["inherited"]:
+                esc = k["src"].replace("&", "&amp;").replace("<", "&lt;")
+                block = re.sub(
+                    rf'(<g transform="[^"]*" class="key keypos-{k["pos"]}">\n<rect[^>]*/>\n)(</g>)',
+                    rf'\g<1><text x="0" y="0" class="key tap inherited">{esc}</text>\n\2', block, count=1)
+        path = OUT / f"{i + 1:02d}-{layer['name']}.svg"
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(head + "\n" + block + "</svg>\n")
+        tmp.replace(path)
+        paths.append(path)
+    th = kd.theme()
+    (OUT / "colors.lua").write_text(f"return {{ bg = {argb(th['bg'])}, fg = {argb(th['legend'])} }}\n")
+    return paths
+
+
+def main():
+    OUT.mkdir(parents=True, exist_ok=True)
+    paths = split_layers()
+    proc = subprocess.Popen([
+        kd.swayimg(), f"--appid={os.environ.get('APPID', 'kanata-keymap')}", "-c", str(HERE / "b-swayimg.lua"),
+        *map(str, paths),
+    ], env=os.environ | {"KEYMAP_DIR": str(OUT), "KEYMAP_SEARCH": str(HERE / "b-search")})
+    (OUT / "pid").write_text(str(proc.pid))
+
+    def watch():
+        last = (kd.theme_stamp(), kd.KBD.stat().st_mtime_ns, kd.DRAWER_YAML.stat().st_mtime_ns)
+        while proc.poll() is None:
+            time.sleep(1)
+            now = (kd.theme_stamp(), kd.KBD.stat().st_mtime_ns, kd.DRAWER_YAML.stat().st_mtime_ns)
+            if now != last:
+                last = now
+                split_layers()
+                proc.send_signal(signal.SIGUSR1)
+
+    threading.Thread(target=watch, daemon=True).start()
+    proc.wait()
+    (OUT / "pid").unlink(missing_ok=True)
+
+
+main()

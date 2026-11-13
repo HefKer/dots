@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""PROTOTYPE (hefker/dots-issues#54), throwaway. Keymap viewer (b)'s search: fzf over every key on every layer.
+
+Prints the picked `layer · key · action` lines. With --goto (how b-swayimg's / runs it), also
+jumps a running b-swayimg to the picked key's layer. fzf is colored from DMS's matugen palette;
+only the dim last field (legend, action, alias and its definition) is searched, so `esc` finds @cap's tap and alias names too.
+"""
+
+import os
+import signal
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import keymapdata as kd
+
+th = kd.theme()
+data = kd.keymap()
+rows = []
+for layer in data["layers"]:
+    for k in layer["keys"]:
+        legend = k["t"] + (f" / {k['h']}" if k["h"] else "") + (f" ({k['s']})" if k["s"] else "")
+        action = k["raw"] or ("held: activates layer" if k["held"] else "unmapped → defsrc")
+        rows.append(f"{layer['name']:<11} · {k['src']:<5} · {legend:<22} · {action:<24}\t\x1b[2m{k['search']}\x1b[0m")
+
+colors = ",".join(f"{k}:{v}" for k, v in {
+    "bg": th["bg"], "bg+": th["key"], "fg": th["sub"], "fg+": th["legend"], "hl": th["hit"], "hl+": th["hit"],
+    "border": th["border"], "prompt": th["accent"], "pointer": th["accent"], "info": th["dim"], "header": th["dim"],
+}.items())
+pick = subprocess.run(
+    ["fzf", "--multi", "--exact", "--layout=reverse", "--delimiter", "\t", "--ansi", "--nth", "2", "--color", colors,
+     "--prompt", "key> ", "--header", "layer       · key   · legend                 · action", "--no-sort",
+     "--bind", "change:first"],
+    input="\n".join(rows), capture_output=False, stdout=subprocess.PIPE, text=True,
+).stdout
+for line in pick.splitlines():
+    print(line.split("\t")[0])
+if "--goto" in sys.argv and pick:
+    out = kd.CACHE / "swayimg"
+    (out / "goto").write_text(pick.split(" ", 1)[0] + "\n")
+    try:
+        os.kill(int((out / "pid").read_text()), signal.SIGUSR2)
+    except (OSError, ValueError):
+        pass
