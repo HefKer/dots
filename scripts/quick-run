@@ -4,7 +4,8 @@
 # stays until a key is pressed. If it fails or runs longer than 10 s, a notification says so.
 #
 # Saved commands, name<TAB>command in fish's quick-run.tsv: `s` in normal mode picks one
-# onto the command line, unrun; `s` on the closing screen names and saves the one just run.
+# onto the command line, unrun (Ctrl+D in the picker deletes one); `s` on the closing
+# screen names and saves the one just run.
 #
 # One at a time. Mod+; again:
 #   - while a command runs in the focused quick run: hides it on the "hidden" workspace;
@@ -15,11 +16,20 @@
 #   quick-run          the Mod+; action above
 #   quick-run show     bring a hidden quick run back, else focus it (the notification's Show)
 #   quick-run hidden   exit 0 if the quick run is hidden (asked by its own fish)
+#   quick-run forget NAME   delete the saved command NAME (the picker's Ctrl+D)
 set -euo pipefail
 app=quick-run
 hidden_ws=hidden
 running=${XDG_RUNTIME_DIR:-/tmp}/quick-run.running
 self=$(realpath "$0")
+list=${XDG_CONFIG_HOME:-$HOME/.config}/fish/quick-run.tsv
+
+if [[ ${1:-} == forget ]]; then
+	[[ -f $list ]] || exit 0
+	N=$2 awk -F '\t' '$1 != ENVIRON["N"]' "$list" >"$list.tmp"
+	mv "$list.tmp" "$list"
+	exit
+fi
 
 win=$(niri msg -j windows | jq -c --arg a "$app" 'first(.[] | select(.app_id == $a)) // empty')
 id=$(jq -r '.id // empty' <<<"$win")
@@ -70,7 +80,7 @@ rm -f "$running"
 # -C runs after the user's config, so abbrs, functions, atuin and the clipboard binds
 # (fish conf.d/22-clipboard.fish) are loaded. A marker file says a command is running.
 init='
-set -g __quick_run_list $__fish_config_dir/quick-run.tsv
+set -g __quick_run_list $QUICK_RUN_LIST
 # Installed at the first prompt, once fish_vi_key_bindings has run, so it is not erased.
 function __quick_run_normal --on-event fish_prompt
     functions -e __quick_run_normal
@@ -84,7 +94,9 @@ function __quick_run_pick
         __fish_echo echo (set_color --dim)"No saved commands yet: s on the closing screen saves one"(set_color normal)
         return
     end
-    set -l pick (fzf --delimiter \t --prompt "saved> " --no-multi <$__quick_run_list)
+    set -l pick (fzf --delimiter \t --prompt "saved> " --no-multi --header "Ctrl+D deletes" \
+        --with-shell "bash -c" --bind "ctrl-d:execute-silent($QUICK_RUN_SELF forget {1})+reload(cat $__quick_run_list)" \
+        <$__quick_run_list)
     and commandline -r -- (string split -m1 -f2 \t -- $pick)
     commandline -f repaint
 end
@@ -138,5 +150,5 @@ end
 '
 
 cd "$HOME"
-QUICK_RUN_SELF=$self QUICK_RUN_RUNNING=$running exec wezterm start --always-new-process --class "$app" --cwd "$HOME" -- \
+QUICK_RUN_SELF=$self QUICK_RUN_RUNNING=$running QUICK_RUN_LIST=$list exec wezterm start --always-new-process --class "$app" --cwd "$HOME" -- \
 	fish -C "$init"

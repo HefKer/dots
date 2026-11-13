@@ -25,5 +25,6 @@ to `~/.config/niri-host.kdl`.
   on; a hidden run that succeeds closes itself and says so, and one that fails
   notifies with a Show button. Long, rare commands are kept as saved
   commands: `s` on the closing screen names the one just run, and `s` in normal
-  mode picks one through fzf onto the command line, unrun, to edit first.
+  mode picks one through fzf onto the command line, unrun, to edit first
+  (Ctrl+D in the picker deletes one).
   [`quick-run`](../scripts/quick-run)
