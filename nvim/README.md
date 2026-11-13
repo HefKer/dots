@@ -139,6 +139,15 @@ Claude Code from Neovim.
   [62b92e1](https://github.com/HefKer/dots/commit/62b92e1),
   [cb67a01](https://github.com/HefKer/dots/commit/cb67a01),
   [4eec5ac](https://github.com/HefKer/dots/commit/4eec5ac)
+- <a id="habit-capture"></a>**Habit capture.** When you sense a better way
+  existed, `<leader>hh` (or `:VimCapture`) asks what you were trying to do and
+  appends an entry to a Vim inbox in the Obsidian vault: the last ~30 keys, the
+  mode, file, and the text before and after them (the changed lines with context,
+  or the cursor's surroundings when the keys only moved it). Buffers that may
+  hold secrets (`*.age`, `*.gpg`, anything under `/tmp` or `/dev/shm`) give the
+  note alone. `<leader>hi` opens the inbox; a Claude skill answers each entry
+  with the idiomatic keys and files it as a drill.
+  [`config/habit_capture.lua`](.config/nvim/lua/config/habit_capture.lua)
 - <a id="markdown"></a>**Obsidian-style markdown.** On top of LazyVim's markdown
   extra, marksman resolves `[[wikilinks]]` by file name as Obsidian does and hides
   unresolved-link errors inside a vault, and markdownlint is cut down to rules

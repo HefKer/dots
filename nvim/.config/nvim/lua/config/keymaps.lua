@@ -59,3 +59,13 @@ for _, lhs in ipairs({ "<leader>o", "gO" }) do
     require("config.outline").open()
   end, { desc = "Outline" })
 end
+
+-- Habit capture: the last keys, the text before and after, and a note, to the Vim
+-- inbox in the vault for /vim-inbox to answer (config/habit_capture.lua).
+require("config.habit_capture").setup()
+vim.keymap.set("n", "<leader>hh", function()
+  require("config.habit_capture").capture("<leader>hh")
+end, { desc = "Capture Habit" })
+vim.keymap.set("n", "<leader>hi", function()
+  require("config.habit_capture").open_inbox()
+end, { desc = "Vim Inbox" })
