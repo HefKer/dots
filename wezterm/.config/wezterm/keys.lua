@@ -396,6 +396,17 @@ local keys = {
 		mods = "CTRL|SHIFT",
 		action = act.DisableDefaultAssignment,
 	},
+	-- herdr's new_tab and close_tab; WezTerm's own tab is Alt+T.
+	{
+		key = "t",
+		mods = "CTRL|SHIFT",
+		action = act.DisableDefaultAssignment,
+	},
+	{
+		key = "x",
+		mods = "CTRL|SHIFT",
+		action = act.DisableDefaultAssignment,
+	},
 }
 
 -- herdr's switch_workspace takes ctrl+shift+1..9. WezTerm's ActivateTab
