@@ -87,6 +87,13 @@ file as it is now and to the commit that added it, which explains why.
 - <a id="file-picker"></a>**yazi as the file picker.** Upload dialogs open yazi
   in a terminal instead of Qt's picker.
   [`filepicker.py`](.config/qutebrowser/filepicker.py)
+- <a id="number-step"></a>**vim's Ctrl-A/Ctrl-X in text fields.** In insert
+  mode, `Alt+Up`/`Alt+Down` step the number the caret touches, or the next one
+  on its line. Zero padding is kept, the edit goes on the field's undo stack, and
+  the page gets a real `input` event. Ctrl+A and Ctrl+X stay select-all and cut.
+  `Ctrl+Shift+V` pastes the clipboard as plain text.
+  [`js/number.js`](.config/qutebrowser/js/number.js),
+  [`binds.py`](.config/qutebrowser/binds.py)
 
 ### Sessions
 

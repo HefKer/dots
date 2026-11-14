@@ -216,6 +216,19 @@ config.bind("<Alt-/>", video("speed", 0))
 config.bind("<Alt-k>", video("volume", 0.05))
 config.bind("<Alt-j>", video("volume", -0.05))
 
+# --- Insert mode ---
+# vim's Ctrl-A/Ctrl-X on the number at the caret; Alt+Up/Down so the text field
+# keeps Ctrl+A (select all) and Ctrl+X (cut)
+NUMBER_JS = " ".join(
+    line.strip()
+    for line in (JS / "number.js").read_text().splitlines()
+    if not line.lstrip().startswith("//")
+)
+config.bind("<Alt-Up>", f"jseval -q ({NUMBER_JS})(1)", mode="insert")
+config.bind("<Alt-Down>", f"jseval -q ({NUMBER_JS})(-1)", mode="insert")
+# Paste as plain text, dropping the clipboard's formatting
+config.bind("<Ctrl-Shift-v>", "insert-text -- {clipboard}", mode="insert")
+
 ## qutewarden ([p]asswords)
 # Rare actions are aliases, so `:` completion finds them instead of a bind
 c.aliases["vault-sync"] = "spawn --userscript qutewarden sync"
