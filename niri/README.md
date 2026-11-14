@@ -28,3 +28,9 @@ to `~/.config/niri-host.kdl`.
   mode picks one through fzf onto the command line, unrun, to edit first
   (Ctrl+D in the picker deletes one).
   [`quick-run`](../scripts/quick-run)
+- <a id="workspace-merge"></a>**Merge a whole workspace into any other.**
+  Mod+Shift+Ctrl+P lists every workspace on every monitor in fuzzel, with its
+  window count, and moves all the focused workspace's windows into the pick.
+  Columns move whole and in order, so stacked windows stay stacked, and it
+  works across monitors although niri's workspace indices are per-monitor.
+  [`workspace-merge`](../scripts/workspace-merge)

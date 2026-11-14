@@ -489,9 +489,12 @@ binds {
     // Mod+Shift+Ctrl+Left  { move-window-to-monitor-left; }
     // ...
 
-    // And you can also move a whole workspace to another monitor:
-    // Mod+Shift+Ctrl+Left  { move-workspace-to-monitor-left; }
-    // ...
+    // Ctrl moves, Shift widens it to every window: the focused workspace, windows and all, to the
+    // other monitor (O). Mod+Shift+Ctrl+H/J/K/L already move a column to a monitor.
+    Mod+Shift+Ctrl+O hotkey-overlay-title="Move the Workspace to the Other Monitor" { move-workspace-to-monitor-next; }
+    // Mod+P's pick, moving every window: choose any workspace on any monitor in fuzzel and the focused
+    // workspace's windows merge into it, columns kept whole and in order (~/dots/scripts/workspace-merge).
+    Mod+Shift+Ctrl+P hotkey-overlay-title="Merge the Workspace into a Picked One" { spawn-sh "~/dots/scripts/workspace-merge"; }
 
     Mod+U              { focus-workspace-down; }
     Mod+I              { focus-workspace-up; }

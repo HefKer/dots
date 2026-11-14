@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2016  # the jq programs are single-quoted on purpose
+# Workspace merge (niri's Mod+Shift+Ctrl+P): pick any workspace, on any monitor, in fuzzel,
+# and every window of the focused workspace moves into it; focus follows.
+# Columns move whole and in order, so stacked windows stay stacked; floating windows follow.
+#
+# Workspace indices are per-monitor and niri resolves one against the focused monitor, so
+# the target is focused first, and columns cross monitors with move-column-to-monitor,
+# which lands them on that monitor's active workspace: the target.
+set -euo pipefail
+workspaces=$(niri msg --json workspaces)
+windows=$(niri msg --json windows)
+src=$(jq '.[] | select(.is_focused) | .id' <<<"$workspaces")
+src_out=$(jq -r '.[] | select(.is_focused) | .output' <<<"$workspaces")
+
+# Every other workspace: by monitor, then index. Empty ones say so.
+rows='[.[] | select(.id != $src)] | sort_by(.output, .idx)[]'
+mapfile -t targets < <(jq -r --argjson src "$src" "$rows"' | "\(.id) \(.idx) \(.output)"' <<<"$workspaces")
+[[ ${#targets[@]} -gt 0 ]] || exit 0
+i=$(jq -r --argjson src "$src" --argjson win "$windows" "$rows"' |
+      . as $w | ([$win[] | select(.workspace_id == $w.id)] | length) as $n
+      | "\(.output)  ·  \(.name // .idx)  ·  \(if $n == 0 then "empty" else "\($n) windows" end)"' <<<"$workspaces" |
+	fuzzel --dmenu --index --prompt "merge into: ") || exit 0
+[[ $i =~ ^[0-9]+$ ]] && ((i < ${#targets[@]})) || exit 0
+read -r _ idx out <<<"${targets[$i]}"
+
+# One window per column, left to right; then each floating window.
+mapfile -t cols < <(jq -r --argjson src "$src" '
+  [.[] | select(.workspace_id == $src and (.is_floating | not))]
+  | group_by(.layout.pos_in_scrolling_layout[0])[] | .[0].id' <<<"$windows")
+mapfile -t floats < <(jq -r --argjson src "$src" '
+  .[] | select(.workspace_id == $src and .is_floating) | .id' <<<"$windows")
+
+act() { niri msg action "$@" >/dev/null; }
+act focus-monitor "$out"
+act focus-workspace "$idx"
+for id in "${cols[@]}" "${floats[@]}"; do
+	act focus-window --id "$id"
+	if [[ $out == "$src_out" ]]; then
+		if [[ " ${floats[*]} " == *" $id "* ]]; then
+			act move-window-to-workspace --focus false "$idx"
+		else
+			act move-column-to-workspace --focus false "$idx"
+		fi
+	elif [[ " ${floats[*]} " == *" $id "* ]]; then
+		act move-window-to-monitor "$out"
+	else
+		act move-column-to-monitor "$out"
+	fi
+done
+# By window, not index: the emptied source may be gone, shifting the indices after it.
+first=("${cols[@]}" "${floats[@]}")
+[[ ${#first[@]} -eq 0 ]] || act focus-window --id "${first[0]}"
