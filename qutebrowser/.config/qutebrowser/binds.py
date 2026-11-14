@@ -92,6 +92,10 @@ c.hints.selectors["scrollable"] = ["[data-qb-hint=scrollable]"]
 # Hint a file input, hidden ones too (drag-and-drop sites), to open the picker
 config.bind(";u", "spawn --userscript js-hint upload normal")
 c.hints.selectors["upload"] = ["[data-qb-hint=upload]"]
+# osugacha: hint the route's recurring buttons (to the lift, auto, …) by text, with a real
+# hint click; a lone one is clicked straight away. Lists per route in js/hint-osug.js
+config.bind(";g", "spawn --userscript js-hint --follow-lone osug normal")
+c.hints.selectors["osug"] = ["[data-qb-hint=osug]"]
 
 config.bind("gG", "tab-give")
 
