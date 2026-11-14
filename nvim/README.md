@@ -63,6 +63,10 @@ Claude Code from Neovim.
   - `<leader>ak` swaps the reply for Claude's task list, rebuilt from its task
     tools in the transcript and updated as it works; the bar counts done tasks.
   - Each bar ends with its binds, most-used first, as many as fit on one line.
+    `<leader>a?` lists the bar's binds in a picker: `Enter` shows or hides one,
+    `Alt+j/k` reorders them, which decides which fit, and `Ctrl+E` opens their
+    defaults in `prompt.lua`. Changes are kept in `claude-prompt-hints.json` under
+    nvim's state dir, merged over the defaults.
   - `<leader>ap` in any other nvim in the tab adds `@file`, or `@file#L10-20`
     for a selection, to the draft, relative to Claude's directory. It opens the
     prompt pane first if there isn't one, and focuses it to keep writing.

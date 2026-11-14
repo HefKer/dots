@@ -443,6 +443,81 @@ local prompt_hints = {
   { "k", "tasks" },
 }
 
+local default_hints = { viewer = viewer_hints, pending = pending_hints, prompt = prompt_hints }
+
+-- <leader>a? overrides, keyed by bar: { order = { what... }, hidden = { what... } }, a hint
+-- named by its `what`. Merged over the defaults above, so a hint dropped from them drops
+-- out here, and a new one appears at its default position.
+local hints_path = vim.fn.stdpath("state") .. "/claude-prompt-hints.json"
+local hint_overrides
+
+local function read_hint_overrides()
+  if not hint_overrides then
+    local ok, decoded = pcall(function()
+      return vim.json.decode(table.concat(vim.fn.readfile(hints_path), "\n"))
+    end)
+    hint_overrides = ok and type(decoded) == "table" and decoded or {}
+  end
+  return hint_overrides
+end
+
+local function write_hint_overrides()
+  vim.fn.writefile({ vim.json.encode(hint_overrides) }, hints_path)
+end
+
+-- Every hint of the bar in its order, each with `hidden` set from the overrides.
+---@param bar "viewer"|"pending"|"prompt"
+local function bar_hints(bar)
+  local saved = read_hint_overrides()[bar] or {}
+  local by_what, ordered, placed = {}, {}, {}
+  for _, hint in ipairs(default_hints[bar]) do
+    by_what[hint[2]] = hint
+  end
+  for _, what in ipairs(saved.order or {}) do
+    if by_what[what] and not placed[what] then
+      placed[what] = true
+      table.insert(ordered, by_what[what])
+    end
+  end
+  for i, hint in ipairs(default_hints[bar]) do
+    if not placed[hint[2]] then
+      table.insert(ordered, math.min(i, #ordered + 1), hint)
+    end
+  end
+  local hidden = {}
+  for _, what in ipairs(saved.hidden or {}) do
+    hidden[what] = true
+  end
+  return vim.tbl_map(function(hint)
+    return vim.tbl_extend("force", hint, { hidden = hidden[hint[2]] or nil })
+  end, ordered)
+end
+
+local function shown_hints(bar)
+  return vim.tbl_filter(function(hint)
+    return not hint.hidden
+  end, bar_hints(bar))
+end
+
+---@param bar "viewer"|"pending"|"prompt"
+---@param hints table[] from bar_hints, in their new order
+local function save_bar_hints(bar, hints)
+  read_hint_overrides()[bar] = {
+    order = vim.tbl_map(function(hint)
+      return hint[2]
+    end, hints),
+    hidden = vim.tbl_map(
+      function(hint)
+        return hint[2]
+      end,
+      vim.tbl_filter(function(hint)
+        return hint.hidden
+      end, hints)
+    ),
+  }
+  write_hint_overrides()
+end
+
 local function render_hints(hints)
   local plain, leader = {}, {}
   for _, hint in ipairs(hints) do
@@ -498,7 +573,7 @@ local function set_winbars()
     end
     local bar = "%#WinBar# 󰚩 " .. title .. status_line()
     vim.wo[state.viewer.win][0].winbar = bar
-      .. fit_hints(state.viewer.win, bar, state.view == "pending" and pending_hints or viewer_hints)
+      .. fit_hints(state.viewer.win, bar, shown_hints(state.view == "pending" and "pending" or "viewer"))
   end
   if state.prompt.win and vim.api.nvim_win_is_valid(state.prompt.win) then
     local where = ""
@@ -508,7 +583,7 @@ local function set_winbars()
       where = "%#Comment# · %#Directory# " .. dir .. branch
     end
     local bar = "%#WinBar# 󰏫 Prompt" .. where
-    vim.wo[state.prompt.win][0].winbar = bar .. fit_hints(state.prompt.win, bar, prompt_hints)
+    vim.wo[state.prompt.win][0].winbar = bar .. fit_hints(state.prompt.win, bar, shown_hints("prompt"))
   end
 end
 
@@ -1327,6 +1402,99 @@ local function pick_draft()
   })
 end
 
+-- <leader>a?: the hints of the bar the cursor is in, to show or hide (<CR>) and reorder
+-- (Alt+j/k), which decides which fit; Ctrl+E opens the bar's defaults in this file.
+local function pick_hints()
+  local bar = vim.api.nvim_get_current_win() == state.prompt.win and "prompt"
+    or state.view == "pending" and "pending"
+    or "viewer"
+  local function edit_defaults(picker)
+    picker:close()
+    local file = debug.getinfo(1, "S").source:sub(2)
+    local line = 1
+    for i, text in ipairs(vim.fn.readfile(file)) do
+      if text:match("^local " .. bar .. "_hints = {") then
+        line = i
+        break
+      end
+    end
+    -- The viewer's window, where files opened in the pane belong; <leader>ar comes back.
+    if state.viewer.win and vim.api.nvim_win_is_valid(state.viewer.win) then
+      vim.api.nvim_set_current_win(state.viewer.win)
+    end
+    vim.cmd.edit(vim.fn.fnameescape(file))
+    vim.api.nvim_win_set_cursor(0, { line, 0 })
+    vim.cmd.normal({ "zt", bang = true })
+  end
+  -- Applies a change to the bar's hints and keeps the cursor on the hint at `cursor`.
+  local function change(picker, cursor, fn)
+    local hints = bar_hints(bar)
+    fn(hints)
+    save_bar_hints(bar, hints)
+    set_winbars()
+    picker.list:set_target(cursor, nil, { force = true })
+    picker:find()
+  end
+  local function move(by)
+    return function(picker, item)
+      if not item then
+        return
+      end
+      local to = item.pos + by
+      change(picker, math.max(1, math.min(to, item.count)), function(hints)
+        if to >= 1 and to <= #hints then
+          hints[item.pos], hints[to] = hints[to], hints[item.pos]
+        end
+      end)
+    end
+  end
+  Snacks.picker.pick({
+    title = ("%s bar hints · <CR> show/hide · Alt+j/k move · Ctrl+E edit defaults"):format(bar),
+    finder = function()
+      local hints = bar_hints(bar)
+      local items = {}
+      for i, hint in ipairs(hints) do
+        table.insert(items, { pos = i, count = #hints, hint = hint, text = hint[1] .. " " .. hint[2] })
+      end
+      return items
+    end,
+    format = function(item)
+      local hint = item.hint
+      return {
+        { hint.hidden and "󰈉 " or "󰈈 ", hint.hidden and "Comment" or "DiagnosticOk" },
+        { ("%-16s"):format((hint.plain and "" or "<leader>a ") .. hint[1]), hint.hidden and "Comment" or "Special" },
+        { " " },
+        { hint[2], hint.hidden and "Comment" or nil },
+      }
+    end,
+    layout = { preset = "select" },
+    confirm = function(picker, item)
+      if item then
+        change(picker, item.pos, function(hints)
+          hints[item.pos].hidden = not hints[item.pos].hidden or nil
+        end)
+      end
+    end,
+    actions = {
+      hint_down = move(1),
+      hint_up = move(-1),
+      hint_source = edit_defaults,
+    },
+    win = {
+      input = {
+        keys = {
+          ["<a-j>"] = { "hint_down", mode = { "n", "i" } },
+          ["<a-k>"] = { "hint_up", mode = { "n", "i" } },
+          ["<c-e>"] = { "hint_source", mode = { "n", "i" } },
+        },
+      },
+      list = {
+        keys = { ["<a-j>"] = "hint_down", ["<a-k>"] = "hint_up", ["<c-e>"] = "hint_source" },
+      },
+    },
+  })
+end
+
 -- Where config.prompt_ref finds this pane's nvim, keyed by the herdr pane it runs in.
 -- Without the pane id's colon, which nvim would read as a TCP host:port.
 function M.socket(pane_id)
@@ -1890,6 +2058,7 @@ local function open_viewer(prompt_win)
   map("n", "<leader>ac", to_claude, "Claude's Pane")
   map("n", "<leader>ai", interrupt, "Interrupt Claude")
   map("n", "<leader>am", cycle_mode, "Cycle Permission Mode")
+  map("n", "<leader>a?", pick_hints, "This Bar's Hints")
   map_answers(buf)
   -- The reply can't be edited, so insert keys move to the prompt and run there.
   for _, key in ipairs({ "i", "a", "I", "A", "o", "O" }) do
@@ -2050,6 +2219,7 @@ function M.open(opts)
   map("n", "<leader>am", cycle_mode, "Cycle Permission Mode")
   -- Beside the Alt scroll keys: interrupting is wanted mid-sentence, without leaving insert.
   map({ "n", "i" }, "<M-c>", interrupt, "Interrupt Claude")
+  map("n", "<leader>a?", pick_hints, "This Bar's Hints")
   map_answers(buf)
   vim.api.nvim_create_user_command(
     "ClaudePane",
