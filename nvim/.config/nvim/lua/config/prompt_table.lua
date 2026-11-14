@@ -4,9 +4,21 @@
 -- wrapping shows the cursor row as raw markdown. Markers are stripped rather than
 -- concealed, since nvim wraps on the raw width, and code spans, header and borders
 -- are coloured with extmarks instead.
+--
+-- Rows drawn into a markdown buffer (the viewer) are still parsed as markdown, so the
+-- inline parser would pair a stray _ or * across rows and conceal it, shifting the
+-- borders. With `escape`, each such marker is drawn backslash-escaped: the parser
+-- conceals only the backslash, always, and the grid is narrowed until its raw width,
+-- which is what nvim wraps on, still fits.
 local M = {}
 
 local dw = vim.fn.strdisplaywidth
+
+-- ASCII punctuation the inline parser can conceal or pair: escapes, emphasis,
+-- strikethrough, links, images, autolinks and HTML, entities, latex.
+local function escape(text)
+  return (text:gsub("[\\`*_%[%]<>&!~$]", "\\%0"))
+end
 
 -- Cell text -> segments { text, code, bold }, cut at ` and ** (not inside code).
 local function segments(text)
@@ -144,7 +156,8 @@ end
 ---@param rows string[][] header first
 ---@param width integer columns available
 ---@param emit fun(line: string, marks: table[], ri?: integer) ri: the row a content line belongs to
-local function draw(rows, width, emit)
+---@param esc? boolean backslash-escape markdown markers in cell text
+local function draw(rows, width, emit, esc)
   local k = 0
   for _, r in ipairs(rows) do
     k = math.max(k, #r)
@@ -182,7 +195,7 @@ local function draw(rows, width, emit)
           end
           for _, piece in ipairs(unit) do
             local s = #line
-            line, used = line .. piece.text, used + dw(piece.text)
+            line, used = line .. (esc and escape(piece.text) or piece.text), used + dw(piece.text)
             local e = #line
             if piece.code then
               table.insert(marks, { s, e, "RenderMarkdownCodeInline" })
@@ -217,8 +230,10 @@ end
 -- Redraws every pipe table outside code fences in `lines` as a box grid `width` wide.
 ---@param lines string[]
 ---@param width integer
+---@param opts? { escape?: boolean } escape: the grid goes into a markdown buffer (see top)
 ---@return prompt_table.Rendered
-function M.render(lines, width)
+function M.render(lines, width, opts)
+  local esc = opts and opts.escape
   local out = { lines = {}, marks = {}, source = {}, line = {} }
   local i, fence = 1, nil
   while i <= #lines do
@@ -234,7 +249,24 @@ function M.render(lines, width)
         table.insert(rows, split_row(lines[i]))
         i = i + 1
       end
-      draw(rows, width, function(text, marks, ri)
+      -- escapes are hidden but count toward wrapping: narrow until the widest raw line fits
+      local drawn, w = {}, width
+      for _ = 1, 5 do
+        drawn = {}
+        draw(rows, w, function(text, marks, ri)
+          table.insert(drawn, { text, marks, ri })
+        end, esc)
+        local over = 0
+        for _, d in ipairs(drawn) do
+          over = math.max(over, dw(d[1]) - width)
+        end
+        if over <= 0 then
+          break
+        end
+        w = w - over
+      end
+      for _, d in ipairs(drawn) do
+        local text, marks, ri = d[1], d[2], d[3]
         table.insert(out.lines, text)
         local row = #out.lines
         out.source[row] = { first, i - 1 }
@@ -245,7 +277,7 @@ function M.render(lines, width)
         for _, m in ipairs(marks) do
           table.insert(out.marks, { row - 1, m[1], m[2], m[3], 110 })
         end
-      end)
+      end
     else
       table.insert(out.lines, line)
       i = i + 1

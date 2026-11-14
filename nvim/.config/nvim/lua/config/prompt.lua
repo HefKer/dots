@@ -542,7 +542,7 @@ local function draw(lines)
     width = info.width - info.textoff
   end
   -- one column short, so a full-width box row doesn't wrap
-  local drawn = tables.render(lines, width - 1)
+  local drawn = tables.render(lines, width - 1, { escape = true })
   vim.bo[buf].modifiable = true
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, drawn.lines)
   vim.bo[buf].modifiable = false
