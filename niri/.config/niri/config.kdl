@@ -416,7 +416,7 @@ binds {
     Mod+G hotkey-overlay-title="Pick a Meme" { spawn "meme-pick"; }
     // Used often enough for rung 1; Shift is meme-pick's counterpart (sounds beside memes).
     Mod+Shift+G hotkey-overlay-title="Play a Sound" { spawn "sound-pick"; }
-    // Type "10m tea" or "7:30 standup" to set a timer or alarm, or pick a pending one to cancel or snooze; synced across hosts (from the nixos flake's alarm package).
+    // Type "10m tea", "7:30 standup" or "weekdays 7:30 gym" to set a timer, alarm or repeating alarm, or pick a pending one to cancel or snooze; synced across hosts (from the nixos flake's alarm package).
     Mod+A hotkey-overlay-title="Set an Alarm" { spawn "alarm" "prompt"; }
     // Pick the project (guessed from this window), type "title // body"; filed as a GitHub issue in the background, queued if offline (from the nixos flake's backlog package).
     Mod+B hotkey-overlay-title="Capture an Idea" { spawn "backlog" "prompt"; }
