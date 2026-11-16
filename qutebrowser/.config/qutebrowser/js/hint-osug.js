@@ -8,9 +8,12 @@
 //
 // Each route lists tiers of labels, first tier first: only the first tier with
 // a button on screen is hinted, so a lone one there is clicked straight away.
+// A tier entry { css } takes the elements matching a selector instead, for
+// buttons with no fixed text (the Depths door tiles).
 (() => {
   const ROUTES = {
-    '/depths': [['on to elite', 'to the lift', 'auto']],
+    '/depths': [['on to elite', 'on to gate', 'on to boss', 'descend', 'to the lift', 'auto'],
+      [{ css: '.dp-doors .dp-door' }]],
     '/farm': [['auto']],
     '/packs': [['open next', 'reveal all', 'done'], ['open pack']],
     '/tower': [['auto']],
@@ -20,7 +23,7 @@
   if (!route) return;
 
   const norm = s => s.toLowerCase().replace(/\s+/g, ' ').trim();
-  let labels;
+  let labels, selectors;
   const matches = text => labels.some(l =>
     text === l || (text.startsWith(l) && !/\p{L}/u.test(text[l.length])));
   const CLICKABLE = 'button, [role=button], a, input[type=button], input[type=submit]';
@@ -55,19 +58,23 @@
       el.getClientRects().length > 0;
   };
 
+  const add = (el, found) => {
+    if (el.disabled || el.getAttribute('aria-disabled') === 'true' || !onScreen(el)) return;
+    if (NEVER.test(norm(el.innerText || ''))) return;
+    found.add(el);
+  };
   const find = (root, found = new Set()) => {
+    for (const css of selectors) for (const el of root.querySelectorAll(css)) add(el, found);
     for (const label of root.querySelectorAll('*')) {
       if (label.shadowRoot) find(label.shadowRoot, found);
-      if (!holdsLabel(label)) continue;
-      const el = target(label);
-      if (el.disabled || el.getAttribute('aria-disabled') === 'true' || !onScreen(el)) continue;
-      if (NEVER.test(norm(el.innerText || ''))) continue;
-      found.add(el);
+      if (labels.length && holdsLabel(label)) add(target(label), found);
     }
     return found;
   };
 
-  for (labels of ROUTES[route]) {
+  for (const tier of ROUTES[route]) {
+    labels = tier.filter(l => typeof l === 'string');
+    selectors = tier.filter(l => l.css).map(l => l.css);
     const found = find(document);
     if (!found.size) continue;
     for (const el of found) {
