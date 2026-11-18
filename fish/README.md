@@ -68,6 +68,13 @@ Commands are autoloaded from [`functions/`](.config/fish/functions/), one per fi
   second account.
   [`csend.fish`](.config/fish/functions/csend.fish),
   [`claude-hulio.fish`](.config/fish/functions/claude-hulio.fish)
+- <a id="agents-slice"></a>**Claude and `lowpri` jobs yield to the desktop.**
+  `claude` starts every session as a scope in a low-weight `agents.slice`, and
+  `lowpri <cmd>` puts your own heavy jobs there too, so neither stalls the apps
+  you're using. The slice itself is in the [NixOS
+  config](https://github.com/HefKer/nixos-config#agents-slice).
+  [`claude.fish`](.config/fish/functions/claude.fish),
+  [`lowpri.fish`](.config/fish/functions/lowpri.fish)
 - <a id="yt"></a>**`yt_summarize` / `yt_chat`: talk about a YouTube video.**
   These fetch a video's transcript and hand it to Claude Code.
   [`yt_summarize.fish`](.config/fish/functions/yt_summarize.fish),
