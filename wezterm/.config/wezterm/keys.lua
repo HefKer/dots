@@ -396,6 +396,12 @@ local keys = {
 		mods = "CTRL|SHIFT",
 		action = act.DisableDefaultAssignment,
 	},
+	-- herdr's goto; WezTerm's quick select is Alt+Space.
+	{
+		key = "Space",
+		mods = "CTRL|SHIFT",
+		action = act.DisableDefaultAssignment,
+	},
 	-- herdr's new_tab and close_tab; WezTerm's own tab is Alt+T.
 	{
 		key = "t",
