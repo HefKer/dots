@@ -79,15 +79,17 @@ It's where my Claude Code sessions, shells and editors live. Only
   account-wide limits, read from the newest render the Claude statusline shares.
   With a second account in use, its limits follow as `│ hulio 5h 3% · wk 1%`.
   [`scripts/claude-limits`](../scripts/claude-limits)
-- <a id="resurrect"></a>**Relaunch what panes ran after a restart.** herdr
-  brings panes back as bare shells; [herdr-resurrect](https://github.com/ntindle/herdr-resurrect)
-  snapshots what each one runs and, from the palette's `Resurrect: restore last
-  snapshot` (or its dry run), relaunches the programs on an explicit allowlist,
-  nvim among them. Claude panes are left to herdr's own `resume_agents_on_restore`,
-  so nothing resumes them twice, and restore never runs on its own.
-  Snapshots follow pane and workspace events; for a timed one too, open its
-  `resurrect autosave` pane and leave it running.
+- <a id="resurrect"></a>**A reboot costs nothing.** herdr brings panes back as
+  bare shells; [herdr-resurrect](https://github.com/ntindle/herdr-resurrect)
+  snapshots what each one runs and, on the first attach after the server
+  starts, once herdr's own `resume_agents_on_restore` has resumed Claude,
+  relaunches it: nvim with its directory's session loaded, a prompt pane zoomed
+  over its tab's Claude with the saved draft (closed if the tab has no one
+  Claude), and the other programs on an explicit allowlist. Stopped sessions
+  stay stopped until attached. Snapshots follow pane and workspace events; for
+  a timed one too, open its `resurrect autosave` pane and leave it running.
   [`allowlist.txt`](.config/herdr/plugins/config/ntindle.herdr-resurrect/allowlist.txt),
-  [`settings.json`](.config/herdr/plugins/config/ntindle.herdr-resurrect/settings.json)
+  [`settings.json`](.config/herdr/plugins/config/ntindle.herdr-resurrect/settings.json),
+  [`scripts/claude-prompt`](../scripts/claude-prompt)
 
 The prefix is `Ctrl+Space`.
