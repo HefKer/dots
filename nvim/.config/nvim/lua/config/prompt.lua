@@ -1294,7 +1294,9 @@ end
 
 local function save_draft()
   local buf = state.prompt.buf
-  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+  -- A hangup (herdr stopping, a reboot) unloads the buffer before VimLeavePre, which
+  -- would read as emptied and delete the draft.
+  if not (buf and vim.api.nvim_buf_is_loaded(buf)) then
     return
   end
   local path = draft_path()

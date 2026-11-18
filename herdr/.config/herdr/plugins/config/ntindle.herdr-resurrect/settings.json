@@ -1,4 +1,10 @@
 {
-  "autoRestore": false,
-  "agentResume": false
+  "autoRestore": true,
+  "agentResume": false,
+  "labelCommands": {
+    "prompt": "exec ~/dots/scripts/claude-prompt --restore"
+  },
+  "programCommands": {
+    "nvim": "nvim -c 'lua require(\"persistence\").load()'"
+  }
 }
