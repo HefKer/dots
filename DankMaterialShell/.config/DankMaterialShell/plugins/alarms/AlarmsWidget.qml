@@ -161,7 +161,7 @@ PluginComponent {
 
                         StyledText {
                             Layout.fillWidth: true
-                            text: modelData.label
+                            text: (modelData.repeat ? "⟳ " : "") + modelData.label
                             color: Theme.surfaceText
                             elide: Text.ElideRight
                         }
@@ -172,7 +172,9 @@ PluginComponent {
                             font.pixelSize: Theme.fontSizeSmall
                         }
 
+                        // A repeating alarm snoozes only while ringing, which its notification already offers.
                         DIconButton {
+                            visible: !modelData.repeat
                             iconName: "snooze"
                             tooltipText: "Snooze 5 min"
                             onClicked: root.run(["snooze", modelData.id])
@@ -180,7 +182,7 @@ PluginComponent {
 
                         DIconButton {
                             iconName: "close"
-                            tooltipText: "Cancel"
+                            tooltipText: modelData.repeat ? "Cancel series" : "Cancel"
                             onClicked: root.run(["rm", modelData.id])
                         }
                     }
