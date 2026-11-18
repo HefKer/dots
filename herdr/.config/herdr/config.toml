@@ -39,7 +39,7 @@ delivery = "off"
 
 [keys]
 prefix = "ctrl+space"
-goto = "prefix+space"
+goto = "ctrl+shift+space"
 new_tab = ["prefix+t", "ctrl+shift+t"]
 # Closes with no confirm (confirm_close covers workspaces only).
 close_tab = ["prefix+shift+x", "ctrl+shift+x"]
