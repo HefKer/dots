@@ -325,6 +325,7 @@
       "showOnLastDisplay": true,
       "position": 1,
       "mode": "compact",
+      "middleClickAction": "close",
       "taskbarAlign": "center",
       "widgetExpansion": "popout",
       "iconSize": 40,
@@ -427,5 +428,6 @@
   "batteryCriticalThreshold": 10,
   "batteryNotifyCritical": true,
   "notificationPopupBodyInvokesAction": true,
-  "notificationFocusedMonitor": true
+  "notificationFocusedMonitor": true,
+  "powerMenuFirmwareSetup": true
 }

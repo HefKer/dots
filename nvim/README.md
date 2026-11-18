@@ -197,6 +197,11 @@ Claude Code from Neovim.
   that far. `<leader>ci` on an image link opens the image in a near-fullscreen
   float. `gf` opens it in a buffer, and `gx` opens it in your image viewer.
   [`plugins/snacks.lua`](.config/nvim/lua/plugins/snacks.lua)
+- <a id="session-cwd"></a>**`<leader>ql` restores this directory's session.**
+  LazyVim's binding loads the newest session from any project; here it loads
+  the current directory's. Nvim started under `/tmp` saves no session, so
+  throwaway buffers never replace a real one.
+  [`plugins/persistence.lua`](.config/nvim/lua/plugins/persistence.lua)
 
 ## Using it yourself
 
