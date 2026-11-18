@@ -45,9 +45,9 @@ function claude --description 'claude-code, behind the launch guard, with the hu
     # Lets herdr's prefix+a pull the unsent prompt out; plain Ctrl+G still opens $EDITOR.
     set -lx VISUAL $HOME/dots/scripts/claude-prompt-editor
 
-    # In agents.slice, at a fifth of the CPU weight of your apps (nixos agents.nix). Without a user bus, as before.
+    # In agents.slice, at a fifth of the CPU weight of your apps (nixos agents.nix); lowpri needs the user bus.
     if test -S "$XDG_RUNTIME_DIR/bus"
-        systemd-run --user --scope --quiet --collect --slice=agents.slice -- (command -s claude) $argv
+        lowpri (command -s claude) $argv
     else
         command claude $argv
     end
