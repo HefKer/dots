@@ -71,7 +71,7 @@ stealing list][nixos-worth-stealing].
 | [fish](fish/) | Shell: vi keys, fzf, NixOS and Claude Code helpers | [README](fish/README.md) |
 | [kanata](kanata/) | Keyboard remapper: home-row mods, layers, tests | [README](kanata/README.md) |
 | [niri](niri/) | Scrolling Wayland compositor, split into one file per topic under `dms/` | [README](niri/README.md) |
-| [DankMaterialShell](DankMaterialShell/) | Bar, launcher and theming for niri; generates the colour schemes the others read | |
+| [DankMaterialShell](DankMaterialShell/) | Bar, launcher and theming for niri; generates the colour schemes the others read; Claude usage limits in the bar | [README](DankMaterialShell/README.md) |
 | [starship](starship/) | Prompt, from the commented defaults | |
 | [fastfetch](fastfetch/) | System info in Everforest, with icon keys in a frame | [screenshot](fastfetch/screenshots/fastfetch.png) |
 | [btop](btop/) | Resource monitor, Everforest soft | |
