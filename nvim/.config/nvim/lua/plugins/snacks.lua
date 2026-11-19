@@ -1,6 +1,14 @@
 return {
   "folke/snacks.nvim",
   keys = {
+    -- One note per project and filetype, across branches and worktrees (config.scratch)
+    {
+      "<leader>.",
+      function()
+        require("config.scratch").open()
+      end,
+      desc = "Toggle Scratch Buffer",
+    },
     -- Inline images are capped at 80 columns, and WezTerm blurs a screenshot
     -- shrunk that far. This opens the image file in a near-fullscreen float,
     -- where snacks renders it at the window's size.

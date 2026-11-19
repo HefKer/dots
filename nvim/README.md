@@ -202,6 +202,14 @@ Claude Code from Neovim.
   the current directory's. Nvim started under `/tmp` saves no session, so
   throwaway buffers never replace a real one.
   [`plugins/persistence.lua`](.config/nvim/lua/plugins/persistence.lua)
+- <a id="scratch"></a>**One scratch note per project.** Snacks keys
+  `<leader>.`'s note by directory and git branch, so a note written on one
+  branch or worktree is gone from the next. Here it's keyed by the repo's
+  common git dir, which every worktree shares, and filetype; outside a repo,
+  by directory as before. A statusline badge counts the project's non-empty
+  notes. Notes Snacks keyed by branch, or by a repo's subdirectory, stay
+  where they were and open from `<leader>S`. [`config/scratch.lua`](.config/nvim/lua/config/scratch.lua),
+  [`plugins/scratch-indicator.lua`](.config/nvim/lua/plugins/scratch-indicator.lua)
 
 ## Using it yourself
 
