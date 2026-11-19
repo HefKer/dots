@@ -210,6 +210,15 @@ Claude Code from Neovim.
   notes. Notes Snacks keyed by branch, or by a repo's subdirectory, stay
   where they were and open from `<leader>S`. [`config/scratch.lua`](.config/nvim/lua/config/scratch.lua),
   [`plugins/scratch-indicator.lua`](.config/nvim/lua/plugins/scratch-indicator.lua)
+- <a id="issue"></a>**`<leader>gi` opens the issue you're working on.** It
+  opens as a buffer through snacks' `gh`, with every comment: `a` comments, `c`
+  closes, `<CR>` lists the other actions. The number comes from the label of
+  the agent pane in the same herdr tab (`#155 …`), else from the branch's
+  commits (`owner/repo#155`). The tracker can be a different repo from the
+  code: it's looked up by directory in a small YAML file. `<leader>gI` lists
+  that tracker's open issues, fetched once and filtered locally, where
+  LazyVim's bind lists the git remote's repo and asks GitHub on every key.
+  [`config/issue.lua`](.config/nvim/lua/config/issue.lua)
 
 ## Using it yourself
 

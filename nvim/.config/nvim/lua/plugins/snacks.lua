@@ -9,6 +9,22 @@ return {
       end,
       desc = "Toggle Scratch Buffer",
     },
+    -- The issue this work belongs to, and the tracker's open issues, in place
+    -- of LazyVim's lists of the git remote's repo (config.issue)
+    {
+      "<leader>gi",
+      function()
+        require("config.issue").open()
+      end,
+      desc = "GitHub Issue (this work)",
+    },
+    {
+      "<leader>gI",
+      function()
+        require("config.issue").pick()
+      end,
+      desc = "GitHub Issues (open)",
+    },
     -- Inline images are capped at 80 columns, and WezTerm blurs a screenshot
     -- shrunk that far. This opens the image file in a near-fullscreen float,
     -- where snacks renders it at the window's size.
