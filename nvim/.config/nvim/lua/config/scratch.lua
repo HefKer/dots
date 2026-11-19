@@ -23,12 +23,21 @@ function M.project()
   return vim.fs.basename(dir):sub(1, 1) == "." and vim.fs.dirname(dir) or dir
 end
 
+--- Whether a note's .meta is keyed by this project, as open() writes it: a
+--- note Snacks keyed by branch has a branch in its .meta.
+---@param meta table
+---@param project string
+function M.owns(meta, project)
+  return meta.cwd == project and meta.branch == nil
+end
+
 --- Open (or close, if shown) the current project's note for this filetype.
 function M.open()
   local ft = vim.bo.buftype == "" and vim.bo.filetype ~= "" and vim.bo.filetype or "markdown"
   local icon, icon_hl = Snacks.util.icon(ft, "filetype")
   local meta = { name = "Scratch", ft = ft, count = vim.v.count1, cwd = M.project(), icon = icon, icon_hl = icon_hl }
-  -- Snacks' key without the branch, so a note outside a repo hashes as before
+  -- Snacks.scratch._write_meta's key without the branch, so a note outside a
+  -- repo hashes to the file Snacks gave it
   local hash = vim.fn.sha256(table.concat({ meta.name, tostring(meta.count), meta.cwd }, "|")):sub(1, 8)
   local file = ("%s/%s.%s"):format(M.root, hash, ft)
   vim.fn.mkdir(M.root, "p")

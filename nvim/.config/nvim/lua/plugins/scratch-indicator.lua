@@ -1,8 +1,7 @@
 -- Statusline badge when <leader>. has content here: counts the non-empty notes
 -- keyed by this project (config.scratch), whatever the branch or worktree. It
 -- reads the .meta files directly: Snacks.scratch.get() would write a new one as
--- a side effect. A note Snacks keyed by branch, before config.scratch, has a
--- branch in its .meta and isn't counted; <leader>S still opens it.
+-- a side effect.
 local scratch = require("config.scratch")
 local count = 0
 
@@ -16,7 +15,7 @@ local function refresh()
       local stat = vim.uv.fs_stat(file)
       if stat and stat.size > 0 then
         local ok, meta = pcall(vim.json.decode, table.concat(vim.fn.readfile(root .. "/" .. name), "\n"))
-        if ok and type(meta) == "table" and meta.cwd == project and meta.branch == nil then
+        if ok and type(meta) == "table" and scratch.owns(meta, project) then
           -- a file of only whitespace counts as empty
           if table.concat(vim.fn.readfile(file), ""):match("%S") then
             n = n + 1

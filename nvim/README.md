@@ -207,7 +207,8 @@ Claude Code from Neovim.
   branch or worktree is gone from the next. Here it's keyed by the repo's
   common git dir, which every worktree shares, and filetype; outside a repo,
   by directory as before. A statusline badge counts the project's non-empty
-  notes. [`config/scratch.lua`](.config/nvim/lua/config/scratch.lua),
+  notes. Notes Snacks keyed by branch, or by a repo's subdirectory, stay
+  where they were and open from `<leader>S`. [`config/scratch.lua`](.config/nvim/lua/config/scratch.lua),
   [`plugins/scratch-indicator.lua`](.config/nvim/lua/plugins/scratch-indicator.lua)
 
 ## Using it yourself
