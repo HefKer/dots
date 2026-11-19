@@ -25,7 +25,8 @@ PluginComponent {
             return limits.last;
         return names.length > 0 ? names[0] : "";
     }
-    readonly property string barText: shown ? `${shown} ${limits.accounts[shown].bar}` : ""
+    readonly property var current: shown ? limits.accounts[shown] : null
+    readonly property string barText: current ? `${shown} ${current.bar.join(" · ")}` : ""
     readonly property string tooltipText: [shown, ...names.filter(n => n !== shown)]
         .filter(n => n)
         .map(n => `${n}\n${limits.accounts[n].detail}`)
@@ -36,7 +37,8 @@ PluginComponent {
         if (!other)
             return;
         pinned = other;
-        pinnedAt = limits.at;
+        // From the click, not the last poll, so a render already behind it can't end the pin.
+        pinnedAt = Math.max(limits.at, Date.now() / 1000);
     }
 
     pillClickAction: () => switchAccount()
@@ -68,7 +70,6 @@ PluginComponent {
         onTriggered: if (!limitsProc.running) limitsProc.running = true
     }
 
-    // DMS's own DTooltip holds one line; this one holds both accounts.
     Loader {
         id: tooltipLoader
         active: false
@@ -78,7 +79,6 @@ PluginComponent {
         }
     }
 
-    // Under a top or bottom bar, centred on the pill; beside a side bar, level with it.
     function showTooltip(item) {
         tooltipLoader.active = true;
         const tip = tooltipLoader.item;
@@ -120,12 +120,12 @@ PluginComponent {
             id: column
             spacing: 0
             Repeater {
-                model: root.shown ? root.limits.accounts[root.shown].bar.split(" · ") : []
+                model: root.current ? [root.shown, ...root.current.bar] : []
                 StyledText {
                     required property string modelData
                     text: modelData
                     color: Theme.surfaceText
-                    font.pixelSize: Theme.fontSizeSmall
+                    font.pixelSize: root.textSize
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
             }

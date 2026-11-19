@@ -3,7 +3,7 @@
 # widget, read from the newest render ~/.claude/statusline.sh shared for each account: the
 # limits are account-wide, so any of its sessions will do. A render without an account tag
 # predates them and is main's. Prints, e.g.:
-#   {"last":"main","at":1795060000,"accounts":{"main":{"bar":"5h 29% · wk 52%",
+#   {"last":"main","at":1795060000,"accounts":{"main":{"bar":["5h 29%","wk 52%"],
 #    "detail":"5h 29%, resets 18:30 (2h12m)\nwk 52%, resets Fri 14:00 (3d4h)"}}}
 # last is the account of the newest render, the Claude last used; at is that render's mtime,
 # so the widget can tell when a Claude is next used. An account without a render is absent;
@@ -30,7 +30,7 @@ limits() {
       elif .resets_at <= $now then {bar: "\($name) reset", detail: "\($name) reset"}
       else {bar: $pct, detail: "\($pct), resets \(at(.resets_at)) (\(left(.resets_at)))"} end;
   [limit("5h"; "five_hour"), limit("wk"; "seven_day")] | select(length > 0)
-  | {bar: (map(.bar) | join(" · ")), detail: (map(.detail) | join("\n"))}
+  | {bar: map(.bar), detail: (map(.detail) | join("\n"))}
 ' "$1"
 }
 accounts='{}'
