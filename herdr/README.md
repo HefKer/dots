@@ -77,11 +77,6 @@ It's where my Claude Code sessions, shells and editors live. Only
   opens it through the same `go`, a finished Claude in its [prompt pane](#prompt-pane),
   reusing one already open.
   [`agent-notify.py`](plugins/agent-notify/agent-notify.py)
-- <a id="limits"></a>**Claude's usage limits in the tab bar.** The right of the
-  tab row shows `5h 29% 3h17m · wk 52% 3d15h`: usage and time to reset of the
-  account-wide limits, read from the newest render the Claude statusline shares.
-  With a second account in use, its limits follow as `│ hulio 5h 3% · wk 1%`.
-  [`scripts/claude-limits`](../scripts/claude-limits)
 - <a id="resurrect"></a>**A reboot costs nothing.** herdr brings panes back as
   bare shells; [herdr-resurrect](https://github.com/ntindle/herdr-resurrect)
   snapshots what each one runs and, on the first attach after the server
