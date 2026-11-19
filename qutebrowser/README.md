@@ -186,7 +186,9 @@ file as it is now and to the commit that added it, which explains why.
   `REUSE` are affected; middle-click and other background opens always get a
   new tab, and a link never reuses the tab it was clicked in. On any site, a
   quickmark (`b`, `B`, `wb`) whose route (site and path, query ignored) is
-  already open focuses that tab instead of loading it again.
+  already open focuses that tab instead of loading it again. The tab remembers
+  which quickmark opened it, so the quickmark still finds it after redirects, and
+  quickmarks sharing a route (one site's several accounts) keep separate tabs.
   [`tabreuse.py`](.config/qutebrowser/tabreuse.py)
 - <a id="spotify"></a>**Spotify links open the app.** Track, album, playlist and
   similar links go to the Spotify desktop app instead of the web player.

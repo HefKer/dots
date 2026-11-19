@@ -125,10 +125,16 @@ def open_url(url, target=None, no_raise=False, via_ipc=True):
 
 # Every site, unlike REUSE: a quickmark whose route is already open focuses that tab, left
 # as it is, instead of loading again. -b still opens a new background tab.
+#
+# A tab a quickmark opened is labelled with its name, so that quickmark finds it again
+# after redirects change its route, and one account's quickmark never takes another's tab
+# where several share a route (Outlook's ?login_hint= accounts). Unlabelled tabs (restored
+# sessions) still match by route. The label stays if the tab is navigated away by hand.
 def quickmark_load(dispatcher, name, tab=False, bg=False, window=False):
     from qutebrowser.browser import urlmarks
     from qutebrowser.utils import objreg
 
+    browser = dispatcher._tabbed_browser
     if not bg:
         try:
             url = objreg.get("quickmark-manager").get(name)
@@ -136,15 +142,26 @@ def quickmark_load(dispatcher, name, tab=False, bg=False, window=False):
             url = None
         if url is not None and url.isValid():
             want = route(url)
-            browser = dispatcher._tabbed_browser
-            found = next((bt for bt in all_tabs(browser) if route(bt[1].url()) == want), None)
+            tabs = all_tabs(browser)
+            label = lambda t: getattr(t, "_quickmark", None)
+            found = next((bt for bt in tabs if label(bt[1]) == name), None) or next(
+                (bt for bt in tabs if label(bt[1]) in (None, name) and route(bt[1].url()) == want),
+                None,
+            )
             if found is not None:
                 browser_, tab_ = found
                 browser_.widget.setCurrentWidget(tab_)
                 browser_.window().activateWindow()
                 browser_.window().raise_()
+                tab_._quickmark = name
                 return
-    return _quickmark_load_orig(dispatcher, name, tab, bg, window)
+    result = _quickmark_load_orig(dispatcher, name, tab, bg, window)
+    # Without -b or -w the quickmark loaded in the current tab, new or not.
+    if not bg and not window:
+        current = browser.widget.currentWidget()
+        if current is not None:
+            current._quickmark = name
+    return result
 
 
 def patch():
