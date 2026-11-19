@@ -1,34 +1,48 @@
 #!/bin/sh
-# Claude's 5-hour and weekly usage with the time to each reset, e.g.
-# "5h 23% 2h12m · wk 51% 3d4h", for herdr's tab bar (ui.tab_bar_right). Read from the
-# newest render ~/.claude/statusline.sh shared for each account: the limits are
-# account-wide, so any of its sessions will do. The hulio account, when it has a render,
-# follows as "hulio 5h … · wk …". Prints nothing, which hides the entry, before the
-# first render. A render without an account tag predates them and is main's.
+# Claude's 5-hour and weekly usage for each account, as JSON for the DMS bar's claudeLimits
+# widget, read from the newest render ~/.claude/statusline.sh shared for each account: the
+# limits are account-wide, so any of its sessions will do. A render without an account tag
+# predates them and is main's. Prints, e.g.:
+#   {"last":"main","at":1795060000,"accounts":{"main":{"bar":["5h 29%","wk 52%"],
+#    "detail":"5h 29%, resets 18:30 (2h12m)\nwk 52%, resets Fri 14:00 (3d4h)"}}}
+# last is the account of the newest render, the Claude last used; at is that render's mtime,
+# so the widget can tell when a Claude is next used. An account without a render is absent;
+# with none, accounts is empty.
+dir="${XDG_RUNTIME_DIR:-/tmp}/claude-statusline"
 newest() {
-  for f in $(ls -t "${XDG_RUNTIME_DIR:-/tmp}"/claude-statusline/*.json 2>/dev/null); do
+  for f in $(ls -t "$dir"/*.json 2>/dev/null); do
     [ "$(jq -r '.account // "main"' "$f" 2>/dev/null)" = "$1" ] && { echo "$f"; return; }
   done
 }
 limits() {
-  jq -r --argjson now "$(date +%s)" '
+  jq -c --argjson now "$(date +%s)" '
   def left($at):
     ([$at - $now, 0] | max) as $s
     | ($s / 86400 | floor) as $d | ($s % 86400 / 3600 | floor) as $h | ($s % 3600 / 60 | floor) as $m
     | if $d > 0 then "\($d)d\($h)h" elif $h > 0 then "\($h)h\($m | tostring | if length < 2 then "0" + . else . end)m" else "\($m)m" end;
+  # The clock time of a reset: the weekday too unless it falls within a day.
+  def at($at): $at | strflocaltime(if $at - $now < 86400 then "%H:%M" else "%a %H:%M" end);
   # A window that reset since the last render shows no stale percentage.
   def limit($name; $key):
     .rate_limits[$key] // empty | select(.used_percentage != null)
-    | if (.resets_at | type) != "number" then "\($name) \(.used_percentage | floor)%"
-      elif .resets_at <= $now then "\($name) reset"
-      else "\($name) \(.used_percentage | floor)% \(left(.resets_at))" end;
-  [limit("5h"; "five_hour"), limit("wk"; "seven_day")] | select(length > 0) | join(" · ")
+    | "\($name) \(.used_percentage | floor)%" as $pct
+    | if (.resets_at | type) != "number" then {bar: $pct, detail: $pct}
+      elif .resets_at <= $now then {bar: "\($name) reset", detail: "\($name) reset"}
+      else {bar: $pct, detail: "\($pct), resets \(at(.resets_at)) (\(left(.resets_at)))"} end;
+  [limit("5h"; "five_hour"), limit("wk"; "seven_day")] | select(length > 0)
+  | {bar: map(.bar), detail: (map(.detail) | join("\n"))}
 ' "$1"
 }
-main=$(newest main)
-hulio=$(newest hulio)
-out=${main:+$(limits "$main")}
-if [ -n "$hulio" ] && h=$(limits "$hulio") && [ -n "$h" ]; then
-  out="${out:+$out │ }hulio $h"
+accounts='{}'
+for a in main hulio; do
+  f=$(newest "$a")
+  [ -n "$f" ] && l=$(limits "$f") && [ -n "$l" ] \
+    && accounts=$(printf '%s' "$accounts" | jq -c --arg a "$a" --argjson l "$l" '. + {($a): $l}')
+done
+last=$(ls -t "$dir"/*.json 2>/dev/null | head -1)
+if [ -n "$last" ]; then
+  jq -c --argjson accounts "$accounts" --argjson at "$(stat -c %Y "$last")" \
+    '{last: (.account // "main"), $at, $accounts}' "$last"
+else
+  jq -nc --argjson accounts "$accounts" '{last: null, at: 0, $accounts}'
 fi
-printf '%s\n' "$out" | sed '/^$/d'

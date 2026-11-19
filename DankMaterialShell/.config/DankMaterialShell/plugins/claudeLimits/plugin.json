@@ -1,0 +1,11 @@
+{
+    "id": "claudeLimits",
+    "name": "Claude Limits",
+    "description": "Claude's 5-hour and weekly usage for the account last used; a click shows the other account, hover the reset times.",
+    "version": "1.0.0",
+    "author": "hefker",
+    "type": "widget",
+    "icon": "speed",
+    "component": "./ClaudeLimitsWidget.qml",
+    "permissions": []
+}

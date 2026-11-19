@@ -24,5 +24,8 @@
   },
   "attention": {
     "enabled": true
+  },
+  "claudeLimits": {
+    "enabled": true
   }
 }
