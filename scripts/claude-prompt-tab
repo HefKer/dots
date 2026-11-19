@@ -2,8 +2,8 @@
 # A new tab in the focused pane's directory, with a fresh Claude and the prompt pane
 # (scripts/claude-prompt) already open over it. Run by herdr's ctrl+alt+t.
 # The tab goes to the space (~/nixos/main/GLOSSARY.md › Herdr) for its directory's repo or
-# worktree, named for the worktree's directory, in the herdr session the bind ran in;
-# outside any repo, to that session's catch-all space, misc. A missing space is created.
+# worktree, in the herdr session the bind ran in; outside any repo, to that session's
+# catch-all space, misc. A missing space is created.
 # With --resume ID CONFIG CWD [DRAFT], by the prompt pane's sessions picker
 # (nvim's lua/config/prompt_stash.lua): Claude resumes session ID under the account
 # whose config dir is CONFIG, in CWD, with DRAFT's text in the prompt.
@@ -13,12 +13,12 @@ fail() {
   exit 1
 }
 
-info=$(herdr pane get "$HERDR_ACTIVE_PANE_ID" | jq -c .result.pane)
-[ -n "$info" ] || fail "Can't read the focused pane"
-cwd=$(printf '%s' "$info" | jq -r '.foreground_cwd // .cwd')
 run=claude
 draft=""
-if [ "$1" = --resume ]; then
+if [ "$1" != --resume ]; then
+  cwd=$(herdr pane get "$HERDR_ACTIVE_PANE_ID" | jq -r '.result.pane | .foreground_cwd // .cwd // empty')
+  [ -n "$cwd" ] || fail "Can't read the focused pane's directory"
+else
   [ $# -ge 4 ] || fail "Usage: --resume ID CONFIG CWD [DRAFT]"
   cwd=$4 draft=$5
   run="claude --resume $2"
@@ -27,18 +27,25 @@ if [ "$1" = --resume ]; then
   [ "${3%/}" = "$HOME/.claude" ] || run="CLAUDE_CONFIG_DIR=$3 $run"
 fi
 
-# By label, as a space's directory isn't recorded and its tabs may have moved since.
-top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)
-space=$(basename "${top:-misc}")
-ws=$(herdr workspace list | jq -r --arg l "$space" \
-  'first(.result.workspaces[] | select(.label == $l) | .workspace_id) // empty')
-if [ -n "$ws" ]; then
-  herdr workspace focus "$ws" >/dev/null
-  pane=$(herdr tab create --workspace "$ws" --cwd "$cwd" --focus | jq -r '.result.root_pane.pane_id // empty')
-else
-  # A new space's first tab is the one Claude goes in.
-  pane=$(herdr workspace create --label "$space" --cwd "$cwd" --focus | jq -r '.result.root_pane.pane_id // empty')
+# A repo's own checkout is named for the repo (dots); a linked worktree adds its
+# directory (nixos/main), so two repos' main worktrees stay apart. Repo is the
+# directory holding .git, or .bare for a bare repo with its worktrees beside it.
+space=misc
+if top=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null); then
+  common=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir)
+  case $common in */.git | */.bare) repo=${common%/*} ;; *) repo=${common%.git} ;; esac
+  space=${repo##*/}
+  [ "$top" = "$repo" ] || space=$space/${top##*/}
 fi
+# By label, as a space's directory isn't recorded and its tabs may have moved since.
+space_id=$(herdr workspace list | jq -r --arg l "$space" \
+  'first(.result.workspaces[] | select(.label == $l) | .workspace_id) // empty')
+# A new space's first tab is the one Claude goes in.
+pane=$(if [ -n "$space_id" ]; then
+  herdr tab create --workspace "$space_id" --cwd "$cwd" --focus
+else
+  herdr workspace create --label "$space" --cwd "$cwd" --focus
+fi | jq -r '.result.root_pane.pane_id // empty')
 [ -n "$pane" ] || fail "Couldn't create the tab in space $space"
 # Through the fish function, for its launch guard; on the main account unless
 # resuming another's, as herdr's environment has no CLAUDE_CONFIG_DIR.
