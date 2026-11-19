@@ -13,8 +13,11 @@ It's where my Claude Code sessions, shells and editors live. Only
   [nvim README](../nvim/README.md#prompt-pane) for the editor side.
 - <a id="new-claude-tab"></a>**`ctrl+alt+t`: a new tab with a fresh Claude, the
   prompt pane already open over it.** In the focused pane's directory, with the
-  cursor in an empty draft; if Claude doesn't start within 10s, the tab is left
-  on its pane with a notification. `prefix+alt+t` too. The prompt pane's
+  cursor in an empty draft. The tab lands in the space for that directory's
+  repo (`dots`) or linked worktree (`nixos/main`), in the session you're in,
+  made if missing; outside any repo, in one `misc` space per session. If
+  Claude doesn't start within 10s, the tab is left on its pane with a
+  notification. `prefix+alt+t` too. The prompt pane's
   [sessions picker](../nvim/README.md#stash) opens one the same way, resuming
   a session.
   [`scripts/claude-prompt-tab`](../scripts/claude-prompt-tab)

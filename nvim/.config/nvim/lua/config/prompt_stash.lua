@@ -252,8 +252,8 @@ local function age(time)
     or ("%dmo"):format(s / (86400 * 30))
 end
 
--- Opens a new tab in the session's cwd, with Claude resuming it under its own account
--- and the prompt pane over it, the stashed draft in the prompt.
+-- Opens a new tab in the session's cwd and that directory's space, with Claude resuming
+-- it under its own account and the prompt pane over it, the stashed draft in the prompt.
 local function resume(item)
   if item.missing then
     return notify("Transcript is gone; nothing to resume", vim.log.levels.ERROR)
