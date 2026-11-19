@@ -252,7 +252,7 @@ local function age(time)
     or ("%dmo"):format(s / (86400 * 30))
 end
 
--- Opens a new tab in the session's cwd, with Claude resuming it under its own account
+-- Opens a new tab in the session's cwd, in that directory's space, with Claude resuming it under its own account
 -- and the prompt pane over it, the stashed draft in the prompt.
 local function resume(item)
   if item.missing then
