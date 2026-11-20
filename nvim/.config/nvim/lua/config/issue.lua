@@ -6,7 +6,8 @@
 -- The tracker is the backlog project whose name is a directory on the cwd's
 -- path (~/nixos/main -> nixos); the number is the one in the label of the
 -- agent pane sharing this herdr tab ("#155 ..."), else the newest one the
--- branch's commits reference (owner/repo#155). With no number, the picker.
+-- branch's commits reference (owner/repo#155). With no number, the picker,
+-- which <leader>gI opens outright and <leader>gt narrows to one label first.
 local M = {}
 
 M.projects = vim.fn.expand("~/.config/backlog/projects.yaml")
@@ -48,10 +49,39 @@ function M.number(repo)
 end
 
 --- The tracker's open issues, fetched once and filtered locally.
-function M.pick()
+---@param opts? snacks.picker.gh.issue.Config
+function M.pick(opts)
+  -- Outside a backlog project, the remote's repo, as LazyVim's bind did. The
+  -- limit is above the backlog's size: the filter only sees what was fetched.
+  Snacks.picker.gh_issue(vim.tbl_extend("force", { repo = M.repo(), live = false, limit = 200 }, opts or {}))
+end
+
+local labels = {} -- by repo ("" for the remote's), for this session
+
+--- Pick one of the tracker's labels, then its open issues.
+function M.by_label()
   local repo = M.repo()
-  -- Outside a backlog project, the remote's repo, as LazyVim's bind did
-  Snacks.picker.gh_issue({ repo = repo, live = false })
+  local function choose(names)
+    vim.ui.select(names, { prompt = "Issues labelled" }, function(label)
+      if label then
+        M.pick({ label = label, title = "  Issues · " .. label })
+      end
+    end)
+  end
+  if labels[repo or ""] then
+    return choose(labels[repo or ""])
+  end
+  local cmd = { "gh", "label", "list", "--limit", "100", "--json", "name", "--jq", ".[].name" }
+  vim.list_extend(cmd, repo and { "--repo", repo } or {})
+  vim.system(cmd, { text = true }, function(res)
+    vim.schedule(function()
+      if res.code ~= 0 then
+        return Snacks.notify.error(vim.trim(res.stderr or "gh label list failed"))
+      end
+      labels[repo or ""] = vim.split(vim.trim(res.stdout), "\n")
+      choose(labels[repo or ""])
+    end)
+  end)
 end
 
 --- Open this work's issue, or the picker when nothing names one.

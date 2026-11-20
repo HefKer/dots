@@ -224,6 +224,7 @@ Claude Code from Neovim.
   code: it's looked up by directory in a small YAML file. `<leader>gI` lists
   that tracker's open issues, fetched once and filtered locally, where
   LazyVim's bind lists the git remote's repo and asks GitHub on every key.
+  `<leader>gt` asks for one of the tracker's labels first.
   [`config/issue.lua`](.config/nvim/lua/config/issue.lua)
 
 ## Using it yourself

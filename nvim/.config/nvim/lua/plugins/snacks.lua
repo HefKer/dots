@@ -25,6 +25,13 @@ return {
       end,
       desc = "GitHub Issues (open)",
     },
+    {
+      "<leader>gt",
+      function()
+        require("config.issue").by_label()
+      end,
+      desc = "GitHub Issues by Label",
+    },
     -- Inline images are capped at 80 columns, and WezTerm blurs a screenshot
     -- shrunk that far. This opens the image file in a near-fullscreen float,
     -- where snacks renders it at the window's size.
