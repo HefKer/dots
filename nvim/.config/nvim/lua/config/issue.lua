@@ -56,30 +56,30 @@ function M.pick(opts)
   Snacks.picker.gh_issue(vim.tbl_extend("force", { repo = M.repo(), live = false, limit = 200 }, opts or {}))
 end
 
-local labels = {} -- by repo ("" for the remote's), for this session
-
---- Pick one of the tracker's labels, then its open issues.
+--- Pick one of the labels the tracker's open issues carry, most used first,
+--- then its issues. A label on none of them isn't offered: its list is empty.
 function M.by_label()
   local repo = M.repo()
-  local function choose(names)
-    vim.ui.select(names, { prompt = "Issues labelled" }, function(label)
-      if label then
-        M.pick({ label = label, title = "  Issues · " .. label })
-      end
-    end)
-  end
-  if labels[repo or ""] then
-    return choose(labels[repo or ""])
-  end
-  local cmd = { "gh", "label", "list", "--limit", "100", "--json", "name", "--jq", ".[].name" }
+  local jq = '[.[].labels[].name] | group_by(.) | sort_by(-length)[] | "\\(.[0])\t\\(length)"'
+  local cmd = { "gh", "issue", "list", "--state", "open", "--limit", "200", "--json", "labels", "--jq", jq }
   vim.list_extend(cmd, repo and { "--repo", repo } or {})
   vim.system(cmd, { text = true }, function(res)
     vim.schedule(function()
       if res.code ~= 0 then
-        return Snacks.notify.error(vim.trim(res.stderr or "gh label list failed"))
+        return Snacks.notify.error(vim.trim(res.stderr or "gh issue list failed"))
       end
-      labels[repo or ""] = vim.split(vim.trim(res.stdout), "\n")
-      choose(labels[repo or ""])
+      local labels = vim.split(vim.trim(res.stdout), "\n", { trimempty = true })
+      vim.ui.select(labels, {
+        prompt = "Issues labelled",
+        format_item = function(line)
+          return (line:gsub("\t", "  "))
+        end,
+      }, function(line)
+        local label = line and line:match("^[^\t]+")
+        if label then
+          M.pick({ label = label, title = "  Issues · " .. label })
+        end
+      end)
     end)
   end)
 end
