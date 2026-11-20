@@ -1,6 +1,7 @@
 #!/bin/sh
 # Open the prompt pane (nvim's lua/config/prompt.lua) zoomed over the active herdr pane,
-# moving Claude's unsent prompt into it. Run by herdr's prefix+a; with --fresh PANE, by
+# moving Claude's unsent prompt into it, or, with the tab's prompt pane open, going to
+# it or restarting it (below). Run by herdr's prefix+a; with --fresh PANE, by
 # scripts/claude-prompt-tab, over a Claude just started, which has no prompt to move;
 # a DRAFT file after PANE is moved into the prompt instead, and deleted. With --restore,
 # by herdr-resurrect in a prompt pane brought back by a restart: it reopens zoomed over
@@ -15,6 +16,35 @@ fi
 pane="$HERDR_ACTIVE_PANE_ID"
 fresh=""
 [ "$1" = --fresh ] && pane=$2 fresh=1
+
+# The tab's prompt pane already open: prefix+a from any other pane in the tab goes to
+# it, and from the prompt pane itself restarts its nvim over the tab's Claude, to load
+# config changes. The draft survives: nvim saves it on exit and reloads it on open.
+if [ -z "$fresh" ]; then
+  panes=$(herdr pane list --workspace "${pane%%:*}" | jq --arg pane "$pane" '
+    .result.panes as $p | ($p[] | select(.pane_id == $pane) | .tab_id) as $tab
+    | [$p[] | select(.tab_id == $tab)]')
+  prompt=$(echo "$panes" | jq -r '[.[] | select(.label == "prompt")][0].pane_id // empty')
+  if [ -n "$prompt" ] && [ "$prompt" != "$pane" ]; then
+    printf '{"id":"claude-prompt","method":"pane.focus","params":{"pane_id":"%s"}}\n' "$prompt" |
+      nc -U -N "$HERDR_SOCKET_PATH" >/dev/null
+    exec herdr pane zoom "$prompt" --on >/dev/null
+  fi
+  if [ -n "$prompt" ]; then
+    pane=$(echo "$panes" | jq -r '[.[] | select(.agent == "claude")][0].pane_id // empty')
+    [ -n "$pane" ] || exit 0
+    # Quit over nvim's socket (lua/config/prompt.lua's M.socket) so it saves the draft
+    # first; a hangup from herdr pane close could lose the last keystrokes.
+    sock="${XDG_RUNTIME_DIR:-/tmp}/claude-prompt/$(echo "$prompt" | tr : -).sock"
+    nvim --server "$sock" --remote-send '<C-\><C-N>:qa!<CR>' 2>/dev/null
+    for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+      herdr pane get "$prompt" >/dev/null 2>&1 || break
+      sleep 0.1
+    done
+    herdr pane close "$prompt" >/dev/null 2>&1
+  fi
+fi
+
 marker="${XDG_RUNTIME_DIR:-/tmp}/claude-prompt-capture"
 draft=$(mktemp --suffix=.md)
 [ -n "$fresh" ] && [ -f "$3" ] && mv -f "$3" "$draft"

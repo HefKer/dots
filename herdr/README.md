@@ -9,7 +9,9 @@ It's where my Claude Code sessions, shells and editors live. Only
 
 - <a id="prompt-pane"></a>**`prefix+a`: a full-screen Neovim prompt pane over Claude.**
   It opens a zoomed nvim buffer holding Claude's unsent prompt, and
-  sends it back when you're done. See the
+  sends it back when you're done. Once open, `prefix+a` from Claude goes back
+  to it, and from the prompt pane restarts its nvim, draft kept, to load config
+  changes. See the
   [nvim README](../nvim/README.md#prompt-pane) for the editor side.
 - <a id="new-claude-tab"></a>**`ctrl+alt+t`: a new tab with a fresh Claude, the
   prompt pane already open over it.** In the focused pane's directory, with the
