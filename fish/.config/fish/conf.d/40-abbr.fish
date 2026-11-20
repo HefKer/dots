@@ -56,11 +56,13 @@ abbr -a st syncthing
 abbr -a H herdr
 abbr -a HH herdr --session
 abbr -a HSL herdr session list
-# HRS attaches to the other machine's herdr: desktop <-> lenovo
+# HRS attaches to the other machine's herdr: desktop <-> lenovo. Server keybindings, so
+# shell binds (ctrl+alt+t, prefix+a, ...) run on the machine whose panes they act on:
+# the default, local, runs them here, where the remote pane IDs mean nothing.
 if test (prompt_hostname) = desktop
-    abbr -a HRS herdr --remote lenovo --session
+    abbr -a HRS herdr --remote lenovo --remote-keybindings server --session
 else
-    abbr -a HRS herdr --remote desktop --session
+    abbr -a HRS herdr --remote desktop --remote-keybindings server --session
 end
 abbr -a Y y
 abbr -a cdi zi
