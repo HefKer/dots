@@ -123,6 +123,12 @@ Claude Code from Neovim.
     tab, in its directory, under its own account, with the prompt pane over it
     and the stashed draft back in place; `Ctrl+X` unstashes without resuming.
     [`config/prompt_stash.lua`](.config/nvim/lua/config/prompt_stash.lua)
+  - <a id="reply-buffer"></a>A file opened in the pane takes the reply's
+    window, and the reply is a buffer like it: the buffer line lists it as
+    `Claude` beside the files, without the draft. `<leader>ar` flips between
+    the reply and the file that covered it last, and `<S-h>`/`<S-l>` from the
+    prompt step the window above through them all, leaving the cursor in the
+    prompt.
   - `Ctrl+V` with an image on the clipboard saves it to
     `$XDG_RUNTIME_DIR/claude-prompt-images/` and inserts its absolute path as an
     embed, previewed inline, for Claude to Read from any cwd.

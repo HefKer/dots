@@ -36,6 +36,7 @@ local state = {
   watcher = nil,
   timer = nil,
   unseen = false, -- a reply arrived while a file covered the viewer
+  cover = nil, -- the buffer that covered the reply last, for <leader>ar to bring back
   queue = nil, -- the command queue being sent: { n, total, label }
   stop_queue = nil, -- stops it, putting back what isn't sent yet: fun(why: string)
   interrupted = false, -- shown in the viewer's bar for a moment after an interrupt
@@ -418,6 +419,7 @@ local viewer_hints = {
   { "i", "interrupt" },
   { "[r ]r", "replies", plain = true },
   { "k", "tasks" },
+  { "r", "file" },
   { "c", "pane" },
   { "m", "mode" },
 }
@@ -2032,6 +2034,10 @@ local function open_viewer(prompt_win)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].filetype = "markdown"
   vim.bo[buf].modifiable = false
+  -- Listed and named, so the buffer line shows the reply beside the files opened
+  -- over it, and <S-h>/<S-l> reach it like any of them.
+  vim.api.nvim_buf_set_name(buf, "Claude")
+  vim.bo[buf].buflisted = true
   -- snacks' smooth scroll animates the cursor too, so a quote taken mid-scroll
   -- would grab whatever line it was passing, and quick Alt+j presses get lost.
   vim.b[buf].snacks_scroll = false
@@ -2055,6 +2061,10 @@ local function open_viewer(prompt_win)
     step(1)
   end, "Newer Reply")
   map("n", "R", attach, "Reload Reply")
+  -- Listed, so the delete keys reach it; the pane has nowhere else to draw the reply.
+  for _, lhs in ipairs({ "<leader>bd", "<leader>bD" }) do
+    map("n", lhs, "<Nop>", "Claude's Reply Stays")
+  end
   map("n", "<leader>ak", toggle_tasks, "Claude's Tasks")
   map("n", "<leader>as", send, "Send Prompt to Claude")
   map("n", "<leader>ac", to_claude, "Claude's Pane")
@@ -2096,6 +2106,7 @@ local function open_viewer(prompt_win)
             set_winbars()
           end
         else
+          state.cover = ev.buf
           for opt in pairs(viewer_opts) do
             vim.wo[win][0][opt] = vim.go[opt]
           end
@@ -2122,11 +2133,36 @@ local function open_viewer(prompt_win)
   })
 end
 
--- Puts the reply back in the top window after a file covered it.
+-- Puts the reply back in the top window after a file covered it; from the reply,
+-- the file that covered it last.
 local function show_reply()
   local win = state.viewer.win
-  if win and vim.api.nvim_win_is_valid(win) and not viewer_valid() then
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+  if not viewer_valid() then
     vim.api.nvim_win_set_buf(win, state.viewer.buf)
+  elseif state.cover and vim.api.nvim_buf_is_valid(state.cover) and vim.bo[state.cover].buflisted then
+    vim.api.nvim_win_set_buf(win, state.cover)
+  end
+end
+
+-- <S-h>/<S-l> from the prompt: the next or previous listed buffer in the top
+-- window, where they show. The prompt isn't listed, so the buffer line's own
+-- cycle does nothing from here.
+local function cycle(delta)
+  return function()
+    local win = state.viewer.win
+    if not (win and vim.api.nvim_win_is_valid(win)) then
+      return
+    end
+    local bufs = vim.tbl_map(function(info)
+      return info.bufnr
+    end, vim.fn.getbufinfo({ buflisted = 1 }))
+    local at = vim.fn.index(bufs, vim.api.nvim_win_get_buf(win))
+    if #bufs > 0 then
+      vim.api.nvim_win_set_buf(win, bufs[(at + delta) % #bufs + 1])
+    end
   end
 end
 
@@ -2182,6 +2218,9 @@ function M.open(opts)
   local buf, win = vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()
   vim.bo[buf].buftype = "nofile"
   vim.bo[buf].swapfile = false
+  -- Off the buffer line, which lists what the top window can show: cycling there
+  -- never lands the draft in it.
+  vim.bo[buf].buflisted = false
   vim.b[buf].claude_prompt = true -- turns on config.prompt_source
   state.prompt = { buf = buf, win = win }
   vim.wo[win][0].winfixheight = true
@@ -2204,7 +2243,9 @@ function M.open(opts)
   end
   map("n", "<leader>as", send, "Send Prompt to Claude")
   -- Global: it's needed from the file covering the reply. This nvim is the pane's alone.
-  vim.keymap.set("n", "<leader>ar", show_reply, { desc = "Show Claude's Reply" })
+  vim.keymap.set("n", "<leader>ar", show_reply, { desc = "Claude's Reply, or the File Over It" })
+  map("n", "<S-h>", cycle(-1), "Prev Buffer Above")
+  map("n", "<S-l>", cycle(1), "Next Buffer Above")
   map("n", "<leader>aq", quote_all, "Quote Claude's Whole Reply")
   map("n", "<leader>aQ", unquote, "Strip Quoted Lines")
   map("n", "<leader>ah", pick_history, "Sent Prompts")
