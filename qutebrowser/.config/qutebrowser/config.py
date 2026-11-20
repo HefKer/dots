@@ -17,7 +17,10 @@ c.auto_save.session = False
 
 # Lets greasemonkey/osugacha-gc.js call gc(). QtWebEngine 6.140's Blink never
 # collects osugacha's garbage on its own (dots-issues#19). Needs a restart.
-c.qt.args = ["js-flags=--expose-gc"]
+# force-prefers-reduced-motion: every site sees prefers-reduced-motion: reduce.
+# osugacha's fights then skip skill casts and cut-ins and step at 0.45x the
+# delay, and its card grids drop their looping CSS effects.
+c.qt.args = ["js-flags=--expose-gc", "force-prefers-reduced-motion"]
 
 c.completion.shrink = True
 c.completion.quick = True
