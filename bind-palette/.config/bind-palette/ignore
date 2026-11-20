@@ -1,0 +1,7 @@
+# Rows the bind palette (Mod+Ctrl+Space s k) hides, to keep the binds still being learned findable.
+# Alt+H in the palette appends a row's line here; Alt+Shift+H lists the hidden rows, where Alt+H removes it again.
+#
+# scope<Tab>trigger    hides that one row, matched literally
+# ~regex               hides every row whose scope, trigger and action, joined by tabs, match; e.g. ~^kanata\t
+#
+# `bind-palette list --all` shows every row; `list --hidden` shows what hides each.

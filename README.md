@@ -77,6 +77,7 @@ stealing list][nixos-worth-stealing].
 | [btop](btop/) | Resource monitor, Everforest soft | |
 | [atuin](atuin/) | Shell history search | |
 | [tealdeer](tealdeer/) | tldr pages, refreshing themselves; fish's Alt+T shows one for the command being typed | |
+| [bind-palette](bind-palette/) | Rows the bind palette (`s k` on the desktop leader) hides: Alt+H in it hides a row, Alt+Shift+H shows the hidden ones; `~regex` lines hide whole families | |
 | [backlog](backlog/) | Projects the `backlog` quick capture (Mod+B) files ideas into, one GitHub tracker each | |
 | [fuzzel](fuzzel/) | App launcher and picker for the qutebrowser session scripts | |
 | [hunk](hunk/) | Diff viewer used for reviewing agent changes | |
