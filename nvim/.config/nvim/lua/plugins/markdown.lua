@@ -96,6 +96,13 @@ return {
         group = vim.api.nvim_create_augroup("bullets_cr", { clear = true }),
         pattern = { "markdown", "text", "gitcommit" },
         callback = function(ev)
+          -- Once per buffer: FileType fires again on :e or a reload from disk,
+          -- and a second <CR> here would replace blink's, which wraps this one
+          -- and is applied only once per buffer, so <CR> would stop accepting.
+          if vim.b[ev.buf].bullets_cr then
+            return
+          end
+          vim.b[ev.buf].bullets_cr = true
           vim.keymap.set("i", "<Plug>(renumber-list)", renumber, { buffer = ev.buf })
           vim.keymap.set("i", "<CR>", function()
             local line = vim.api.nvim_get_current_line()
