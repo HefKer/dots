@@ -19,15 +19,9 @@ herdr is packaged in NixOS — upgrade it in `~/nixos/`. Do **not** use the upst
 
 ## Applying and validating config changes
 
-Each named session runs its own server, and a bare `herdr server reload-config` reaches only `default`. Apply edits to every running session:
+Each named session runs its own server, and a bare `herdr server reload-config` reaches only `default`. Apply edits to every running session with `~/dots/scripts/herdr-reload` (fish: `HRL`): one line per session, `ok` or its diagnostics, non-zero exit if any reported some.
 
-```sh
-for s in $(herdr session list | awk 'NR>1 && $2=="running" {print $1}'); do
-  herdr --session "$s" server reload-config
-done
-```
-
-Read the JSON `diagnostics` array in its output — that is the real validator. `herdr config check` will catch unknown keys but **not** invalid values, so a config that passes `config check` can still be wrong.
+Those diagnostics, the reload's JSON `diagnostics` array, are the real validator. `herdr config check` will catch unknown keys but **not** invalid values, so a config that passes `config check` can still be wrong.
 
 ## Key syntax gotchas
 

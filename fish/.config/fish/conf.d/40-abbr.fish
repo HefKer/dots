@@ -56,6 +56,8 @@ abbr -a st syncthing
 abbr -a H herdr
 abbr -a HH herdr --session
 abbr -a HSL herdr session list
+# HRL reloads herdr's config in every running session; a bare reload-config reaches only default.
+abbr -a HRL '~/dots/scripts/herdr-reload'
 # HRS attaches to the other machine's herdr: desktop <-> lenovo. Server keybindings, so
 # shell binds (ctrl+alt+t, prefix+a, ...) run on the machine whose panes they act on:
 # the default, local, runs them here, where the remote pane IDs mean nothing.

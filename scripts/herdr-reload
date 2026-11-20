@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Reload herdr's config in every running session: each named session runs its own
+# server, and a bare `herdr server reload-config` reaches only `default`. Stopped
+# sessions are skipped, not started. Prints one line per session: `ok`, or the
+# diagnostics its reload reported, which are the real validator (`herdr config check`
+# misses invalid values). Exits non-zero if any session had diagnostics or failed.
+# Usage: herdr-reload
+set -uo pipefail
+mapfile -t sessions < <(herdr session list | awk 'NR>1 && $2=="running" {print $1}')
+if ((${#sessions[@]} == 0)); then
+  echo "no running herdr session"
+  exit 0
+fi
+status=0
+for s in "${sessions[@]}"; do
+  # Bounded, so a hung server can't hold up the rest.
+  out=$(timeout 10 herdr --session "$s" server reload-config 2>&1)
+  code=$?
+  if ((code != 0)); then
+    ((code == 124)) && msg="no answer in 10 s" || msg="failed (exit $code): $out"
+    status=1
+  elif ! msg=$(jq -er '.result.diagnostics
+        | if length == 0 then "ok" else map(if type == "string" then . else tojson end) | join("; ") end' \
+        <<<"$out" 2>/dev/null); then
+    msg="unreadable reply: $out"
+    status=1
+  fi
+  [[ $msg == ok ]] || status=1
+  printf '%s: %s\n' "$s" "$msg"
+done
+exit "$status"

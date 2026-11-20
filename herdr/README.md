@@ -91,5 +91,12 @@ It's where my Claude Code sessions, shells and editors live. Only
   [`allowlist.txt`](.config/herdr/plugins/config/ntindle.herdr-resurrect/allowlist.txt),
   [`settings.json`](.config/herdr/plugins/config/ntindle.herdr-resurrect/settings.json),
   [`scripts/claude-prompt`](../scripts/claude-prompt)
+- <a id="reload-all"></a>**`HRL`: reload the config in every running session.**
+  Each named session runs its own server, and a bare `herdr server
+  reload-config` reaches only `default`. This reloads each running one, leaves
+  stopped ones stopped, and prints a line per session: `ok`, or the diagnostics
+  the reload reported, which catch the invalid values `herdr config check`
+  misses. Non-zero exit if any did.
+  [`scripts/herdr-reload`](../scripts/herdr-reload)
 
 The prefix is `Ctrl+Space`.
