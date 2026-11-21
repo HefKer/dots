@@ -187,6 +187,16 @@ menu:
       - key: p
         desc: Power profile
         cmd: dms ipc call powerprofile toggle
+      # Keyboard-only mode: every pointer device (mouse, touchpad, trackpoint, ...) off or
+      # on, through the file niri's config.kdl includes last; a new session starts on.
+      - key: m
+        desc: Mouse and touchpad off or on (keyboard-only mode)
+        cmd: >-
+          f="$HOME/.cache/niri/pointers-off.kdl";
+          if [ -e "$f" ]; then rm "$f"; notify-send -a niri "Pointers on" "Mouse and touchpad work again";
+          else mkdir -p "${f%/*}";
+          printf 'input {\n    mouse { off; }\n    touchpad { off; }\n    trackpoint { off; }\n    trackball { off; }\n    tablet { off; }\n    touch { off; }\n}\n' > "$f";
+          notify-send -a niri "Pointers off" "Keyboard only; Mod+Ctrl+Space u m switches them back"; fi
 
   - key: q
     desc: +session

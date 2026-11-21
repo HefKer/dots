@@ -375,6 +375,14 @@ include "dms/wpblur.kdl"
 // that hasn't rebuilt yet still loads; the link comes from the nixos flake's dotfiles module.
 include optional=true "~/.config/niri-host.kdl"
 
+// Keyboard-only mode: the desktop leader's `u m` writes this file to switch every pointer
+// device off and removes it to switch them back. Last, because pointer device sections
+// replace rather than merge: while off it overrides the host's touchpad block, and removing
+// it reloads that block whole. Optional, since it exists only while pointers are off.
+include optional=true "~/.cache/niri/pointers-off.kdl"
+// ~/.cache outlives a logout (lingering) and a reboot, so each session starts with pointers on.
+spawn-sh-at-startup "rm -f ~/.cache/niri/pointers-off.kdl"
+
 // Window-manager and personal binds. Shell binds (launcher, clipboard, notifications, media,
 // volume, brightness, lock, screenshots, cheatsheet) live only in dms/binds.kdl, included
 // first, and are edited through DMS's rebinder (`dms keybinds set`). A bind here wins over
