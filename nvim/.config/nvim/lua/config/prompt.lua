@@ -20,7 +20,8 @@ local state = {
   path = nil, -- transcript being read
   offset = 0, -- bytes of it already parsed
   partial = "", -- a line still being written when last read
-  replies = {}, -- finished replies, oldest first; those with no prompt of yours between are one
+  replies = {}, -- replies, one per turn, oldest first; those with no prompt of yours between are one
+  turn = nil, -- the turn whose text the last reply holds: { own, line, done }, nil after a prompt
   prompted = true, -- whether you've written to Claude since its last reply
   session = nil, -- Claude's session id, last seen
   draft = nil, -- file the prompt is saved to
@@ -154,9 +155,11 @@ end
 
 ------------------------------------------------------------------------------
 -- Replies, read from the transcript rather than the screen: that's the exact
--- markdown, unwrapped and complete. Only a turn's final answer counts (the text
--- Claude ends the turn with, stop_reason end_turn), so the narration it writes
--- between tool calls never replaces the reply you're reading.
+-- markdown, unwrapped and complete. A turn's reply is all the text Claude writes in
+-- it, in order, a blank line between blocks: what it says before a tool call is often
+-- part of the answer. Tool calls, their results and thinking are left out. Text shows
+-- as it lands; once the turn ends (stop_reason end_turn), its last block is put at
+-- the top of the viewer, the rest of the turn one scroll above.
 
 -- What a tool call is doing, for the bar while Claude works: "Edit prompt.lua",
 -- "Bash Run the tests", an MCP tool by its own name.
@@ -239,10 +242,11 @@ function M.from_you(entry)
 end
 
 -- Parses whatever was appended since the last read, so a long session isn't
--- re-read on every write. Replies Claude ends several turns with, with no prompt of
--- yours between (a background task finishing, say), join the one before them, so
--- none is hidden behind the newest. Returns whether a reply arrived, and whether
--- it was joined to the last one rather than starting a new one.
+-- re-read on every write. The text of turns with no prompt of yours between (a
+-- background task finishing, say) joins the reply before them, so none is hidden
+-- behind the newest. Returns whether a reply arrived; whether a turn or recap was
+-- joined to the last one; whether the running turn added to it; and, when a turn
+-- that started its own reply ended, the markdown line its last block starts on.
 local function read_new()
   local fh = state.path and io.open(state.path, "rb")
   if not fh then
@@ -257,27 +261,33 @@ local function read_new()
   state.partial = last_nl and text:sub(last_nl + 1) or text
   text = last_nl and text:sub(1, last_nl) or ""
 
-  local before, last_id, joined = #state.replies, state.last_id, false
-  -- A message's content blocks arrive as separate entries; join them.
-  local function add(body, id)
+  local before, joined, grew, land = #state.replies, false, false, nil
+  -- Adds text to the running turn's reply, else joins it to the last reply, else
+  -- starts one. Returns the line it starts on, and whether it started a reply.
+  local function add(body, in_turn)
     local last = state.replies[#state.replies]
-    if id and id == last_id then
-      state.replies[#state.replies] = last .. "\n" .. body
-      joined = joined or #state.replies == before
-    elseif last and not state.prompted then
-      state.replies[#state.replies] = last .. "\n\n---\n\n" .. body
-      joined = joined or #state.replies == before
-    else
-      table.insert(state.replies, body)
-    end
-    last_id = id
+    local sep = in_turn and "\n\n" or last and not state.prompted and "\n\n---\n\n"
     state.prompted = false
+    if not in_turn then
+      land = nil -- a later turn or recap: the one that ended isn't last anymore
+    end
+    if not sep then
+      table.insert(state.replies, body)
+      return 1, true
+    end
+    if #state.replies == before then
+      grew = grew or in_turn
+      joined = joined or not in_turn
+    end
+    local head = last .. sep
+    state.replies[#state.replies] = head .. body
+    return select(2, head:gsub("\n", "")) + 1, false
   end
   for line in text:gmatch("[^\n]+") do
     if line:find('"type":"user"', 1, true) and not line:find('"tool_use_id"', 1, true) then
       local ok, entry = pcall(vim.json.decode, line)
       if ok and type(entry) == "table" and M.from_you(entry) then
-        state.prompted = true
+        state.prompted, state.turn, land = true, nil, nil
         state.calls = {} -- a prompt, or an interrupt: whatever was asked is over
       end
     end
@@ -308,19 +318,48 @@ local function read_new()
       end
     end
     -- Cheap filter first: Claude Code writes compact JSON, and most lines are tool output.
-    if line:find('"stop_reason":"end_turn"', 1, true) then
+    -- A message's blocks are written as separate entries, each with the message's
+    -- stop_reason: tool_use until the one that ends the turn.
+    local ends = line:find('"stop_reason":"end_turn"', 1, true)
+    if line:find('"type":"assistant"', 1, true) and (ends or line:find('"type":"text"', 1, true)) then
       local ok, entry = pcall(vim.json.decode, line)
-      if ok and entry.type == "assistant" and entry.isSidechain ~= true then
-        local texts = {}
+      if
+        ok
+        and type(entry) == "table"
+        and entry.type == "assistant"
+        and entry.isSidechain ~= true
+        and entry.message
+      then
+        local id, texts, thinking = entry.message.id, {}, true
         for _, block in ipairs(entry.message.content or {}) do
-          if block.type == "text" then
+          if block.type == "text" and type(block.text) == "string" and block.text ~= "" then
             table.insert(texts, block.text)
           end
+          thinking = thinking and block.type == "thinking"
         end
+        local turn = state.turn
+        -- The ending message's own text is still the turn, written after it was marked done.
+        local in_turn = turn and (not turn.done or turn.done == id)
         if #texts > 0 then
-          add(table.concat(texts, "\n"), entry.message.id)
+          local start, own = add(table.concat(texts, "\n\n"), in_turn)
+          if not in_turn then
+            turn = { own = own }
+            state.turn = turn
+          end
+          turn.line = start
+        end
+        if entry.message.stop_reason == "end_turn" then
           state.activity = nil
           state.calls = {}
+          if turn then
+            turn.done = id
+            -- Not on its thinking: the answer is in the entry after it.
+            if not turn.own then
+              land = nil
+            elseif not thinking then
+              land = turn.line
+            end
+          end
         end
       end
     end
@@ -330,12 +369,11 @@ local function read_new()
     if line:find('"subtype":"away_summary"', 1, true) then
       local ok, entry = pcall(vim.json.decode, line)
       if ok and type(entry) == "table" and entry.type == "system" and type(entry.content) == "string" then
-        add("_Recap:_ " .. entry.content:gsub("%s*%(disable recaps in /config%)$", ""))
+        add("_Recap:_ " .. entry.content:gsub("%s*%(disable recaps in /config%)$", ""), false)
       end
     end
   end
-  state.last_id = last_id
-  return #state.replies > before, joined
+  return #state.replies > before, joined, grew, land
 end
 
 ------------------------------------------------------------------------------
@@ -610,16 +648,21 @@ local function locate(agent)
   )
 end
 
--- Fills the viewer with markdown, its tables drawn to fit the window (config.prompt_table).
-local function draw(lines)
-  local buf = state.viewer.buf
+-- The viewer's markdown with its tables drawn to fit the window (config.prompt_table).
+local function render(lines)
   local width = 80
   if viewer_valid() then
     local info = vim.fn.getwininfo(state.viewer.win)[1]
     width = info.width - info.textoff
   end
   -- one column short, so a full-width box row doesn't wrap
-  local drawn = tables.render(lines, width - 1, { escape = true })
+  return tables.render(lines, width - 1, { escape = true })
+end
+
+-- Fills the viewer with markdown.
+local function draw(lines)
+  local buf = state.viewer.buf
+  local drawn = render(lines)
   vim.bo[buf].modifiable = true
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, drawn.lines)
   vim.bo[buf].modifiable = false
@@ -656,6 +699,18 @@ local function show(index, message)
     vim.api.nvim_win_set_cursor(state.viewer.win, { 1, 0 })
   end
   set_winbars()
+end
+
+-- Puts the shown reply's markdown line at the top of the viewer: a turn's last block,
+-- once it ends. The rows drawn before it are counted, since a table's rows aren't its lines.
+local function land_on(line)
+  if not viewer_valid() then
+    return
+  end
+  local row = #render(vim.list_slice(state.shown.lines, 1, line - 1)).lines + 1
+  vim.api.nvim_win_call(state.viewer.win, function()
+    vim.fn.winrestview({ topline = row, lnum = row, col = 0 })
+  end)
 end
 
 -- The task list in the viewer, in place of the reply, as markdown checkboxes.
@@ -895,7 +950,7 @@ end
 -- back to an older one; the task list stays up when one arrives, redrawn as it changes.
 local function refresh()
   local following = state.index == #state.replies
-  local new_reply, joined = read_new()
+  local new_reply, joined, grew, land = read_new()
   if (new_reply or joined) and not viewer_valid() then
     state.unseen = true
     vim.notify("Claude replied · <leader>ar to show", vim.log.levels.INFO, { title = "Claude prompt" })
@@ -916,15 +971,24 @@ local function refresh()
     end
   elseif new_reply and following then
     show(#state.replies)
-  elseif joined and following and viewer_valid() then
-    -- More of the reply you're reading: keep your place in it.
+    if land then
+      land_on(land)
+    end
+  elseif (joined or grew or land) and following and viewer_valid() then
+    -- More of the reply you're reading: keep your place in it, until its turn ends.
     vim.api.nvim_win_call(state.viewer.win, function()
       local view = vim.fn.winsaveview()
       draw(vim.split(state.replies[state.index], "\n"))
       vim.fn.winrestview(view)
     end)
+    if land then
+      land_on(land)
+    end
     set_winbars()
-    vim.notify("Claude added to its reply", vim.log.levels.INFO, { title = "Claude prompt" })
+    -- Once per joined turn or recap, not for each block of a running turn.
+    if joined then
+      vim.notify("Claude added to its reply", vim.log.levels.INFO, { title = "Claude prompt" })
+    end
   else
     set_winbars()
   end
@@ -940,14 +1004,17 @@ local function attach_to(path, err)
   if state.watcher then
     state.watcher:stop()
   end
-  state.path, state.offset, state.partial, state.replies, state.last_id = path, 0, "", {}, nil
+  state.path, state.offset, state.partial, state.replies, state.turn = path, 0, "", {}, nil
   state.prompted = true
   state.tasks, state.activity, state.calls, state.answered = {}, nil, {}, {}
   if not path then
     return show(0, "_" .. err .. "._")
   end
-  read_new()
+  local _, _, _, land = read_new()
   show(#state.replies)
+  if land then
+    land_on(land)
+  end
 
   -- libuv often reports only the first of several edits, so re-arm after each one.
   state.timer = state.timer or vim.uv.new_timer()

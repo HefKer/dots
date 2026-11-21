@@ -27,8 +27,10 @@ Claude Code from Neovim.
   Claude pane and moves Claude's unsent prompt into it. `<leader>as` sends the
   buffer to Claude. You get a full-screen editor for long prompts.
   - Claude's last reply sits rendered above the prompt, read from the session
-    transcript and refreshed when a turn ends, so narration between tool calls
-    never replaces it. `Alt+j/k/u/d` scroll it from the prompt, even in insert
+    transcript. A reply is every text block of its turn, tool calls left out,
+    shown as it lands without moving your place; when the turn ends, its last
+    block is put at the top of the viewer, the text before it one scroll up.
+    `Alt+j/k/u/d` scroll it from the prompt, even in insert
     mode, and `[r`/`]r` step through earlier replies. Replies Claude ends
     several turns with, with no prompt of yours between (a background task
     finishing, say), join the one shown under a rule, keeping your place in it,
