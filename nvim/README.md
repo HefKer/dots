@@ -36,6 +36,9 @@ Claude Code from Neovim.
     finishing, say), join the one shown under a rule, keeping your place in it,
     so none is skipped behind the newest. So does the recap Claude writes when
     you come back after being away (`awaySummaryEnabled`).
+  - Open issue and PR buffers (`gh://`, Snacks.gh) are refetched once a `gh`
+    command of Claude's that changes one (close, comment, edit, `gh api`, ...)
+    finishes, so a closed issue doesn't still show open.
   - The prompt is saved as you type, synced to disk, to
     `~/.local/state/nvim/claude-drafts/<session-id>.md`, and deleted once sent.
     A crash, reboot or power cut doesn't take it: the next `prefix+a` in the tab

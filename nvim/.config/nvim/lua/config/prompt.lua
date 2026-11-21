@@ -220,6 +220,48 @@ local function track(entry)
   end
 end
 
+-- Whether a tool call is a `gh` command that changes an issue or PR on GitHub: an
+-- open gh:// buffer (Snacks.gh) only fetches when opened, so it's refetched after one.
+local gh_verbs = {
+  "close",
+  "reopen",
+  "comment",
+  "edit",
+  "create",
+  "delete",
+  "merge",
+  "review",
+  "ready",
+  "lock",
+  "unlock",
+  "pin",
+  "unpin",
+  "transfer",
+}
+local function changes_github(call)
+  local command = call.name == "Bash" and type(call.input) == "table" and call.input.command
+  if type(command) ~= "string" then
+    return false
+  end
+  for _, verb in ipairs(gh_verbs) do
+    if command:find("%f[%w]gh%s+[%w-]+%s+" .. verb .. "%f[%W]") then
+      return true
+    end
+  end
+  return command:find("%f[%w]gh%s+api%s") ~= nil
+end
+
+-- Refetches every open gh:// buffer.
+local function refresh_github()
+  local ok, gh_buf = pcall(require, "snacks.gh.buf")
+  if not ok then
+    return
+  end
+  for _, attached in pairs(gh_buf.attached) do
+    attached:update()
+  end
+end
+
 -- Whether a user entry is something you wrote: a prompt or a /command, not a tool
 -- result, an injected reminder, a background task's notification or `!` output.
 function M.from_you(entry)
@@ -307,6 +349,9 @@ local function read_new()
     if line:find('"type":"tool_result"', 1, true) then
       for id in line:gmatch('"tool_use_id":"([^"]+)"') do
         state.calls = vim.tbl_filter(function(call)
+          if call.id == id and changes_github(call) then
+            state.github_changed = true
+          end
           return call.id ~= id
         end, state.calls)
       end
@@ -951,6 +996,10 @@ end
 local function refresh()
   local following = state.index == #state.replies
   local new_reply, joined, grew, land = read_new()
+  if state.github_changed then
+    state.github_changed = false
+    refresh_github()
+  end
   if (new_reply or joined) and not viewer_valid() then
     state.unseen = true
     vim.notify("Claude replied · <leader>ar to show", vim.log.levels.INFO, { title = "Claude prompt" })
@@ -1011,6 +1060,7 @@ local function attach_to(path, err)
     return show(0, "_" .. err .. "._")
   end
   local _, _, _, land = read_new()
+  state.github_changed = false -- the session's past commands, already fetched by any open buffer
   show(#state.replies)
   if land then
     land_on(land)
