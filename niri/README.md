@@ -34,10 +34,3 @@ to `~/.config/niri-host.kdl`.
   Columns move whole and in order, so stacked windows stay stacked, and it
   works across monitors although niri's workspace indices are per-monitor.
   [`workspace-merge`](../scripts/workspace-merge)
-- <a id="pointers-off"></a>**Keyboard-only mode: every pointer device off, no
-  root.** niri has no action for it, but it live-reloads includes, an optional
-  one may be missing, and pointer device sections replace rather than merge. So
-  a toggle writes a file of `off` blocks that `config.kdl` includes last, and
-  deletes it to restore the host's touchpad settings whole. A startup line
-  deletes it too, so each session starts with pointers on.
-  [`config.kdl`](.config/niri/config.kdl)
