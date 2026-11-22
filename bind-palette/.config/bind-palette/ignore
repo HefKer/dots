@@ -5,3 +5,97 @@
 # ~regex               hides every row whose scope, trigger and action, joined by tabs, match; e.g. ~^kanata\t
 #
 # `bind-palette list --all` shows every row; `list --hidden` shows what hides each.
+shell	Mod+Comma
+shell	Mod+N
+shell	Mod+Space
+shell	Mod+V
+shell	Print
+wm	Mod+Alt+B
+wm	Mod+Alt+T
+wm	Mod+Alt+Y
+wm	Mod+Alt+D
+wm	Mod+Alt+S
+wm	Mod+B
+wm	Mod+Period
+wm	Mod+Shift+H
+wm	Mod+Shift+J
+wm	Mod+Shift+K
+wm	Mod+Shift+L
+wm	Mod+Semicolon
+wm	Mod+Shift+Left
+wm	Mod+Shift+Down
+wm	Mod+Shift+Up
+wm	Mod+Shift+Right
+wm	Mod+C
+wm	Mod+Q
+wm	Mod+F
+wm	Mod+R
+wm	Mod+Left
+wm	Mod+Right
+wm	Mod+H
+wm	Mod+L
+wm	Mod+Ctrl+Left
+wm	Mod+Ctrl+Down
+wm	Mod+Ctrl+Up
+wm	Mod+Ctrl+Right
+wm	Mod+Ctrl+H
+wm	Mod+Ctrl+J
+wm	Mod+Ctrl+K
+wm	Mod+Ctrl+L
+wm	Mod+1
+wm	Mod+2
+wm	Mod+3
+wm	Mod+4
+wm	Mod+5
+wm	Mod+6
+wm	Mod+7
+wm	Mod+8
+wm	Mod+9
+wm	Mod+J
+wm	Mod+K
+wm	Mod+0
+wm	Mod+Ctrl+1
+wm	Mod+Ctrl+2
+wm	Mod+Ctrl+3
+wm	Mod+Ctrl+4
+wm	Mod+Ctrl+5
+wm	Mod+Ctrl+6
+wm	Mod+Ctrl+7
+wm	Mod+Ctrl+8
+wm	Mod+Ctrl+9
+wm	Mod+Ctrl+0
+leader	Mod+Ctrl+Space space
+qutebrowser	go
+shell	Super+X
+wm	Mod+Return
+wm	Mod+Slash
+wm	Mod+G
+wm	Mod+Up
+qutebrowser	<Ctrl+t>
+
+# wm: workspace numbers, the arrow/Page/Home/End and wheel twins of hjkl, hjkl/ui themselves, and the basics.
+~^wm	Mod\+(Shift\+)?(Ctrl\+)?[0-9]	
+~^wm	[^	]*(Left|Right|Up|Down|Page_Up|Page_Down|Home|End)	
+~^wm	[^	]*WheelScroll
+~^wm	Mod\+(Shift\+)?(Ctrl\+)?[HJKLUI]	
+~^wm	Mod\+(Q|Return|Tab|F|Shift\+F|Minus|Equal|Shift\+Minus|Shift\+Equal)	
+# shell: launcher, clipboard, region copy, settings.
+~^shell	(Mod\+Space|Mod\+V|Print|Mod\+Comma)	
+# kanata: home-row mods, Fn1's number row (F-keys) and hjkl (Home/Down/Up/End).
+~^kanata	Hold 
+~^kanata	Fn1\+([0-9=-]|Escape)	
+~^kanata	Fn1\+[HJKL]	
+# qutebrowser: readline and completion in the command line and prompts, tab numbers, vim basics, browser conventions.
+~^qutebrowser	(command|prompt|yesno|register): 
+~^qutebrowser	<Alt\+[0-9]>	
+~^qutebrowser	[hjklGnNdurRHLJKoOT/?:]	
+~^qutebrowser	(gg|yy|ZQ|ZZ|\+|-|=)	
+~^qutebrowser	<(Ctrl\+t|Ctrl\+w|Ctrl\+Shift\+t|F5|Ctrl\+F5|F11|Back|Forward|Ctrl\+PgUp|Ctrl\+PgDown|Ctrl\+f|Ctrl\+b|Ctrl\+d|Ctrl\+u|Ctrl\+q)>	
+~^qutebrowser	(hint|insert|passthrough): <(Escape|Return)>	
+# nvim: built-in defaults, the [x ]x list family, scroll/increment, LSP defaults, and LazyVim's basics.
+~^nvim	[^	]*	:help 
+~^nvim	[^	]*	:(c|l|t|pt)?(next|prev|previous|first|last|rewind|pfile|nfile)$
+~^nvim	([ioxc]: )?<lt>C-[FBAX]>	
+~^nvim	[^	]*	vim\.lsp\.buf\.
+~^nvim	(x: )?(p|P|y|gc|gcc|gx|H|L|\]b|\[b|\]d|\[d)	
+~^nvim	<Space>(<Space>|ff|/|e|,|:)	
