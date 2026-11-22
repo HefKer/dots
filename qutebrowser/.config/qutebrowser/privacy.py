@@ -11,7 +11,11 @@
 # c.content.proxy = "http://127.0.0.1:8118"
 # WebRTC over TCP via the proxy only, so UDP can't leak the real IP around it.
 config.set("content.webrtc_ip_handling_policy", "disable-non-proxied-udp")
-config.set("content.cookies.accept", "all")  # Options: all, no-3rdparty
+config.set("content.cookies.accept", "no-3rdparty")
+# Sites that need third-party cookies go here, one line each: a sign-in or embed
+# that breaks without them. The pattern is the page being visited, not the cookie's
+# host, and it needs the leading `*.` to cover the site's subdomains:
+#   config.set("content.cookies.accept", "all", "*://*.example.com/*")
 config.set("content.cookies.store", True)
 # Bad certs on third-party resources are blocked silently; the page's own still asks.
 config.set("content.tls.certificate_errors", "ask-block-thirdparty")
