@@ -315,6 +315,14 @@ window-rule {
     default-window-height { fixed 560; }
 }
 
+// The bind palette (Mod+Shift+/), fzf in a WezTerm: floating and centred, about fuzzel's size.
+window-rule {
+    match app-id="^bind-palette$"
+    open-floating true
+    default-column-width { fixed 1100; }
+    default-window-height { fixed 560; }
+}
+
 // Throwaway windows an agent opens to screenshot a config, floating so the columns don't
 // shift and unfocused so typing carries on in the window you were in.
 window-rule {
