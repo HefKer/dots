@@ -99,3 +99,13 @@ qutebrowser	<Ctrl+t>
 ~^nvim	[^	]*	vim\.lsp\.buf\.
 ~^nvim	(x: )?(p|P|y|gc|gcc|gx|H|L|\]b|\[b|\]d|\[d)	
 ~^nvim	<Space>(<Space>|ff|/|e|,|:)	
+kanata	Fn1+C
+kanata	Fn1+W
+shell	Ctrl+Alt+BackSpace
+qutebrowser	U
+qutebrowser	f
+qutebrowser	gK
+qutebrowser	gJ
+wm	Mod+A
+wm	Mod+Shift+G
+wm	Mod+P
