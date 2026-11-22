@@ -204,6 +204,8 @@ of my data:
 - **Terminal apps**: [`scripts/claude-shot`][claude-shot] opens the program in
   a new WezTerm window on the screen I'm not using, without taking focus, and
   captures only that window, so nothing else on screen is in the image.
+- **GUI apps**: `claude-shot --gui` runs the program in a headless
+  [cage](https://github.com/cage-kiosk/cage), which never appears on a screen.
 
 [qute-sandbox]: scripts/qute-sandbox
 [claude-shot]: scripts/claude-shot

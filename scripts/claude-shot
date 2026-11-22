@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
-# Screenshot a terminal program without touching the user's focus:
-#   claude-shot [--cwd DIR] [--keys KEYS] [--wait SECS] OUT.png -- CMD [ARGS...]
+# Screenshot a program without touching the user's focus:
+#   claude-shot [--gui] [--cwd DIR] [--keys KEYS] [--wait SECS] OUT.png -- CMD [ARGS...]
 # Opens CMD in a throwaway WezTerm window whose app-id matches niri's claude-shot rules
 # (floating, unfocused, on the screen you aren't focused on), captures only that window,
 # then kills it. KEYS is typed through WezTerm's socket, so the window never needs focus;
 # split it into groups with $'\x1f' to pause 0.8s between them, e.g. for a popup to open.
+# --gui is for a program with its own window: CMD runs fullscreen (1280x720) in a headless
+# cage, which never shows on any screen. Each KEYS group is then wtype's arguments
+# (`hello`, `-k Return`, `-M ctrl o -m ctrl`). CMD gets no DISPLAY, so an X11-only program
+# exits and the shot fails.
 set -euo pipefail
-cwd=$PWD keys="" wait=2.5
+cwd=$PWD keys="" wait=2.5 gui=""
 while [[ $# -gt 0 ]]; do
 	case $1 in
+	--gui) gui=1; shift ;;
 	--cwd) cwd=$2; shift 2 ;;
 	--keys) keys=$2; shift 2 ;;
 	--wait) wait=$2; shift 2 ;;
@@ -18,6 +23,40 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -n ${out:-} && $# -gt 0 ]] || { sed -n '2,3p' "$0" >&2; exit 2; }
 [[ $out = /* ]] || out=$PWD/$out
+
+if [[ -n $gui ]]; then
+	dir=$(mktemp -d)
+	trap 'kill "${pid:-}" 2>/dev/null || true; rm -rf "$dir"' EXIT
+	cd "$cwd"
+	# shellcheck disable=SC2016 # the inner sh expands these, inside cage
+	WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 cage -- sh -c \
+		'echo "$WAYLAND_DISPLAY" >"$0"; unset DISPLAY; exec "$@"' "$dir/sock" "$@" >"$dir/log" 2>&1 &
+	pid=$!
+	for _ in $(seq 50); do
+		[[ -s $dir/sock ]] && break
+		sleep 0.1
+	done
+	fail() {
+		echo "claude-shot: $1" >&2
+		grep -v '\[INFO\]' "$dir/log" | tail -5 >&2
+		exit 1
+	}
+	[[ -s $dir/sock ]] || fail "cage never started"
+	WAYLAND_DISPLAY=$(<"$dir/sock")
+	export WAYLAND_DISPLAY
+	sleep "$wait"
+	kill -0 "$pid" 2>/dev/null || fail "CMD exited before the shot"
+	IFS=$'\x1f' read -ra groups <<<"$keys"
+	for g in "${groups[@]}"; do
+		read -ra args <<<"$g"
+		# wtype drops the first key unless it waits for its keymap to land
+		wtype -s 300 "${args[@]}"
+		sleep 0.8
+	done
+	timeout 10 grim "$out" || fail "CMD never drew a frame"
+	echo "$out"
+	exit
+fi
 
 focused=$(niri msg -j focused-output | jq -r .name)
 other=$(niri msg -j outputs | jq -r --arg f "$focused" 'keys[] | select(. != $f)' | head -1)
