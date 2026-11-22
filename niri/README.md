@@ -28,6 +28,11 @@ to `~/.config/niri-host.kdl`.
   mode picks one through fzf onto the command line, unrun, to edit first
   (Ctrl+D in the picker deletes one).
   [`quick-run`](../scripts/quick-run)
+- <a id="scratch"></a>**Toggle an app like a scratchpad.**
+  Mod+Alt+N opens nvim in the notes vault, its last session restored; again
+  while it's focused hides it on a spare workspace, and again brings it to the
+  workspace you're on. Any app-id works: `scratch APP-ID CMD...`.
+  [`scratch`](../scripts/scratch)
 - <a id="workspace-merge"></a>**Merge a whole workspace into any other.**
   Mod+Shift+Ctrl+P lists every workspace on every monitor in fuzzel, with its
   window count, and moves all the focused workspace's windows into the pick.

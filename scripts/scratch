@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Scratch window toggle (niri), as quick-run's Mod+; does, for an app that stays open:
+#   - focused: hides it on the "hidden" workspace (niri has no minimize)
+#   - hidden: brings it to the workspace you're on, focused
+#   - open elsewhere: focuses it
+#   - none: runs CMD, which must open a window with app-id APP-ID
+#
+#   scratch APP-ID CMD...
+set -euo pipefail
+app=$1
+shift
+hidden_ws=hidden
+
+# The app's most recently focused window.
+win=$(niri msg -j windows | jq -c --arg a "$app" '[.[] | select(.app_id == $a)]
+  | sort_by(.focus_timestamp.secs // -1, .focus_timestamp.nanos // 0) | last // empty')
+if [[ -z $win ]]; then
+	exec niri msg action spawn -- "$@"
+fi
+id=$(jq -r .id <<<"$win")
+hidden_id=$(niri msg -j workspaces | jq -r --arg n "$hidden_ws" '.[] | select(.name == $n) | .id')
+
+if [[ $(jq -r .workspace_id <<<"$win") == "$hidden_id" ]]; then
+	# The focused output's active workspace: moving to another output lands on it; on
+	# the same output, an index is that output's.
+	out=$(niri msg -j focused-output | jq -r .name)
+	ws_out=$(niri msg -j workspaces | jq -r --arg i "$hidden_id" '.[] | select((.id | tostring) == $i) | .output')
+	if [[ $ws_out != "$out" ]]; then
+		niri msg action move-window-to-monitor --id "$id" "$out"
+	else
+		idx=$(niri msg -j workspaces | jq -r --arg o "$out" '.[] | select(.output == $o and .is_active) | .idx')
+		niri msg action move-window-to-workspace --window-id "$id" --focus false "$idx"
+	fi
+	niri msg action focus-window --id "$id"
+elif [[ $(jq -r .is_focused <<<"$win") == true ]]; then
+	niri msg action move-window-to-workspace --window-id "$id" --focus false "$hidden_ws"
+else
+	niri msg action focus-window --id "$id"
+fi
