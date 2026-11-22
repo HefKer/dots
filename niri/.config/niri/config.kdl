@@ -356,6 +356,12 @@ window-rule {
     // block-out-from "screencast"
 }
 
+// DMS notification popups stay off screencasts and screen shares; niri's own screenshots and the screen still show them.
+layer-rule {
+    match namespace="^dms:notification-popup$"
+    block-out-from "screencast"
+}
+
 // Example: enable rounded corners for all windows.
 // (This example rule is commented out with a "/-" in front.)
 /-window-rule {
