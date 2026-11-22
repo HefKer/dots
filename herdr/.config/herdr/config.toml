@@ -33,6 +33,11 @@ rows = [
 [ui.toast]
 delivery = "off"
 
+# herdr's own sounds for an agent finishing or blocking in a background workspace, on
+# by default; a blocked agent is announced by agent-notify's notification instead.
+[ui.sound]
+enabled = false
+
 [keys]
 prefix = "ctrl+space"
 goto = "ctrl+shift+space"
