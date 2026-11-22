@@ -423,4 +423,15 @@ for i, shifted in ipairs({ "!", "@", "#", "$", "%", "^", "&", "*", "(" }) do
 	end
 end
 
+-- The bind palette (BIND_PALETTE_DIR, set by its launcher) runs fzf in its own WezTerm, whose
+-- Alt+H hides a row and Alt+Shift+H shows the hidden ones: leave those two to fzf there.
+if os.getenv("BIND_PALETTE_DIR") then
+	for i = #keys, 1, -1 do
+		local k = keys[i]
+		if k.key == "h" and (k.mods == "ALT" or k.mods == "ALT|SHIFT") then
+			table.remove(keys, i)
+		end
+	end
+end
+
 return keys
