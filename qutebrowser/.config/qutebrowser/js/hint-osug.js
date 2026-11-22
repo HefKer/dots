@@ -12,7 +12,8 @@
 // buttons with no fixed text (the Depths door tiles).
 (() => {
   const ROUTES = {
-    '/depths': [['on to elite', 'on to gate', 'on to boss', 'descend', 'to the lift', 'auto'],
+    '/depths': [['on to elite', 'on to gate', 'on to boss', 'descend', 'to the lift', 'auto',
+      'ride up', 'go deeper'],
       [{ css: '.dp-doors .dp-door' }]],
     '/farm': [['auto']],
     '/packs': [['open next', 'reveal all', 'done'], ['open pack']],
