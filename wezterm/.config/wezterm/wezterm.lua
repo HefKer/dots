@@ -67,6 +67,14 @@ config.quick_select_patterns = {
 	[[(?:[.\w\-@~]+)?(?:/+[.\w\-@]+)*/+(?:[.\w\-@]*[\w\-@]|\.\.)]],
 }
 
+-- Issue refs (dots-issues#67, hefker/nixos-issues#155) open the issue; GitHub
+-- redirects to the PR when the number is one. Defaults keep plain urls links.
+config.hyperlink_rules = wezterm.default_hyperlink_rules()
+table.insert(config.hyperlink_rules, {
+	regex = [[\b(?i:(?:hefker/)?(dots|nixos)-issues)#(\d+)\b]],
+	format = "https://github.com/hefker/$1-issues/issues/$2",
+})
+
 config.scrollback_lines = 20000
 config.notification_handling = "SuppressFromFocusedWindow"
 config.check_for_updates = false

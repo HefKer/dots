@@ -72,3 +72,43 @@ end, { desc = "Vim Inbox" })
 
 -- :ConfigReload picks up edits to lua/config/ in a running nvim (config/reload.lua).
 require("config.reload")
+
+-- gx on an issue ref (dots-issues#67, hefker/nixos-issues#155) opens the issue on
+-- GitHub; anything else falls through to the built-in gx (urls, paths).
+local function issue_ref_url(text)
+  local repo, n = (text or ""):match("[Hh]ef[Kk]er/(%a+)%-issues#(%d+)")
+  if not repo then
+    repo, n = (text or ""):match("(%a+)%-issues#(%d+)")
+  end
+  if repo and (repo:lower() == "dots" or repo:lower() == "nixos") then
+    return ("https://github.com/hefker/%s-issues/issues/%s"):format(repo:lower(), n)
+  end
+end
+
+-- The runtime's own gx, captured before it is replaced below.
+-- Kept in a global so a :ConfigReload doesn't capture this override as the builtin.
+_G.builtin_gx = _G.builtin_gx
+  or {
+    n = vim.fn.maparg("gx", "n", false, true).callback,
+    x = vim.fn.maparg("gx", "x", false, true).callback,
+  }
+local builtin_gx = _G.builtin_gx
+
+vim.keymap.set("n", "gx", function()
+  local url = issue_ref_url(vim.fn.expand("<cWORD>"))
+  if url then
+    return vim.ui.open(url)
+  end
+  builtin_gx.n()
+end, { desc = "Open link or issue ref" })
+
+vim.keymap.set("x", "gx", function()
+  local sel = table.concat(vim.fn.getregion(vim.fn.getpos("v"), vim.fn.getpos("."), { type = vim.fn.mode() }), "\n")
+  local url = issue_ref_url(sel)
+  if url then
+    vim.ui.open(url)
+    vim.api.nvim_feedkeys(vim.keycode("<Esc>"), "nx", false)
+  else
+    builtin_gx.x()
+  end
+end, { desc = "Open link or issue ref" })
