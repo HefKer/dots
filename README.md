@@ -81,7 +81,7 @@ stealing list][nixos-worth-stealing].
 | [backlog](backlog/) | Projects the `backlog` quick capture (Mod+B) files ideas into, one GitHub tracker each | |
 | [fuzzel](fuzzel/) | App launcher and picker for the qutebrowser session scripts | |
 | [hunk](hunk/) | Diff viewer used for reviewing agent changes | |
-| [mpv](mpv/) | Video player | |
+| [mpv](mpv/) | Video player: uosc in Everforest, YouTube capped at 1080p and quick to start, thumbnails, AniList sync | [README](mpv/README.md) |
 | [yt-dlp](yt-dlp/) | Video downloader: no AV1, metadata on; [`scripts/ytdl`](scripts/ytdl) wraps it with subtitles for qutebrowser's `emd` binds | |
 | [lazygit](lazygit/) | Git TUI in the DMS accent: detailed graph, flat file list, g/G, edit in a herdr split | [README](lazygit/README.md) |
 | [swayimg](swayimg/) | Image viewer: vim keys, page-like scrolling | |
@@ -153,7 +153,7 @@ reading their config) rather than loudly.
 | [`herdr`](herdr/) | [herdr](https://herdr.dev) agent multiplexer | `config.toml`, the hunk-diff and herdr-resurrect plugin configs, and `~/.config/herdr-auto-title/config.env` | See note below; auto-title's directory also holds its state, so only `config.env` is linked. |
 | [`git`](git/) | git | `config` and `ignore` only | The directory takes git's runtime state (credential store, gitk), so the two files are linked alone. |
 | [`qutebrowser`](qutebrowser/) | [qutebrowser](https://qutebrowser.org/) | `~/.config/qutebrowser/`, plus `userscripts/` | Multi-file config split across `appearance`, `privacy`, `filepicker`, `binds`, `search_engines`. Themes under `themes/`. Only `userscripts/` is linked under `~/.local/share/qutebrowser`, whose history and caches stay out of here. See deps below. |
-| [`mpv`](mpv/) | [mpv](https://mpv.io/) | `~/.config/mpv/` | `mpv.conf` + `input.conf`. |
+| [`mpv`](mpv/) | [mpv](https://mpv.io/) | `~/.config/mpv/` | `mpv.conf`, `input.conf`, and `script-opts/` for the scripts the NixOS config installs. |
 
 Directories are linked whole unless they hold runtime state, because an
 application that saves by writing a temp file and renaming it over the target

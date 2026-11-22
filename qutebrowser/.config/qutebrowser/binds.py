@@ -170,10 +170,10 @@ config.bind(
 # Video binds ([m]pv)
 config.bind(
     "emf",
-    "hint links spawn --detach mpv --ytdl-raw-options=write-subs=,write-auto-subs= {hint-url}",
+    "hint links spawn --detach mpv {hint-url}",
 )
 config.bind(
-    "emm", "spawn --detach mpv --ytdl-raw-options=write-subs=,write-auto-subs= {url}"
+    "emm", "spawn --detach mpv {url}"
 )
 config.bind(
     "emdf", "hint links spawn wezterm -e /home/hefker/.local/bin/ytdl {hint-url}"
