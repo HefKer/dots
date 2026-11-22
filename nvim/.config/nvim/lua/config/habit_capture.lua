@@ -4,7 +4,7 @@
 -- idiomatic way. hardtime and eyeliner hint live; this keeps what they can't see.
 local M = {}
 
-M.inbox = vim.fn.expand("~/obsidian/main/vim-inbox.md")
+M.inbox = vim.fn.expand("~/polaris/vim-inbox.md")
 
 local size = 30 -- keystrokes kept
 local max_lines = 5000 -- a bigger buffer gets no text snapshots, only keys

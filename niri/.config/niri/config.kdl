@@ -446,8 +446,8 @@ binds {
     Mod+Alt+T hotkey-overlay-title="Summon WezTerm" { spawn "summon" "org.wezfurlong.wezterm" "wezterm"; }
     // Not a summon: always a new WezTerm window running yazi.
     Mod+Alt+Y hotkey-overlay-title="Yazi in New WezTerm" { spawn "wezterm" "start" "--class" "yazi" "--" "yazi"; }
-    // Notes: its own app-id (--class), so Mod+Alt+T's summon never lands on it; niri's spawn doesn't expand ~, hence spawn-sh.
-    Mod+Alt+N hotkey-overlay-title="Summon notes" { spawn-sh "summon notes wezterm start --class notes --cwd ~/polaris -- nvim"; }
+    // Notes: its own app-id (--class), so Mod+Alt+T's summon never lands on it; niri's spawn doesn't expand ~, hence spawn-sh. nvim reopens the vault's last session.
+    Mod+Alt+N hotkey-overlay-title="Summon notes" { spawn-sh r#"summon notes wezterm start --class notes --cwd ~/polaris -- nvim +'lua require("persistence").load()'"#; }
     Mod+Alt+D hotkey-overlay-title="Summon Vesktop" { spawn "summon" "vesktop" "vesktop"; }
     Mod+Alt+S hotkey-overlay-title="Summon Spotify" { spawn "summon" "spotify" "spotify"; }
 
