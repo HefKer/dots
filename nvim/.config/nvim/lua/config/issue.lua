@@ -9,8 +9,10 @@
 -- branch's commits reference (owner/repo#155). With no number, the picker,
 -- which <leader>gI opens outright, <leader>ga over closed issues too, and
 -- <leader>gt and <leader>gm narrow to one label or milestone first.
--- Every list matches 168 or #168 by number as well as by title, and Enter
--- opens each issue selected with Tab as its own buffer.
+-- Every list matches 168 or #168 by number as well as by title, filters typed
+-- as field:value (state:closed label:bug milestone:!x), suggested as they are
+-- typed and accepted with Tab, and Enter opens each issue selected with Tab
+-- as its own buffer. In the milestone list, <a-c> closes one.
 local M = {}
 
 M.projects = vim.fn.expand("~/.config/backlog/projects.yaml")
@@ -51,16 +53,138 @@ function M.number(repo)
   return log:match(vim.pesc(repo) .. "#(%d+)")
 end
 
+-- Filters typed as field:value, as in Discord's search, each narrowing the
+-- list (snacks' matcher reads item[field]). Values are matched fuzzily and
+-- stored without spaces, so a completed value stays one word.
+M.fields = { "state", "reason", "label", "milestone", "author" }
+
+local function squash(s)
+  return s and (s:gsub("%s+", "")) or nil
+end
+
 -- snacks matches on text built from gh's raw JSON, which has no "#168" and
 -- no label names: put them there, and keep them through later refetches.
-local function searchable(item)
+local function searchable(item, ctx)
   local raw = item.item
+  raw.milestone = (ctx.picker.issue_milestones or {})[raw.number]
   local labels = vim.tbl_map(function(l)
-    return l.name
+    return squash(l.name)
   end, raw.labels or {})
-  raw.issue_text = ("#%d %s %s"):format(raw.number, table.concat(labels, " "), item.author or "")
+  raw.label = table.concat(labels, " ")
+  raw.reason = item.state_reason
+  raw.issue_text = ("#%d %s %s"):format(raw.number, raw.label, item.author or "")
   item.opts.text = { "issue_text", "title" }
   item.text = Snacks.picker.util.text(raw, item.opts.text)
+end
+
+-- gh issue list leaves milestones out of the fields snacks asks for, so they
+-- come from a second call: filled into the items fetched by the time it
+-- returns, and by the transform into those fetched after.
+local function add_milestones(picker, opts)
+  local cmd = { "gh", "issue", "list", "--state", opts.state or "open", "--limit", tostring(opts.limit) }
+  vim.list_extend(
+    cmd,
+    { "--json", "number,milestone", "--jq", '.[] | select(.milestone) | "\\(.number)\t\\(.milestone.title)"' }
+  )
+  vim.list_extend(cmd, opts.repo and { "--repo", opts.repo } or {})
+  vim.system(cmd, { text = true }, function(res)
+    vim.schedule(function()
+      if res.code ~= 0 or picker.closed then
+        return
+      end
+      local by_number = {}
+      for n, title in res.stdout:gmatch("(%d+)\t([^\n]+)") do
+        by_number[tonumber(n)] = squash(title)
+      end
+      picker.issue_milestones = by_number
+      for _, item in ipairs(picker.finder.items) do
+        item.item.milestone = by_number[item.number]
+      end
+      picker:find({ refresh = false })
+    end)
+  end)
+end
+
+-- The values offered after field: are the ones the fetched issues carry.
+local function values(picker, field)
+  if field == "state" then
+    return { "open", "closed" }
+  elseif field == "reason" then
+    return { "completed", "not_planned" }
+  end
+  local seen, ret = {}, {}
+  local function add(v)
+    if v and v ~= "" and not seen[v] then
+      seen[v], ret[#ret + 1] = true, v
+    end
+  end
+  if field == "milestone" then
+    vim.iter(pairs(picker.issue_milestones or {})):each(function(_, v)
+      add(v)
+    end)
+  end
+  for _, item in ipairs(picker.finder.items) do
+    if field == "label" then
+      vim.iter(vim.split(item.item.label or "", " ")):each(add)
+    elseif field == "author" then
+      add(item.author)
+    end
+  end
+  table.sort(ret)
+  return ret
+end
+
+-- Suggest a field name for a word typed at a prefix of one, and the values
+-- after field: (field:!value negates the filter, as snacks reads it).
+local function suggest(picker)
+  local line = vim.api.nvim_get_current_line():sub(1, vim.fn.col(".") - 1)
+  local token = line:match("(%S*)$")
+  local start = #line - #token + 1
+  local field, bang, value = token:match("^(%a+):(!?)(%S*)$")
+  local words = {}
+  if field and vim.tbl_contains(M.fields, field) then
+    start = start + #field + 1 + #bang
+    for _, v in ipairs(values(picker, field)) do
+      if v ~= value and vim.startswith(v:lower(), value:lower()) then
+        words[#words + 1] = v
+      end
+    end
+  elseif not field and token:match("^%a+$") then
+    for _, f in ipairs(M.fields) do
+      if vim.startswith(f, token:lower()) then
+        words[#words + 1] = f .. ":"
+      end
+    end
+  end
+  if #words > 0 or vim.fn.pumvisible() == 1 then
+    vim.fn.complete(start, words)
+  end
+end
+
+local function complete_keys(picker)
+  local buf = picker.input.win.buf
+  vim.api.nvim_set_option_value("completeopt", "menuone,noinsert", { scope = "local", buf = buf })
+  vim.api.nvim_create_autocmd("TextChangedI", {
+    buffer = buf,
+    callback = function()
+      suggest(picker)
+    end,
+  })
+end
+
+local function pum_or(keys, fallback)
+  return function(picker)
+    if vim.fn.pumvisible() == 1 then
+      vim.api.nvim_feedkeys(vim.keycode(keys), "n", false)
+      if keys == "<C-y>" then
+        vim.schedule(function()
+          suggest(picker) -- state: accepted: now its values
+        end)
+      end
+    else
+      picker:action(fallback)
+    end
+  end
 end
 
 -- Enter opens every issue selected with Tab, else the actions of the one under
@@ -77,13 +201,30 @@ end
 function M.pick(opts)
   -- Outside a backlog project, the remote's repo, as LazyVim's bind did. The
   -- limit is above the backlog's size: the filter only sees what was fetched.
-  Snacks.picker.gh_issue(vim.tbl_extend("force", {
+  opts = vim.tbl_extend("force", {
     repo = M.repo(),
     live = false,
     limit = 200,
     transform = searchable,
     confirm = confirm,
-  }, opts or {}))
+    on_show = complete_keys,
+    actions = {
+      issue_tab = pum_or("<C-y>", "select_and_next"),
+      issue_down = pum_or("<C-n>", "list_down"),
+      issue_up = pum_or("<C-p>", "list_up"),
+    },
+    win = {
+      input = {
+        keys = {
+          ["<Tab>"] = { "issue_tab", mode = { "i", "n" } },
+          ["<c-n>"] = { "issue_down", mode = { "i", "n" } },
+          ["<c-p>"] = { "issue_up", mode = { "i", "n" } },
+        },
+      },
+    },
+  }, opts or {})
+  local picker = Snacks.picker.gh_issue(opts)
+  add_milestones(picker, opts)
 end
 
 --- Open and closed issues alike; the status icon tells them apart. Closed
@@ -121,39 +262,74 @@ function M.by_label()
 end
 
 --- Pick one of the tracker's open milestones, by open-issue count, then its
---- open issues; one with none open lists its closed ones too.
+--- open issues; one with none open lists its closed ones too. <a-c> closes
+--- the milestone under the cursor, after asking.
 function M.by_milestone()
-  local repo = M.repo()
-  local cmd = {
-    "gh",
-    "api",
-    ("repos/%s/milestones?state=open&per_page=100"):format(repo or "{owner}/{repo}"),
-    "--jq",
-    'sort_by(-.open_issues)[] | "\\(.title)\t\\(.open_issues)"',
-  }
-  vim.system(cmd, { text = true }, function(res)
-    vim.schedule(function()
-      if res.code ~= 0 then
-        return Snacks.notify.error(vim.trim(res.stderr or "gh api milestones failed"))
+  local api = ("repos/%s/milestones"):format(M.repo() or "{owner}/{repo}")
+  local jq = 'sort_by(-.open_issues)[] | "\\(.number)\t\\(.open_issues)\t\\(.title)"'
+  local res = vim.system({ "gh", "api", api .. "?state=open&per_page=100", "--jq", jq }, { text = true }):wait()
+  if res.code ~= 0 then
+    return Snacks.notify.error(vim.trim(res.stderr or "gh api milestones failed"))
+  end
+  local items = {}
+  for number, open, title in res.stdout:gmatch("(%d+)\t(%d+)\t([^\n]+)") do
+    items[#items + 1] = { text = title, number = number, open = tonumber(open) }
+  end
+  Snacks.picker({
+    title = "Milestones",
+    items = items,
+    layout = { preset = "select" },
+    format = function(item)
+      return { { item.text }, { ("  %d open"):format(item.open), "SnacksPickerComment" } }
+    end,
+    confirm = function(picker, item)
+      picker:close()
+      if item then
+        M.pick({
+          milestone = item.text,
+          state = item.open == 0 and "all" or "open",
+          title = "  Issues · " .. item.text,
+        })
       end
-      local milestones = vim.split(vim.trim(res.stdout), "\n", { trimempty = true })
-      vim.ui.select(milestones, {
-        prompt = "Issues in milestone",
-        format_item = function(line)
-          return (line:gsub("\t(%d+)$", "  %1 open"))
+    end,
+    actions = {
+      close_milestone = {
+        desc = "Close milestone",
+        action = function(picker, item)
+          if not item then
+            return
+          end
+          local open = item.open > 0 and (" (%d issues still open)"):format(item.open) or ""
+          Snacks.picker.select({ "No", "Yes" }, { prompt = ("Close %s%s?"):format(item.text, open) }, function(yes)
+            if yes ~= "Yes" then
+              return
+            end
+            local cmd = { "gh", "api", "-X", "PATCH", api .. "/" .. item.number, "-f", "state=closed", "--silent" }
+            vim.system(cmd, { text = true }, function(r)
+              vim.schedule(function()
+                if r.code ~= 0 then
+                  return Snacks.notify.error(vim.trim(r.stderr or "closing the milestone failed"))
+                end
+                Snacks.notify.info("Closed milestone " .. item.text)
+                for i, it in ipairs(items) do
+                  if it == item then
+                    table.remove(items, i)
+                  end
+                end
+                if not picker.closed then
+                  picker:find({ refresh = true })
+                end
+              end)
+            end)
+          end)
         end,
-      }, function(line)
-        local title, open = (line or ""):match("^(.-)\t(%d+)$")
-        if title then
-          M.pick({
-            milestone = title,
-            state = open == "0" and "all" or "open",
-            title = "  Issues · " .. title,
-          })
-        end
-      end)
-    end)
-  end)
+      },
+    },
+    win = {
+      input = { keys = { ["<a-c>"] = { "close_milestone", mode = { "i", "n" } } } },
+      list = { keys = { ["<a-c>"] = "close_milestone" } },
+    },
+  })
 end
 
 --- Open this work's issue, or the picker when nothing names one.

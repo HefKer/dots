@@ -232,7 +232,11 @@ Claude Code from Neovim.
   `<leader>gt` asks for one of the tracker's labels first, `<leader>gm` for
   one of its milestones, and `<leader>ga` lists closed issues too. Every list
   finds `168` or `#168` by number (snacks' own match text leaves the number
-  out), and Enter opens each issue picked with Tab as its own buffer.
+  out), and Enter opens each issue picked with Tab as its own buffer. Filters
+  are typed as in Discord's search (`state:closed label:bug milestone:!x`,
+  plus `reason:` and `author:`), with the field names and the values the
+  fetched issues carry suggested as you type and taken with Tab. In the
+  milestone list, `<a-c>` closes the one under the cursor.
   [`config/issue.lua`](.config/nvim/lua/config/issue.lua)
 
 ## Using it yourself
