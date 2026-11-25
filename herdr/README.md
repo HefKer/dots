@@ -32,6 +32,16 @@ It's where my Claude Code sessions, shells and editors live. Only
   It works from the [prompt pane](#prompt-pane) too, which keeps its draft, and
   shows a `hulio` badge in place of the statusline it covers.
   [`scripts/herdr-claude-account`](../scripts/herdr-claude-account)
+- <a id="claude-to-herdr"></a>**WezTerm's `Alt+M`: move a Claude session from
+  a plain WezTerm pane into herdr.** For a conversation started outside herdr that
+  grew big. It exits the idle Claude, closes the WezTerm pane, and resumes the
+  session in a new herdr tab in the space for its directory, with the
+  [prompt pane](#prompt-pane) open and the unsent prompt in it. It goes to the
+  herdr session a WezTerm tab is showing, and focuses that tab. With several
+  shown, or none, WezTerm asks which; with none, it opens a WezTerm window on
+  the one picked.
+  [`scripts/claude-to-herdr`](../scripts/claude-to-herdr),
+  [`keys.lua`](../wezterm/.config/wezterm/keys.lua) (`claude_to_herdr`)
 - <a id="review"></a>**`prefix+d`: review the agent's diff and comment back.**
   This opens [herdr-hunk-diff](https://github.com/jhochenbaum/herdr-hunk-diff)'s
   review pane, which refreshes as files change. `prefix+shift+s` sends the inline

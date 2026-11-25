@@ -296,7 +296,129 @@ local function hint_patterns(win, pane)
 	return patterns
 end
 
+-- Move the Claude session in this plain pane into herdr (scripts/claude-to-herdr), into
+-- the herdr session a WezTerm tab shows, and show that tab. With several sessions shown,
+-- or none, pick one; with none, a new WezTerm window attaches to the one picked.
+
+-- The herdr session a client's argv names: herdr [--session X] or herdr session attach X.
+-- None for a client of another machine's herdr, which this one's Claude can't move to.
+local function herdr_session(argv)
+	for i, arg in ipairs(argv) do
+		if arg == "--remote" or arg == "--machine" then
+			return nil
+		end
+		if arg == "--session" then
+			return argv[i + 1]
+		end
+		if arg == "attach" and argv[i - 1] == "session" then
+			return argv[i + 1]
+		end
+	end
+	return "default"
+end
+
+-- Each herdr session a WezTerm tab shows, with the first such tab, in mux order.
+local function herdr_clients()
+	local clients, seen = {}, {}
+	for _, win in ipairs(wezterm.mux.all_windows()) do
+		for _, tab in ipairs(win:tabs()) do
+			for _, p in ipairs(tab:panes()) do
+				local proc = p:get_foreground_process_info()
+				if proc and proc.executable:match("/herdr$") and proc.argv[2] ~= "server" then
+					local session = herdr_session(proc.argv)
+					if session and not seen[session] then
+						seen[session] = true
+						clients[#clients + 1] = { session = session, win = win, tab = tab }
+					end
+				end
+			end
+		end
+	end
+	return clients
+end
+
+-- Running herdr sessions, from herdr session list.
+local function herdr_running()
+	local ok, out = wezterm.run_child_process({ "herdr", "session", "list", "--json" })
+	local running = {}
+	if ok then
+		for _, s in ipairs(wezterm.json_parse(out).sessions or {}) do
+			if s.running then
+				running[#running + 1] = { session = s.name }
+			end
+		end
+	end
+	if #running == 0 then
+		running[1] = { session = "default" }
+	end
+	return running
+end
+
+local claude_to_herdr = wezterm.action_callback(function(win, pane)
+	local proc = pane:get_foreground_process_info()
+	if not proc or not proc.executable:match("claude") then
+		win:toast_notification("Claude to herdr", "No Claude in this pane", nil, 3000)
+		return
+	end
+	-- Claude titles the pane ✳ when idle and with a spinner while it works.
+	if not pane:get_title():match("^✳") then
+		win:toast_notification("Claude to herdr", "Claude is busy; move it once it's idle", nil, 3000)
+		return
+	end
+	local pane_id, pid = tostring(pane:pane_id()), tostring(proc.pid)
+
+	local function go(target)
+		if target.tab then
+			target.tab:activate()
+			local gui = target.win:gui_window()
+			if gui then
+				gui:focus()
+			end
+		else
+			wezterm.mux.spawn_window({ args = { "herdr", "--session", target.session } })
+		end
+		wezterm.background_child_process({
+			wezterm.home_dir .. "/dots/scripts/claude-to-herdr",
+			pane_id,
+			pid,
+			target.session,
+		})
+	end
+
+	local targets = herdr_clients()
+	local shown = #targets > 0
+	if not shown then
+		targets = herdr_running()
+	end
+	if #targets == 1 then
+		go(targets[1])
+		return
+	end
+	local choices = {}
+	for i, t in ipairs(targets) do
+		choices[i] = { id = tostring(i), label = t.session .. (shown and "" or "  (opens a window)") }
+	end
+	win:perform_action(
+		act.InputSelector({
+			title = "Move Claude to herdr session",
+			choices = choices,
+			fuzzy = true,
+			action = wezterm.action_callback(function(_, _, id)
+				if id then
+					go(targets[tonumber(id)])
+				end
+			end),
+		}),
+		pane
+	)
+end)
+
 local keys = {
+	{
+		key = "m",
+		mods = "ALT",
+		action = claude_to_herdr,
+	},
 	{
 		key = "t",
 		mods = "ALT",

@@ -1,0 +1,66 @@
+#!/bin/sh
+# Move a Claude session from a plain WezTerm pane into herdr: exit it there and resume it
+# in a new herdr tab, in the space for its directory, with any unsent prompt carried over
+# through Claude's Ctrl+G editor (scripts/claude-prompt-editor). The WezTerm pane closes.
+# Run by WezTerm's Alt+M (keys.lua) as: claude-to-herdr WEZTERM_PANE CLAUDE_PID SESSION,
+# SESSION being the herdr session whose client WezTerm shows. The tab is made by
+# scripts/claude-prompt-tab --resume.
+wpane=$1 pid=$2
+rt="${XDG_RUNTIME_DIR:-/tmp}"
+draft=""
+# Talk to SESSION, whatever herdr environment WezTerm was started with.
+unset HERDR_SOCKET_PATH HERDR_ENV HERDR_PANE_ID HERDR_TAB_ID HERDR_WORKSPACE_ID HERDR_ACTIVE_PANE_ID
+export HERDR_SESSION="${3:-default}"
+
+fail() {
+  [ -s "$draft" ] && set -- "$1; unsent prompt saved in $draft"
+  notify-send "Claude to herdr" "$1"
+  exit 1
+}
+
+# --no-auto-start: a closed pane must not make wezterm cli spawn a mux server.
+send() { wezterm cli --no-auto-start send-text --pane-id "$wpane" --no-paste "$1"; }
+
+[ -n "$pid" ] && [ -d "/proc/$pid" ] || fail "No Claude process"
+cfg=$(tr '\0' '\n' <"/proc/$pid/environ" | sed -n 's/^CLAUDE_CONFIG_DIR=//p')
+rec="${cfg:-$HOME/.claude}/sessions/$pid.json"
+id=$(jq -r '.sessionId // empty' "$rec" 2>/dev/null)
+[ -n "$id" ] || fail "Can't tell which session this is"
+[ "$(jq -r .status "$rec")" = idle ] || fail "Claude is busy or waiting on you; move it once it's idle"
+cwd=$(readlink "/proc/$pid/cwd") || fail "Can't read Claude's directory"
+
+# A herdr client WezTerm just opened may still be starting the server.
+i=0
+until herdr workspace list >/dev/null 2>&1; do
+  i=$((i + 1))
+  [ "$i" -le 50 ] || fail "herdr session $HERDR_SESSION isn't running"
+  sleep 0.1
+done
+
+# Without the editor (a Claude from before it was set up) Ctrl+G would open a real one.
+if tr '\0' '\n' <"/proc/$pid/environ" | grep -qx "VISUAL=$(dirname "$0")/claude-prompt-editor"; then
+  draft=$(mktemp "$rt/claude-to-herdr-draft.XXXXXX")
+  echo "$draft" >"$rt/claude-prompt-capture"
+  send "$(printf '\007')"
+  i=0
+  while [ -e "$rt/claude-prompt-capture" ] && [ "$i" -lt 10 ]; do
+    i=$((i + 1))
+    sleep 0.1
+  done
+  rm -f "$rt/claude-prompt-capture"
+fi
+
+# Ctrl+C clears any draft left; on an empty box it only arms a second press, which /exit makes moot.
+send "$(printf '\003')"
+send "/exit"
+send "$(printf '\r')"
+i=0
+while kill -0 "$pid" 2>/dev/null; do
+  i=$((i + 1))
+  [ "$i" -le 100 ] || fail "Claude didn't exit within 10s; session left in WezTerm"
+  sleep 0.1
+done
+wezterm cli --no-auto-start kill-pane --pane-id "$wpane"
+
+[ -s "$draft" ] || { rm -f "$draft"; draft=""; }
+exec "$(dirname "$0")/claude-prompt-tab" --resume "$id" "${cfg:-$HOME/.claude}" "$cwd" ${draft:+"$draft"}
