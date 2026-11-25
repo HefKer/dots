@@ -229,7 +229,10 @@ Claude Code from Neovim.
   code: it's looked up by directory in a small YAML file. `<leader>gI` lists
   that tracker's open issues, fetched once and filtered locally, where
   LazyVim's bind lists the git remote's repo and asks GitHub on every key.
-  `<leader>gt` asks for one of the tracker's labels first.
+  `<leader>gt` asks for one of the tracker's labels first, `<leader>gm` for
+  one of its milestones, and `<leader>ga` lists closed issues too. Every list
+  finds `168` or `#168` by number (snacks' own match text leaves the number
+  out), and Enter opens each issue picked with Tab as its own buffer.
   [`config/issue.lua`](.config/nvim/lua/config/issue.lua)
 
 ## Using it yourself

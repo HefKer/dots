@@ -9,8 +9,9 @@ return {
       end,
       desc = "Toggle Scratch Buffer",
     },
-    -- The issue this work belongs to, and the tracker's open issues, in place
-    -- of LazyVim's lists of the git remote's repo (config.issue)
+    -- The issue this work belongs to, and the tracker's issues (open, all, by
+    -- label or milestone), in place of LazyVim's lists of the git remote's
+    -- repo (config.issue)
     {
       "<leader>gi",
       function()
@@ -31,6 +32,20 @@ return {
         require("config.issue").by_label()
       end,
       desc = "GitHub Issues by Label",
+    },
+    {
+      "<leader>ga",
+      function()
+        require("config.issue").all()
+      end,
+      desc = "GitHub Issues (all, closed too)",
+    },
+    {
+      "<leader>gm",
+      function()
+        require("config.issue").by_milestone()
+      end,
+      desc = "GitHub Issues by Milestone",
     },
     -- Inline images are capped at 80 columns, and WezTerm blurs a screenshot
     -- shrunk that far. This opens the image file in a near-fullscreen float,
