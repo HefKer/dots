@@ -62,11 +62,20 @@ local function squash(s)
   return s and (s:gsub("%s+", "")) or nil
 end
 
+-- The milestone stays gh's { title } in the raw JSON, which snacks' issue view
+-- draws; milestone: matches the squashed title, set on the item itself, which
+-- the matcher reads before falling through to the JSON.
+local function set_milestone(item, title)
+  item.item.milestone = title and { title = title } or nil
+  rawset(item, "milestone", squash(title))
+end
+
 -- snacks matches on text built from gh's raw JSON, which has no "#168" and
 -- no label names: put them there, and keep them through later refetches.
 local function searchable(item, ctx)
   local raw = item.item
-  raw.milestone = (ctx.picker.issue_milestones or {})[raw.number]
+  local known = type(raw.milestone) == "table" and raw.milestone.title or nil
+  set_milestone(item, (ctx.picker.issue_milestones or {})[raw.number] or known)
   local labels = vim.tbl_map(function(l)
     return squash(l.name)
   end, raw.labels or {})
@@ -94,11 +103,11 @@ local function add_milestones(picker, opts)
       end
       local by_number = {}
       for n, title in res.stdout:gmatch("(%d+)\t([^\n]+)") do
-        by_number[tonumber(n)] = squash(title)
+        by_number[tonumber(n)] = title
       end
       picker.issue_milestones = by_number
       for _, item in ipairs(picker.finder.items) do
-        item.item.milestone = by_number[item.number]
+        set_milestone(item, by_number[item.number])
       end
       picker:find({ refresh = false })
     end)
@@ -120,7 +129,7 @@ local function values(picker, field)
   end
   if field == "milestone" then
     vim.iter(pairs(picker.issue_milestones or {})):each(function(_, v)
-      add(v)
+      add(squash(v))
     end)
   end
   for _, item in ipairs(picker.finder.items) do
