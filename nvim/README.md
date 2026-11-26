@@ -236,7 +236,12 @@ Claude Code from Neovim.
   are typed as in Discord's search (`state:closed label:bug milestone:!x`,
   plus `reason:` and `author:`), with the field names and the values the
   fetched issues carry suggested as ghost text and taken with Tab. In the
-  milestone list, `<c-x>` closes the one under the cursor.
+  milestone list, `<c-x>` closes the one under the cursor. An issue with an
+  open blocker has a lock before its title, and `blocked:yes` / `blocking:yes`
+  narrow to those blocked or holding one up. Its buffer adds Blocked by and
+  Blocking rows (open ones only), Parent, and Sub-issues (`2/5 done` and the
+  open ones), all from fields gh has but snacks doesn't ask for; Enter or
+  `gf` on a `#n` there, or `owner/repo#n` across trackers, opens it.
   [`config/issue.lua`](.config/nvim/lua/config/issue.lua)
 
 ## Using it yourself

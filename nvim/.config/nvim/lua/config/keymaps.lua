@@ -73,6 +73,9 @@ end, { desc = "Vim Inbox" })
 -- :ConfigReload picks up edits to lua/config/ in a running nvim (config/reload.lua).
 require("config.reload")
 
+-- Issue buffers show blockers, blocked issues, parent and sub-issues (config/issue.lua).
+require("config.issue").setup()
+
 -- gx on an issue ref (dots-issues#67, hefker/nixos-issues#155) opens the issue on
 -- GitHub; anything else falls through to the built-in gx (urls, paths).
 local function issue_ref_url(text)

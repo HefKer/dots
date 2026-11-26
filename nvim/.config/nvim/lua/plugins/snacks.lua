@@ -64,6 +64,31 @@ return {
     },
   },
   opts = {
+    -- In an issue buffer, Enter or gf on a #n in the Blocked by, Blocking,
+    -- Parent or Sub-issues rows opens that issue; elsewhere Enter keeps
+    -- snacks' actions menu and gf its usual file jump (config.issue).
+    gh = {
+      keys = {
+        select = {
+          "<cr>",
+          function(item)
+            require("config.issue").follow(function(it)
+              require("snacks.gh.actions").actions.gh_actions.action(it, { items = { it } })
+            end)(item)
+          end,
+          desc = "Open Related Issue or Select Action",
+        },
+        issue_ref = {
+          "gf",
+          function(item)
+            require("config.issue").follow(function()
+              pcall(vim.cmd, "normal! gf")
+            end)(item)
+          end,
+          desc = "Open Related Issue or File",
+        },
+      },
+    },
     -- Renders markdown images inline and opens image files as images.
     image = {
       enabled = true,

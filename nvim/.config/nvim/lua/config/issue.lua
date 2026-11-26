@@ -13,6 +13,10 @@
 -- as field:value (state:closed label:bug milestone:!x), suggested as ghost
 -- text while typed and taken with Tab, and Enter opens each issue selected
 -- with Tab as its own buffer. In the milestone list, <c-x> closes one.
+-- An issue with an open blocker has a lock before its title (blocked:yes
+-- lists them, blocking:yes those holding up an open one), and its buffer
+-- shows Blocked by, Blocking, Parent and Sub-issues rows, whose #n (or
+-- owner/repo#n, across trackers) Enter or gf opens.
 local M = {}
 
 M.projects = vim.fn.expand("~/.config/backlog/projects.yaml")
@@ -56,7 +60,7 @@ end
 -- Filters typed as field:value, as in Discord's search, each narrowing the
 -- list (snacks' matcher reads item[field]). Values are matched fuzzily and
 -- stored without spaces, so a completed value stays one word.
-M.fields = { "state", "reason", "label", "milestone", "author" }
+M.fields = { "state", "reason", "label", "milestone", "author", "blocked", "blocking" }
 
 local function squash(s)
   return s and (s:gsub("%s+", "")) or nil
@@ -64,18 +68,25 @@ end
 
 -- The milestone stays gh's { title } in the raw JSON, which snacks' issue view
 -- draws; milestone: matches the squashed title, set on the item itself, which
--- the matcher reads before falling through to the JSON.
-local function set_milestone(item, title)
+-- the matcher reads before falling through to the JSON. blocked: and
+-- blocking: are yes or no, set there too, from what the list call found.
+local function set_extra(item, extra)
+  local title = extra and extra.milestone
   item.item.milestone = title and { title = title } or nil
   rawset(item, "milestone", squash(title))
+  rawset(item, "blocked", extra and (extra.blocked and "yes" or "no") or nil)
+  rawset(item, "blocking", extra and (extra.blocking and "yes" or "no") or nil)
 end
 
 -- snacks matches on text built from gh's raw JSON, which has no "#168" and
 -- no label names: put them there, and keep them through later refetches.
 local function searchable(item, ctx)
   local raw = item.item
-  local known = type(raw.milestone) == "table" and raw.milestone.title or nil
-  set_milestone(item, (ctx.picker.issue_milestones or {})[raw.number] or known)
+  local extra = (ctx.picker.issue_extra or {})[raw.number]
+  if not extra and type(raw.milestone) == "table" then
+    extra = { milestone = raw.milestone.title }
+  end
+  set_extra(item, extra)
   local labels = vim.tbl_map(function(l)
     return squash(l.name)
   end, raw.labels or {})
@@ -86,15 +97,19 @@ local function searchable(item, ctx)
   item.text = Snacks.picker.util.text(raw, item.opts.text)
 end
 
--- gh issue list leaves milestones out of the fields snacks asks for, so they
--- come from a second call: filled into the items fetched by the time it
--- returns, and by the transform into those fetched after.
-local function add_milestones(picker, opts)
+-- gh issue list leaves milestones and blockers out of the fields snacks asks
+-- for, so they come from a second call, made each time the list is fetched:
+-- filled into the items fetched by the time it returns, and by the transform
+-- into those fetched after. Only open blockers and blocked issues count.
+local extra_jq = '.[] | "\\(.number)\t\\(.milestone.title // "")\t'
+  .. '\\([.blockedBy.nodes[] | select(.state == "OPEN")] | length)\t'
+  .. '\\([.blocking.nodes[] | select(.state == "OPEN")] | length)"'
+
+local function add_extra(picker, opts)
   local cmd = { "gh", "issue", "list", "--state", opts.state or "open", "--limit", tostring(opts.limit) }
-  vim.list_extend(
-    cmd,
-    { "--json", "number,milestone", "--jq", '.[] | select(.milestone) | "\\(.number)\t\\(.milestone.title)"' }
-  )
+  vim.list_extend(cmd, { "--json", "number,milestone,blockedBy,blocking", "--jq", extra_jq })
+  vim.list_extend(cmd, opts.label and { "--label", opts.label } or {})
+  vim.list_extend(cmd, opts.milestone and { "--milestone", opts.milestone } or {})
   vim.list_extend(cmd, opts.repo and { "--repo", opts.repo } or {})
   vim.system(cmd, { text = true }, function(res)
     vim.schedule(function()
@@ -102,16 +117,41 @@ local function add_milestones(picker, opts)
         return
       end
       local by_number = {}
-      for n, title in res.stdout:gmatch("(%d+)\t([^\n]+)") do
-        by_number[tonumber(n)] = title
+      for n, title, blocked, blocking in res.stdout:gmatch("(%d+)\t([^\t]*)\t(%d+)\t(%d+)") do
+        by_number[tonumber(n)] = {
+          milestone = title ~= "" and title or nil,
+          blocked = blocked ~= "0",
+          blocking = blocking ~= "0",
+        }
       end
-      picker.issue_milestones = by_number
+      picker.issue_extra = by_number
       for _, item in ipairs(picker.finder.items) do
-        set_milestone(item, by_number[item.number])
+        set_extra(item, by_number[item.number])
       end
       picker:find({ refresh = false })
     end)
   end)
+end
+
+-- snacks' issue finder, with the second call started alongside each run, so
+-- a refetch drops the lock of an issue whose last blocker has closed.
+local function finder(opts, ctx)
+  add_extra(ctx.picker, opts)
+  return require("snacks.picker.source.gh").issue(opts, ctx)
+end
+
+-- snacks' issue row, with a lock before the title of a blocked issue.
+local function format(item, picker)
+  local ret = require("snacks.picker.source.gh").format(item, picker)
+  if rawget(item, "blocked") == "yes" then
+    for i, chunk in ipairs(ret) do
+      if item.hash and vim.trim(chunk[1] or "") == item.hash then
+        table.insert(ret, i + 1, { "󰌾 ", "DiagnosticWarn" })
+        break
+      end
+    end
+  end
+  return ret
 end
 
 -- The values offered after field: are the ones the fetched issues carry.
@@ -120,6 +160,8 @@ local function values(picker, field)
     return { "open", "closed" }
   elseif field == "reason" then
     return { "completed", "not_planned" }
+  elseif field == "blocked" or field == "blocking" then
+    return { "yes", "no" }
   end
   local seen, ret = {}, {}
   local function add(v)
@@ -128,8 +170,8 @@ local function values(picker, field)
     end
   end
   if field == "milestone" then
-    vim.iter(pairs(picker.issue_milestones or {})):each(function(_, v)
-      add(squash(v))
+    vim.iter(pairs(picker.issue_extra or {})):each(function(_, v)
+      add(squash(v.milestone))
     end)
   end
   for _, item in ipairs(picker.finder.items) do
@@ -248,6 +290,8 @@ function M.pick(opts)
     repo = M.repo(),
     live = false,
     limit = 200,
+    finder = finder,
+    format = format,
     transform = searchable,
     confirm = confirm,
     on_show = hint_keys,
@@ -266,8 +310,7 @@ function M.pick(opts)
       },
     },
   }, opts or {})
-  local picker = Snacks.picker.gh_issue(opts)
-  add_milestones(picker, opts)
+  Snacks.picker.gh_issue(opts)
 end
 
 --- Open and closed issues alike; the status icon tells them apart. Closed
@@ -373,6 +416,151 @@ function M.by_milestone()
       list = { keys = { ["<c-x>"] = "close_milestone" } },
     },
   })
+end
+
+-- The issue buffer's relation rows, drawn from fields its view asks gh for.
+-- gh gives each relation as { nodes, totalCount }; snacks' own list keeps them
+-- unfetched, so a buffer opened from the picker asks for them too.
+M.view_fields = { "milestone", "blockedBy", "blocking", "parent", "subIssues", "subIssuesSummary" }
+
+local function nodes(v)
+  return type(v) == "table" and (v.nodes or v) or {}
+end
+
+local function is_open(node)
+  return (node.state or ""):lower() == "open"
+end
+
+-- #n for an issue in the buffer's own tracker, owner/repo#n for another's.
+local function ref(item, node)
+  local repo = node.url and require("snacks.gh.item").get_repo(node.url)
+  if repo and repo:lower() ~= (item.repo or ""):lower() then
+    return ("%s#%d"):format(repo:lower(), node.number)
+  end
+  return "#" .. node.number
+end
+
+local function refs(item, list)
+  local ret = {}
+  for _, node in ipairs(list) do
+    if #ret > 0 then
+      ret[#ret + 1] = { " " }
+    end
+    ret[#ret + 1] = { ref(item, node), "@markup.link" }
+  end
+  return ret
+end
+
+local function open_ones(item, field)
+  return refs(item, vim.tbl_filter(is_open, nodes(item.item[field])))
+end
+
+M.props = {
+  {
+    name = "Blocked by",
+    hl = function(item)
+      return open_ones(item, "blockedBy")
+    end,
+  },
+  {
+    name = "Blocking",
+    hl = function(item)
+      return open_ones(item, "blocking")
+    end,
+  },
+  {
+    name = "Parent",
+    hl = function(item)
+      local parent = item.item.parent
+      if type(parent) == "table" and parent.number then
+        return { { ref(item, parent), "@markup.link" }, { " " .. (parent.title or "") } }
+      end
+    end,
+  },
+  {
+    name = "Sub-issues",
+    hl = function(item)
+      local sum = item.item.subIssuesSummary
+      if type(sum) ~= "table" or (sum.total or 0) == 0 then
+        return
+      end
+      local ret = { { ("%d/%d done"):format(sum.completed or 0, sum.total), "SnacksPickerComment" } }
+      local open = open_ones(item, "subIssues")
+      if #open > 0 then
+        ret[#ret + 1] = { " " }
+        vim.list_extend(ret, open)
+      end
+      return ret
+    end,
+  },
+}
+
+-- The ref under the cursor in a relation row; in Parent, only the parent's
+-- (its title may hold others).
+local function ref_at_cursor(item)
+  local line = vim.api.nvim_get_current_line()
+  local row = line:match("^(%a[%a%- ]*):")
+  local names = vim.tbl_map(function(p)
+    return p.name
+  end, M.props)
+  if not vim.tbl_contains(names, row) then
+    return
+  end
+  local col = vim.api.nvim_win_get_cursor(0)[2] + 1
+  local start = #row + 2
+  while true do
+    local s, e = line:find("[%w%.%-_]*/?[%w%.%-_]*#%d+", start)
+    if not s then
+      return
+    end
+    if row == "Parent" or (col >= s and col <= e) then
+      local repo, n = line:sub(s, e):match("^(.-)#(%d+)$")
+      return repo ~= "" and repo or item.repo, n
+    end
+    start = e + 1
+  end
+end
+
+--- Enter or gf in an issue buffer: open the related issue under the cursor,
+--- else do what the key does there already.
+---@param fallback fun(item: table)
+function M.follow(fallback)
+  return function(item)
+    local repo, n = ref_at_cursor(item)
+    if repo then
+      return vim.cmd.edit(("gh://%s/issue/%s"):format(repo, n))
+    end
+    fallback(item)
+  end
+end
+
+--- Teach snacks' issue view the relation rows: added after Milestone, and
+--- their fields added to what its view fetches. Safe to run again.
+function M.setup()
+  local Render = require("snacks.gh.render")
+  Render.props = vim.tbl_filter(function(p)
+    return not p.issue_relation
+  end, Render.props)
+  local at = #Render.props + 1
+  for i, p in ipairs(Render.props) do
+    if p.name == "Milestone" then
+      at = i + 1
+    end
+  end
+  for i, p in ipairs(M.props) do
+    p.issue_relation = true
+    table.insert(Render.props, at + i - 1, p)
+  end
+  local Api = require("snacks.gh.api")
+  Api.issue_view = Api.issue_view or Api.view
+  Api.view = function(cb, item, opts)
+    if item.type == "issue" then
+      opts = vim.tbl_extend("force", opts or {}, {
+        fields = vim.list_extend(vim.deepcopy(opts and opts.fields or {}), M.view_fields),
+      })
+    end
+    return Api.issue_view(cb, item, opts)
+  end
 end
 
 --- Open this work's issue, or the picker when nothing names one.
