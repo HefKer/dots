@@ -235,8 +235,8 @@ Claude Code from Neovim.
   out), and Enter opens each issue picked with Tab as its own buffer. Filters
   are typed as in Discord's search (`state:closed label:bug milestone:!x`,
   plus `reason:` and `author:`), with the field names and the values the
-  fetched issues carry suggested as you type and taken with Tab. In the
-  milestone list, `<a-c>` closes the one under the cursor.
+  fetched issues carry suggested as ghost text and taken with Tab. In the
+  milestone list, `<c-x>` closes the one under the cursor.
   [`config/issue.lua`](.config/nvim/lua/config/issue.lua)
 
 ## Using it yourself

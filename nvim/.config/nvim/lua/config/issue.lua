@@ -10,9 +10,9 @@
 -- which <leader>gI opens outright, <leader>ga over closed issues too, and
 -- <leader>gt and <leader>gm narrow to one label or milestone first.
 -- Every list matches 168 or #168 by number as well as by title, filters typed
--- as field:value (state:closed label:bug milestone:!x), suggested as they are
--- typed and accepted with Tab, and Enter opens each issue selected with Tab
--- as its own buffer. In the milestone list, <a-c> closes one.
+-- as field:value (state:closed label:bug milestone:!x), suggested as ghost
+-- text while typed and taken with Tab, and Enter opens each issue selected
+-- with Tab as its own buffer. In the milestone list, <c-x> closes one.
 local M = {}
 
 M.projects = vim.fn.expand("~/.config/backlog/projects.yaml")
@@ -134,16 +134,39 @@ local function values(picker, field)
   return ret
 end
 
+local ns = vim.api.nvim_create_namespace("issue_filter_hint")
+
+-- The suggestion shows as ghost text after the cursor, the chosen one's rest
+-- then the others, where a completion menu would cover what's typed.
+local function show(picker)
+  local buf, hint = picker.input.win.buf, picker.issue_hint
+  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+  if not hint then
+    return
+  end
+  local chunks = { { hint.words[hint.idx]:sub(hint.typed + 1), "Comment" } }
+  local others = {}
+  for i, w in ipairs(hint.words) do
+    if i ~= hint.idx and #others < 5 then
+      others[#others + 1] = w
+    end
+  end
+  if #others > 0 then
+    chunks[#chunks + 1] = { "  " .. table.concat(others, " "), "NonText" }
+  end
+  vim.api.nvim_buf_set_extmark(buf, ns, 0, hint.col, { virt_text = chunks, virt_text_pos = "inline" })
+end
+
 -- Suggest a field name for a word typed at a prefix of one, and the values
 -- after field: (field:!value negates the filter, as snacks reads it).
 local function suggest(picker)
-  local line = vim.api.nvim_get_current_line():sub(1, vim.fn.col(".") - 1)
+  local col = vim.api.nvim_win_get_cursor(picker.input.win.win)[2]
+  local line = vim.api.nvim_buf_get_lines(picker.input.win.buf, 0, 1, false)[1]:sub(1, col)
   local token = line:match("(%S*)$")
-  local start = #line - #token + 1
   local field, bang, value = token:match("^(%a+):(!?)(%S*)$")
-  local words = {}
+  local typed, words = token, {}
   if field and vim.tbl_contains(M.fields, field) then
-    start = start + #field + 1 + #bang
+    typed = value
     for _, v in ipairs(values(picker, field)) do
       if v ~= value and vim.startswith(v:lower(), value:lower()) then
         words[#words + 1] = v
@@ -156,34 +179,45 @@ local function suggest(picker)
       end
     end
   end
-  if #words > 0 or vim.fn.pumvisible() == 1 then
-    vim.fn.complete(start, words)
-  end
+  picker.issue_hint = #words > 0
+      and vim.fn.mode():sub(1, 1) == "i"
+      and { col = col, typed = #typed, words = words, idx = 1 }
+    or nil
+  show(picker)
 end
 
-local function complete_keys(picker)
-  local buf = picker.input.win.buf
-  vim.api.nvim_set_option_value("completeopt", "menuone,noinsert", { scope = "local", buf = buf })
-  vim.api.nvim_create_autocmd("TextChangedI", {
-    buffer = buf,
+local function hint_keys(picker)
+  vim.api.nvim_create_autocmd({ "TextChangedI", "CursorMovedI", "InsertLeave" }, {
+    buffer = picker.input.win.buf,
     callback = function()
       suggest(picker)
     end,
   })
 end
 
-local function pum_or(keys, fallback)
+-- Tab takes the suggestion, replacing what's typed of it; with none, it
+-- selects as snacks' Tab does.
+local function accept(picker)
+  local hint = picker.issue_hint
+  if not hint then
+    return picker:action("select_and_next")
+  end
+  local word = hint.words[hint.idx]
+  local win = picker.input.win.win
+  vim.api.nvim_buf_set_text(picker.input.win.buf, 0, hint.col - hint.typed, 0, hint.col, { word })
+  vim.api.nvim_win_set_cursor(win, { 1, hint.col - hint.typed + #word })
+  suggest(picker) -- state: taken: now its values
+end
+
+-- Ctrl+N/P cycle through the suggestions, or move in the list without one.
+local function cycle(step, fallback)
   return function(picker)
-    if vim.fn.pumvisible() == 1 then
-      vim.api.nvim_feedkeys(vim.keycode(keys), "n", false)
-      if keys == "<C-y>" then
-        vim.schedule(function()
-          suggest(picker) -- state: accepted: now its values
-        end)
-      end
-    else
-      picker:action(fallback)
+    local hint = picker.issue_hint
+    if not hint then
+      return picker:action(fallback)
     end
+    hint.idx = (hint.idx - 1 + step) % #hint.words + 1
+    show(picker)
   end
 end
 
@@ -207,11 +241,11 @@ function M.pick(opts)
     limit = 200,
     transform = searchable,
     confirm = confirm,
-    on_show = complete_keys,
+    on_show = hint_keys,
     actions = {
-      issue_tab = pum_or("<C-y>", "select_and_next"),
-      issue_down = pum_or("<C-n>", "list_down"),
-      issue_up = pum_or("<C-p>", "list_up"),
+      issue_tab = accept,
+      issue_down = cycle(1, "list_down"),
+      issue_up = cycle(-1, "list_up"),
     },
     win = {
       input = {
@@ -262,7 +296,7 @@ function M.by_label()
 end
 
 --- Pick one of the tracker's open milestones, by open-issue count, then its
---- open issues; one with none open lists its closed ones too. <a-c> closes
+--- open issues; one with none open lists its closed ones too. <c-x> closes
 --- the milestone under the cursor, after asking.
 function M.by_milestone()
   local api = ("repos/%s/milestones"):format(M.repo() or "{owner}/{repo}")
@@ -326,8 +360,8 @@ function M.by_milestone()
       },
     },
     win = {
-      input = { keys = { ["<a-c>"] = { "close_milestone", mode = { "i", "n" } } } },
-      list = { keys = { ["<a-c>"] = "close_milestone" } },
+      input = { keys = { ["<c-x>"] = { "close_milestone", mode = { "i", "n" } } } },
+      list = { keys = { ["<c-x>"] = "close_milestone" } },
     },
   })
 end
