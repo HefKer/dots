@@ -39,6 +39,11 @@ Commands are autoloaded from [`functions/`](.config/fish/functions/), one per fi
   named (`nrs smart-shot`, `#host` suffix allowed), with names tab-completed from
   `git worktree list`. Prints the command first; extra args reach `nixos-rebuild`.
   [`__nixos_rebuild.fish`](.config/fish/functions/__nixos_rebuild.fish)
+- <a id="nixfind"></a>**`nixfind`: one fuzzy search over packages and options.**
+  fzf over [nix-search-tv](https://github.com/3timeslazy/nix-search-tv)'s index of
+  nixpkgs, NUR, NixOS and Home Manager options, with docs in the preview; Enter
+  prints the bare name, so `nix shell nixpkgs#(nixfind rg)` works.
+  [`nixfind.fish`](.config/fish/functions/nixfind.fish)
 - <a id="hmopt"></a>**`hmopt`: search Home Manager options offline**, from the
   Nix store. [`hmopt.fish`](.config/fish/functions/hmopt.fish)
 
